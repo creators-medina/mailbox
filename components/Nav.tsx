@@ -28,7 +28,7 @@ export function Nav() {
         <div className="w-nav-right">
           <a
             className="w-cta-pill filled"
-            href="#pricing"
+            href="/signup"
             style={{ fontSize: 13, padding: '9px 20px' }}
           >
             Get your address

@@ -3,8 +3,8 @@ import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
 
 export const metadata: Metadata = {
-  title: 'No worries — My Biz Address',
-  description: "Your address wasn't activated. Ready when you are.",
+  title: 'Checkout cancelled — My Biz Address',
+  description: "Your checkout was cancelled. Ready when you are.",
   robots: { index: false, follow: false },
 };
 
@@ -18,12 +18,12 @@ export default function CancelPage() {
       >
         <div className="w-section-inner">
           <h1 className="w-hero-title">No worries.</h1>
-          <p className="w-hero-sub">
-            Your address wasn&rsquo;t activated. Whenever you&rsquo;re ready,
-            your Rockwall business address is waiting.
+          <p className="w-hero-sub" style={{ maxWidth: 480, margin: '0 auto 36px' }}>
+            Your checkout was cancelled and nothing was charged. Whenever
+            you&rsquo;re ready, your Rockwall business address is waiting.
           </p>
           <div className="w-cta-row">
-            <a className="w-cta-pill filled" href="/#pricing">View plans ›</a>
+            <a className="w-cta-pill filled" href="/signup">Return to signup ›</a>
             <a className="w-cta-pill outline" href="/#contact">Talk to us first</a>
           </div>
         </div>

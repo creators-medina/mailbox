@@ -203,7 +203,7 @@ export default function Home() {
               notifications, and manage your mail from anywhere.
             </p>
             <div className="w-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 20 }}>
-              <a className="w-cta-pill filled" href="#pricing">Get your address</a>
+              <a className="w-cta-pill filled" href="/signup">Get your address</a>
               <a className="w-cta-pill outline" href="#how-it-works">View plans ›</a>
             </div>
             <p style={{
@@ -496,7 +496,7 @@ export default function Home() {
               <p className="contact-info-label">Hours</p>
               <p className="contact-info-value">Monday – Saturday<br />9 am – 6 pm</p>
               <a
-                href="https://mybizmailbox.coworksapp.com/membership-signup/6953"
+                href="/signup"
                 className="w-cta-pill filled"
                 style={{ display: 'inline-flex', marginTop: 8 }}
               >
@@ -523,7 +523,7 @@ export default function Home() {
             and your address is active the same day.
           </p>
           <div className="w-cta-row">
-            <a className="w-cta-pill filled" href="https://mybizmailbox.coworksapp.com/membership-signup/6953">
+            <a className="w-cta-pill filled" href="/signup">
               Get your address
             </a>
             <a className="w-cta-pill outline" href="#contact">Talk to us first ›</a>
