@@ -27,6 +27,16 @@ export function Nav() {
 
         <div className="w-nav-right">
           <a
+            href="/login"
+            style={{
+              font: '500 13px/1 var(--font-text,sans-serif)',
+              color: 'var(--c-text-2,rgba(255,255,255,0.60))',
+              textDecoration: 'none', marginRight: 16,
+            }}
+          >
+            Login
+          </a>
+          <a
             className="w-cta-pill filled"
             href="/signup"
             style={{ fontSize: 13, padding: '9px 20px' }}
