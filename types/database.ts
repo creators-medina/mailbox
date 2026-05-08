@@ -111,6 +111,10 @@ export interface Database {
           id: string;
           customer_id: string;
           sender: string | null;
+          title: string | null;
+          recipient_name: string | null;
+          notes: string | null;
+          created_by: string | null;
           envelope_image_url: string | null;
           scanned_document_url: string | null;
           status: string;
@@ -122,6 +126,10 @@ export interface Database {
           id?: string;
           customer_id: string;
           sender?: string | null;
+          title?: string | null;
+          recipient_name?: string | null;
+          notes?: string | null;
+          created_by?: string | null;
           envelope_image_url?: string | null;
           scanned_document_url?: string | null;
           status?: string;
@@ -131,6 +139,9 @@ export interface Database {
         };
         Update: {
           sender?: string | null;
+          title?: string | null;
+          recipient_name?: string | null;
+          notes?: string | null;
           envelope_image_url?: string | null;
           scanned_document_url?: string | null;
           status?: string;
@@ -145,6 +156,8 @@ export interface Database {
           request_type: string;
           status: string;
           notes: string | null;
+          admin_notes: string | null;
+          completed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -155,12 +168,16 @@ export interface Database {
           request_type: string;
           status?: string;
           notes?: string | null;
+          admin_notes?: string | null;
+          completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           status?: string;
           notes?: string | null;
+          admin_notes?: string | null;
+          completed_at?: string | null;
           updated_at?: string;
         };
       };

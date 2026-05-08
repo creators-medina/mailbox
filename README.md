@@ -160,7 +160,60 @@ components/
 | 2 | ✅ Done | Stripe checkout flow, `/signup` page |
 | 3 | ✅ Done | Supabase foundation, auth pages, DB schema, RLS |
 | 4 | ✅ Done | Stripe webhooks, customer creation, mail inbox dashboard |
-| 5 | Pending | Admin CRM, mail item management, scan uploads, billing portal |
+| 5 | ✅ Done | Admin panel, mail upload, customer requests, billing portal |
+
+---
+
+---
+
+## Phase 5 — Admin Panel
+
+### Making a user an admin
+
+Run this in the Supabase SQL editor (replace the email):
+
+```sql
+update public.profiles set role = 'admin' where email = 'staff@example.com';
+```
+
+Admin users can then access `/admin`, which is protected by `lib/auth/require-admin.ts`.
+
+### Admin routes
+
+| Route | Purpose |
+|---|---|
+| `/admin` | Overview — active customer count, mail items, pending requests |
+| `/admin/customers` | Customer list with search |
+| `/admin/customers/[id]` | Customer detail — profile, mail, requests, internal notes |
+| `/admin/mail` | Mail queue with inline status dropdown |
+| `/admin/mail/upload` | Upload envelope image + scan, create mail_item record |
+| `/admin/requests` | Pending/completed mail action requests |
+
+### Storage reminder
+
+Before uploading mail items, ensure the two private Storage buckets exist (see `supabase/storage-setup.md`):
+- `mail-envelopes` — envelope photos (10 MB limit)
+- `mail-scans` — scanned PDFs (50 MB limit)
+
+### Stripe Billing Portal
+
+The billing portal is wired at `POST /api/billing/portal`. Configure it in the Stripe dashboard first:
+
+1. Go to **Stripe → Customer Portal → Settings**
+2. Enable the portal and configure allowed actions
+3. Save — no extra env vars needed
+
+The **Manage billing** button on `/account` calls this route and redirects to the portal.
+
+### Customer mail requests
+
+Customers can request actions on individual mail items from `/account`:
+- **Request scan** — admin will scan and upload the document
+- **Request forwarding** — admin will forward to their forwarding address
+- **Hold for pickup** — customer will pick up in person
+- **Request shred** — admin will shred after confirmation
+
+Requests appear in `/admin/requests` and can be updated to `in_progress` or `completed`.
 
 ---
 

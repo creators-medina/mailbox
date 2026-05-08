@@ -5,11 +5,14 @@ import type { Database } from '@/types/database';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
 import SignOutButton from './SignOutButton';
+import MailItemActions from './MailItemActions';
+import BillingButton from './BillingButton';
 
 type ProfileRow      = Database['public']['Tables']['profiles']['Row'];
 type CustomerRow     = Database['public']['Tables']['customers']['Row'];
 type SubscriptionRow = Database['public']['Tables']['subscriptions']['Row'];
 type MailItemRow     = Database['public']['Tables']['mail_items']['Row'];
+type MailRequestRow  = Database['public']['Tables']['mail_requests']['Row'];
 
 export const metadata: Metadata = {
   title: 'My Account — My Biz Address',
@@ -26,6 +29,13 @@ const MAIL_STATUS_CLASS: Record<string, string> = {
   shredded:  'mock-badge-held',
 };
 
+const REQUEST_STATUS_CLASS: Record<string, string> = {
+  pending:     'mock-badge-new',
+  in_progress: 'mock-badge-scanned',
+  completed:   'mock-badge-ready',
+  cancelled:   'mock-badge-held',
+};
+
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
@@ -35,38 +45,42 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Fetch all data in parallel
+  // Fetch profile and customer in parallel
   const [profileRes, customerRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('customers').select('*').eq('profile_id', user.id).maybeSingle(),
   ]);
 
-  const profile = profileRes.data as ProfileRow | null;
+  const profile  = profileRes.data  as ProfileRow  | null;
   const customer = customerRes.data as CustomerRow | null;
 
   let subscription: SubscriptionRow | null = null;
   let mailItems: MailItemRow[] = [];
+  let mailRequests: MailRequestRow[] = [];
 
   const customerId = customer?.id ?? null;
   if (customerId) {
-    const [sr, mr] = await Promise.all([
+    const [sr, mr, rr] = await Promise.all([
       supabase.from('subscriptions').select('*').eq('customer_id', customerId).maybeSingle(),
       supabase.from('mail_items').select('*').eq('customer_id', customerId)
         .order('received_at', { ascending: false }).limit(10),
+      supabase.from('mail_requests').select('*').eq('customer_id', customerId)
+        .order('created_at', { ascending: false }).limit(5),
     ]);
-    subscription = sr.data as SubscriptionRow | null;
-    mailItems = (mr.data ?? []) as MailItemRow[];
+    subscription  = sr.data  as SubscriptionRow | null;
+    mailItems     = (mr.data ?? []) as MailItemRow[];
+    mailRequests  = (rr.data ?? []) as MailRequestRow[];
   }
 
   const displayName = profile?.business_name || profile?.full_name || user.email || 'there';
-  const statusKey = customer?.status ?? 'pending';
-  const statusClass = statusKey === 'active' ? 'status-pill-active'
+  const statusKey   = customer?.status ?? 'pending';
+  const statusClass = statusKey === 'active'    ? 'status-pill-active'
     : statusKey === 'cancelled' ? 'status-pill-cancelled'
     : 'status-pill-pending';
-  const dotClass = statusKey === 'active' ? 'status-dot-active'
+  const dotClass    = statusKey === 'active'    ? 'status-dot-active'
     : statusKey === 'cancelled' ? 'status-dot-cancelled'
     : 'status-dot-pending';
-  const statusLabel = statusKey === 'active' ? 'Active'
+  const statusLabel = statusKey === 'active'    ? 'Active'
     : statusKey === 'cancelled' ? 'Cancelled'
     : 'Setting up';
 
@@ -76,7 +90,7 @@ export default async function AccountPage() {
       <section className="w-section dark" style={{ minHeight: '100vh', paddingTop: 96, paddingBottom: 80 }}>
         <div className="w-section-inner" style={{ maxWidth: 900, textAlign: 'left' }}>
 
-          {/* ── Header row ─────────────────────────────────────────── */}
+          {/* ── Header row ─────────────────────────────────────── */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div className="w-hero-eyebrow" style={{ marginBottom: 6 }}>Dashboard</div>
@@ -87,7 +101,7 @@ export default async function AccountPage() {
             <SignOutButton />
           </div>
 
-          {/* ── A. Address card ────────────────────────────────────── */}
+          {/* ── A. Address card ────────────────────────────────── */}
           <div className="dash-card" style={{ marginBottom: 20, borderColor: customer?.status === 'active' ? 'rgba(74,222,128,0.18)' : 'var(--c-border-2,rgba(255,255,255,0.13))' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: customer ? 20 : 0 }}>
               <span className="dash-card-title" style={{ margin: 0 }}>Your business address</span>
@@ -115,40 +129,43 @@ export default async function AccountPage() {
             )}
           </div>
 
-          {/* ── Main 2-col grid ────────────────────────────────────── */}
+          {/* ── Main 2-col grid ────────────────────────────────── */}
           <div className="dash-grid" style={{ marginBottom: 20 }}>
 
-            {/* ── C. Mail feed ──────────────────────────────────────── */}
+            {/* ── C. Mail feed ──────────────────────────────────── */}
             <div className="dash-card">
               <span className="dash-card-title">Mail inbox</span>
               {mailItems.length > 0 ? (
                 <div>
                   {mailItems.map(item => (
-                    <div key={item.id} className="dash-mail-item">
-                      <div style={{
-                        width: 34, height: 34, borderRadius: 8, flexShrink: 0, marginTop: 1,
-                        background: 'var(--c-surface-2,#222)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <svg viewBox="0 0 16 12" width="13" height="10" fill="none"
-                             stroke="var(--c-gold-2,#d4aa50)" strokeWidth="1.4"
-                             strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="1" y="1" width="14" height="10" rx="1.5"/>
-                          <path d="M1 3l7 5 7-5"/>
-                        </svg>
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 3 }}>
-                          {item.sender ?? 'Unknown sender'}
+                    <div key={item.id} className="dash-mail-item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%' }}>
+                        <div style={{
+                          width: 34, height: 34, borderRadius: 8, flexShrink: 0, marginTop: 1,
+                          background: 'var(--c-surface-2,#222)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <svg viewBox="0 0 16 12" width="13" height="10" fill="none"
+                               stroke="var(--c-gold-2,#d4aa50)" strokeWidth="1.4"
+                               strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="1" y="1" width="14" height="10" rx="1.5"/>
+                            <path d="M1 3l7 5 7-5"/>
+                          </svg>
                         </div>
-                        <div style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-                          {fmt(item.received_at)}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 3 }}>
+                            {item.sender ?? 'Unknown sender'}
+                          </div>
+                          <div style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+                            {fmt(item.received_at)}
+                          </div>
                         </div>
+                        <span className={`mock-badge ${MAIL_STATUS_CLASS[item.status] ?? 'mock-badge-held'}`}
+                              style={{ flexShrink: 0 }}>
+                          {item.status.replace('_', ' ')}
+                        </span>
                       </div>
-                      <span className={`mock-badge ${MAIL_STATUS_CLASS[item.status] ?? 'mock-badge-held'}`}
-                            style={{ flexShrink: 0 }}>
-                        {item.status.replace('_', ' ')}
-                      </span>
+                      <MailItemActions mailItemId={item.id} />
                     </div>
                   ))}
                 </div>
@@ -171,10 +188,10 @@ export default async function AccountPage() {
               )}
             </div>
 
-            {/* ── Right column ─────────────────────────────────────── */}
+            {/* ── Right column ─────────────────────────────────── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-              {/* ── B. Subscription card ──────────────────────────── */}
+              {/* ── B. Subscription card ──────────────────────── */}
               <div className="dash-card">
                 <span className="dash-card-title">Subscription</span>
                 <div className="addon-row" style={{ paddingTop: 0 }}>
@@ -214,40 +231,44 @@ export default async function AccountPage() {
                 )}
               </div>
 
-              {/* ── Account links ─────────────────────────────────── */}
+              {/* ── Account links ─────────────────────────────── */}
               <div className="dash-card">
                 <span className="dash-card-title">Account</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <a href="/#contact" style={{ font: '500 14px/1.3 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#d4aa50)', textDecoration: 'none' }}>
                     Contact support ›
                   </a>
-                  <span style={{ font: '400 13px/1.3 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-                    Manage billing — coming in Phase 5
-                  </span>
+                  {customer?.stripe_customer_id && <BillingButton />}
                 </div>
               </div>
 
             </div>
           </div>
 
-          {/* ── D. Request actions ─────────────────────────────────── */}
-          <div className="dash-card">
-            <span className="dash-card-title">Mail actions</span>
-            <div className="dash-actions-grid">
-              {[
-                { label: 'Request scan', icon: '📄' },
-                { label: 'Request forwarding', icon: '📦' },
-                { label: 'Hold for pickup', icon: '🏠' },
-                { label: 'Request shred', icon: '🗑️' },
-              ].map(a => (
-                <div key={a.label} className="dash-action-btn" title="Coming in Phase 5">
-                  <span style={{ fontSize: 20 }}>{a.icon}</span>
-                  <span>{a.label}</span>
-                  <span style={{ font: '400 10px/1 var(--font-text,sans-serif)', opacity: 0.6 }}>Phase 5</span>
-                </div>
-              ))}
+          {/* ── D. Recent requests ─────────────────────────────── */}
+          {mailRequests.length > 0 && (
+            <div className="dash-card" style={{ marginBottom: 20 }}>
+              <span className="dash-card-title">Recent requests</span>
+              <div>
+                {mailRequests.map(r => (
+                  <div key={r.id} className="dash-mail-item">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 3, textTransform: 'capitalize' }}>
+                        {r.request_type} request
+                      </div>
+                      <div style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+                        {fmt(r.created_at)}
+                      </div>
+                    </div>
+                    <span className={`mock-badge ${REQUEST_STATUS_CLASS[r.status] ?? 'mock-badge-held'}`}
+                          style={{ flexShrink: 0 }}>
+                      {r.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
       </section>
