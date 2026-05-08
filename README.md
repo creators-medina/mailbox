@@ -40,9 +40,40 @@ Visit `http://localhost:3000`.
 > supabase gen types typescript --project-id <ref> > types/database.ts
 > ```
 
-### Stripe
+### Stripe Webhook Setup
 
-1. Log in to [dashboard.stripe.com](https://dashboard.stripe.com).
+The webhook endpoint is `/api/stripe/webhook` and handles subscription lifecycle.
+
+**Handled events:**
+- `checkout.session.completed` — creates profile/customer/subscription in Supabase
+- `customer.subscription.created` — syncs subscription status
+- `customer.subscription.updated` — syncs status and renewal date
+- `customer.subscription.deleted` — marks subscription and customer as cancelled
+
+**Local testing with Stripe CLI:**
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+# Copy the webhook signing secret printed by the CLI into STRIPE_WEBHOOK_SECRET
+```
+
+**Vercel production webhook:**
+1. Go to Stripe dashboard → **Developers → Webhooks → Add endpoint**
+2. Endpoint URL: `https://mybizmailbox.biz/api/stripe/webhook`
+3. Select events: `checkout.session.completed`, `customer.subscription.*`
+4. Copy the signing secret into `STRIPE_WEBHOOK_SECRET` in Vercel env vars
+
+**Customer account creation behavior:**
+- When `checkout.session.completed` fires, the webhook calls `supabase.auth.admin.inviteUserByEmail(email)` if the customer does not yet have a Supabase account.
+- The customer receives an email with a magic link to set their password.
+- If the customer already has a Supabase account (signed up before checkout), their existing account is linked automatically.
+- The `profiles` table stores email as a unique index for O(1) lookup during webhook processing.
+
+**Suite number assignment:**
+- Suite numbers are assigned sequentially: `MB1001`, `MB1002`, etc.
+- Assignment happens in `lib/mailbox/suite.ts` on first checkout.
+- **MVP limitation:** No concurrency protection. For production under heavy load, replace with a Postgres sequence.
+
+### Stripe
 2. Create four products:
    - **Business Address** — $29.99/month (recurring) → `STRIPE_PRICE_BUSINESS_ADDRESS_MONTHLY`
    - **Mail Scanning** — $9.99/month (recurring) → `STRIPE_PRICE_MAIL_SCANNING_MONTHLY`
@@ -128,8 +159,8 @@ components/
 | 1 | ✅ Done | Public marketing site, dark premium redesign |
 | 2 | ✅ Done | Stripe checkout flow, `/signup` page |
 | 3 | ✅ Done | Supabase foundation, auth pages, DB schema, RLS |
-| 4 | Pending | Stripe webhooks, customer account creation, mail inbox dashboard |
-| 5 | Pending | Admin CRM, mail item management, scan uploads |
+| 4 | ✅ Done | Stripe webhooks, customer creation, mail inbox dashboard |
+| 5 | Pending | Admin CRM, mail item management, scan uploads, billing portal |
 
 ---
 
