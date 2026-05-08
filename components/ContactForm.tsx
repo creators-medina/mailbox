@@ -33,18 +33,24 @@ export default function ContactForm() {
   if (status === 'sent') {
     return (
       <div style={{ padding: '32px 0' }}>
-        <p style={{ font: '600 20px/1.3 var(--font-display, -apple-system, sans-serif)', color: '#1d1d1f', marginBottom: 8 }}>
+        <p style={{
+          font: '700 20px/1.3 var(--font-display,sans-serif)',
+          color: 'var(--c-light-text,#0d0d0d)', marginBottom: 8,
+        }}>
           Message received.
         </p>
-        <p style={{ font: '400 15px/1.5 var(--font-text, -apple-system, sans-serif)', color: 'rgba(29,29,31,0.7)' }}>
-          We&#39;ll get back to you within one business day.
+        <p style={{
+          font: '400 15px/1.6 var(--font-text,sans-serif)',
+          color: 'var(--c-light-text-2,#555)',
+        }}>
+          We&rsquo;ll get back to you within one business day.
         </p>
         <button
           className="w-cta-pill outline"
-          style={{ marginTop: 20, border: '1px solid #0066cc', color: '#0066cc', background: 'transparent', cursor: 'pointer' }}
+          style={{ marginTop: 20, cursor: 'pointer' }}
           onClick={() => setStatus('idle')}
         >
-          Send another message ›
+          Send another message
         </button>
       </div>
     );
@@ -53,56 +59,29 @@ export default function ContactForm() {
   return (
     <form onSubmit={handleSubmit}>
       <div className="ds-field">
-        <label className="ds-label" htmlFor="name">Name</label>
-        <input
-          id="name"
-          className="ds-input"
-          type="text"
-          placeholder="Your name"
-          value={form.name}
-          onChange={set('name')}
-          required
-        />
+        <label className="ds-label" htmlFor="c-name">Name</label>
+        <input id="c-name" className="ds-input" type="text"
+          placeholder="Your name" value={form.name} onChange={set('name')} required />
       </div>
       <div className="ds-field">
-        <label className="ds-label" htmlFor="email">Email</label>
-        <input
-          id="email"
-          className="ds-input"
-          type="email"
-          placeholder="you@example.com"
-          value={form.email}
-          onChange={set('email')}
-          required
-        />
+        <label className="ds-label" htmlFor="c-email">Email</label>
+        <input id="c-email" className="ds-input" type="email"
+          placeholder="you@example.com" value={form.email} onChange={set('email')} required />
       </div>
       <div className="ds-field">
-        <label className="ds-label" htmlFor="phone">Phone (optional)</label>
-        <input
-          id="phone"
-          className="ds-input"
-          type="tel"
-          placeholder="(469) 000-0000"
-          value={form.phone}
-          onChange={set('phone')}
-        />
+        <label className="ds-label" htmlFor="c-phone">Phone (optional)</label>
+        <input id="c-phone" className="ds-input" type="tel"
+          placeholder="(469) 000-0000" value={form.phone} onChange={set('phone')} />
       </div>
       <div className="ds-field">
-        <label className="ds-label" htmlFor="message">Message</label>
-        <textarea
-          id="message"
-          className="ds-input"
-          placeholder="How can we help?"
-          rows={5}
-          value={form.message}
-          onChange={set('message')}
-          required
-          style={{ resize: 'vertical' }}
-        />
+        <label className="ds-label" htmlFor="c-message">Message</label>
+        <textarea id="c-message" className="ds-input" rows={5}
+          placeholder="How can we help?" value={form.message}
+          onChange={set('message')} required style={{ resize: 'vertical' }} />
       </div>
       {status === 'error' && (
-        <p style={{ font: '400 13px/1.4 var(--font-text, -apple-system, sans-serif)', color: '#c00', marginBottom: 12 }}>
-          Something went wrong. Please try again or call us directly.
+        <p style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: '#d00', marginBottom: 12 }}>
+          Something went wrong. Please try again or call (469) 893-4120.
         </p>
       )}
       <button
@@ -111,7 +90,7 @@ export default function ContactForm() {
         disabled={status === 'sending'}
         style={{ border: 'none', cursor: status === 'sending' ? 'default' : 'pointer' }}
       >
-        {status === 'sending' ? 'Sending...' : 'Send message'}
+        {status === 'sending' ? 'Sending…' : 'Send message'}
       </button>
     </form>
   );
