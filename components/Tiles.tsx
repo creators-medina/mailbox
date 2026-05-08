@@ -4,54 +4,23 @@ interface ProductTileProps {
   theme?: 'dark' | 'light';
   eyebrow?: string;
   title?: React.ReactNode;
-  titleAccent?: string;
   sub?: string;
-  links?: { label: string; href?: string; arrow?: boolean }[];
   children?: React.ReactNode;
   style?: React.CSSProperties;
 }
 
-export function ProductTile({
-  theme = 'light',
-  eyebrow,
-  title,
-  titleAccent,
-  sub,
-  links = [],
-  children,
-  style,
-}: ProductTileProps) {
+export function ProductTile({ theme = 'dark', eyebrow, title, sub, children, style }: ProductTileProps) {
   return (
     <div className={`w-tile ${theme}`} style={style}>
       {eyebrow && <div className="w-tile-eyebrow">{eyebrow}</div>}
-      {title && (
-        <h3 className="w-tile-title">
-          {title}
-          {titleAccent && <> <span className="accent">{titleAccent}</span></>}
-        </h3>
-      )}
+      {title && <h3 className="w-tile-title">{title}</h3>}
       {sub && <p className="w-tile-sub">{sub}</p>}
-      {links.length > 0 && (
-        <div className="w-tile-links">
-          {links.map((l, i) => (
-            <a key={i} href={l.href ?? '#'}>
-              {l.label}{l.arrow !== false ? ' ›' : ''}
-            </a>
-          ))}
-        </div>
-      )}
       {children && <div className="w-tile-visual">{children}</div>}
     </div>
   );
 }
 
-export function FeatureGrid({
-  cols = 2,
-  children,
-}: {
-  cols?: 2 | 3 | 4;
-  children: React.ReactNode;
-}) {
+export function FeatureGrid({ cols = 3, children }: { cols?: 2 | 3 | 4; children: React.ReactNode }) {
   return <div className={`w-tiles cols-${cols}`}>{children}</div>;
 }
 
@@ -60,21 +29,18 @@ export function Footer() {
     {
       h: 'Services',
       items: [
-        { label: 'Business address',   href: '#services' },
-        { label: 'Package receiving',  href: '#services' },
-        { label: 'Mail scanning',      href: '#services' },
-        { label: 'Mail forwarding',    href: '#services' },
-        { label: 'Notary services',    href: '#services' },
-        { label: 'Meeting rooms',      href: '#services' },
+        { label: 'Business Address',          href: '#services' },
+        { label: 'Mail Scanning',             href: '#services' },
+        { label: 'Business Phone Number',     href: '#services' },
+        { label: 'Google Business Setup',     href: '#services' },
       ],
     },
     {
       h: 'Company',
       items: [
-        { label: 'About us',   href: '#' },
-        { label: 'Contact',    href: '#contact' },
-        { label: 'Careers',    href: '#' },
-        { label: 'Press',      href: '#' },
+        { label: 'About',   href: '#' },
+        { label: 'Contact', href: '#contact' },
+        { label: 'Careers', href: '#' },
       ],
     },
     {
@@ -83,16 +49,14 @@ export function Footer() {
         { label: 'FAQ',          href: '#faq' },
         { label: 'How it works', href: '#how-it-works' },
         { label: 'Pricing',      href: '#pricing' },
-        { label: 'Support',      href: '#contact' },
+        { label: 'Contact us',   href: '#contact' },
       ],
     },
     {
       h: 'Legal',
       items: [
-        { label: 'Privacy policy',   href: '#' },
-        { label: 'Terms of service', href: '#' },
-        { label: 'Acceptable use',   href: '#' },
-        { label: 'Sitemap',          href: '/sitemap.xml' },
+        { label: 'Privacy Policy',   href: '#' },
+        { label: 'Terms of Service', href: '#' },
       ],
     },
   ];
@@ -100,33 +64,26 @@ export function Footer() {
   return (
     <footer className="w-footer">
       <div className="w-footer-inner">
-        {/* Footer logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
-          <div style={{
-            width: 36, height: 36,
-            background: 'var(--c-navy, #1d3557)',
-            borderRadius: 10,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg viewBox="0 0 32 32" width="18" height="18" fill="none"
-                 stroke="var(--c-sandstone, #d6c1a3)" strokeWidth="1.75"
-                 strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="7" width="26" height="18" rx="3" />
-              <path d="M4 9 L16 18 L28 9" />
-            </svg>
-          </div>
+        {/* Logo row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 44 }}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+               stroke="var(--c-gold, #c49a3c)" strokeWidth="1.75"
+               strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="M2 7l10 7 10-7"/>
+          </svg>
           <div>
             <div style={{
-              font: '700 14px/1.1 var(--font-text, -apple-system, sans-serif)',
-              color: '#fff', letterSpacing: '-0.1px',
+              font: '700 14px/1.1 var(--font-text, sans-serif)',
+              color: 'rgba(255,255,255,0.88)', letterSpacing: '-0.1px',
             }}>
-              My Biz Mailbox
+              My Biz Address
             </div>
             <div style={{
-              font: '400 12px/1.3 var(--font-text, -apple-system, sans-serif)',
-              color: 'rgba(255,255,255,0.45)', marginTop: 2,
+              font: '400 12px/1.3 var(--font-text, sans-serif)',
+              color: 'rgba(255,255,255,0.35)', marginTop: 3,
             }}>
-              802 North Goliad St, Rockwall TX 75087
+              802 North Goliad St · Rockwall, TX 75087
             </div>
           </div>
         </div>
@@ -143,13 +100,11 @@ export function Footer() {
         </div>
 
         <div className="w-footer-legal">
-          <span>© 2026 My Biz Mailbox. All rights reserved.</span>
+          <span>© 2026 My Biz Address. All rights reserved.</span>
           <span>
-            <a href="#">Privacy</a>
+            <a href="#">Privacy Policy</a>
             {' · '}
-            <a href="#">Terms</a>
-            {' · '}
-            Secured by Stripe
+            <a href="#">Terms of Service</a>
           </span>
         </div>
       </div>

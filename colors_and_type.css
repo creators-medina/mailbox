@@ -1,90 +1,67 @@
 /* ─── colors_and_type.css ─────────────────────────────────────────
-   Design tokens for My Biz Mailbox — warm, premium, local-professional.
+   My Biz Address — dark, premium, modern professional.
    ──────────────────────────────────────────────────────────────── */
 
 :root {
   /* Font stacks */
-  --font-display: "SF Pro Display", ui-sans-serif, -apple-system, BlinkMacSystemFont,
-                  "Inter var", "Inter", "Georgia", sans-serif;
-  --font-text:    "SF Pro Text",    ui-sans-serif, -apple-system, BlinkMacSystemFont,
-                  "Inter var", "Inter", sans-serif;
+  --font-display: "SF Pro Display", ui-sans-serif, -apple-system,
+                  BlinkMacSystemFont, "Inter var", "Inter", sans-serif;
+  --font-text:    "SF Pro Text",    ui-sans-serif, -apple-system,
+                  BlinkMacSystemFont, "Inter var", "Inter", sans-serif;
 
-  /* ─── Brand palette ─────────────────────────────────────────── */
-  --c-navy:        #1d3557;   /* primary — nav, CTAs, headings on light */
-  --c-navy-hover:  #16304d;
-  --c-charcoal:    #1d2a36;   /* body text on light */
-  --c-cream:       #f7f5f2;   /* primary light bg */
-  --c-soft-white:  #fdfcf9;   /* alternate light bg */
-  --c-sandstone:   #d6c1a3;   /* warm accent — dividers, icon bg, badge */
-  --c-sandstone-d: #c4a882;   /* sandstone hover */
-  --c-gray-text:   #6b7280;   /* secondary text */
-  --c-border:      rgba(0, 0, 0, 0.07);
-  --c-border-navy: rgba(255, 255, 255, 0.12);
+  /* ── Dark palette ───────────────────────────────────────────── */
+  --c-bg:           #0d0d0d;   /* page / hero background        */
+  --c-bg-2:         #141414;   /* secondary dark section        */
+  --c-surface:      #1a1a1a;   /* card surface on dark          */
+  --c-surface-2:    #222222;   /* hover / nested card           */
+  --c-border:       rgba(255, 255, 255, 0.07);
+  --c-border-2:     rgba(255, 255, 255, 0.13);
 
-  /* ─── Shadows ────────────────────────────────────────────────── */
-  --shadow-sm:   0 1px 4px rgba(29, 42, 54, 0.06), 0 1px 2px rgba(29, 42, 54, 0.04);
-  --shadow-card: 0 4px 16px rgba(29, 42, 54, 0.08), 0 1px 4px rgba(29, 42, 54, 0.04);
-  --shadow-deep: 0 12px 40px rgba(29, 42, 54, 0.14), 0 4px 12px rgba(29, 42, 54, 0.06);
-  --shadow-nav:  0 1px 0 rgba(0, 0, 0, 0.12);
+  /* ── Text on dark ───────────────────────────────────────────── */
+  --c-text:         #ffffff;
+  --c-text-2:       rgba(255, 255, 255, 0.60);
+  --c-text-3:       rgba(255, 255, 255, 0.32);
 
-  /* ─── Border radii ───────────────────────────────────────────── */
-  --r-xs:     4px;
-  --r-sm:     8px;
-  --r-md:     12px;
-  --r-lg:     18px;
-  --r-xl:     24px;
-  --r-pill:   980px;
-  --r-circle: 50%;
-}
+  /* ── Warm gold accent ───────────────────────────────────────── */
+  --c-gold:         #c49a3c;
+  --c-gold-2:       #d4aa50;   /* lighter, for small labels     */
 
-/* ─── Typography scale ─────────────────────────────────────────── */
+  /* ── Light / contrast sections ─────────────────────────────── */
+  --c-light-bg:     #f2f1ed;
+  --c-light-bg-2:   #ffffff;
+  --c-light-text:   #0d0d0d;
+  --c-light-text-2: #555555;
+  --c-light-border: rgba(0, 0, 0, 0.08);
 
-.t-hero {
-  font: 800 72px/1.03 var(--font-display);
-  letter-spacing: -1px;
-}
-.t-section {
-  font: 700 44px/1.1 var(--font-display);
-  letter-spacing: -0.5px;
-}
-.t-tile {
-  font: 700 24px/1.2 var(--font-display);
-  letter-spacing: -0.3px;
-}
-.t-headline {
-  font: 700 28px/1.2 var(--font-display);
-  letter-spacing: -0.3px;
-}
-.t-body {
-  font: 400 18px/1.65 var(--font-text);
-  letter-spacing: -0.1px;
-}
-.t-caption {
-  font: 400 14px/1.5 var(--font-text);
-  letter-spacing: -0.1px;
-}
-.t-label {
-  font: 600 13px/1.4 var(--font-text);
-  letter-spacing: 0.01em;
-}
-.t-overline {
-  font: 700 11px/1.3 var(--font-text);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  /* ── Shadows ────────────────────────────────────────────────── */
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.50), 0 1px 4px rgba(0, 0, 0, 0.35);
+  --shadow-deep: 0 12px 48px rgba(0, 0, 0, 0.65), 0 4px 16px rgba(0, 0, 0, 0.40);
+
+  /* ── Radii ───────────────────────────────────────────────────── */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   16px;
+  --r-xl:   22px;
+  --r-pill: 980px;
 }
 
-/* ─── Surface helpers ──────────────────────────────────────────── */
-.surface-navy   { background: #1d3557; color: #fff; }
-.surface-cream  { background: #f7f5f2; color: #1d2a36; }
-.surface-white  { background: #fdfcf9; color: #1d2a36; }
+/* ── Type scale ─────────────────────────────────────────────────── */
+.t-hero    { font: 800 72px/1.04 var(--font-display); letter-spacing: -1.2px; }
+.t-section { font: 700 46px/1.08 var(--font-display); letter-spacing: -0.6px; }
+.t-tile    { font: 700 22px/1.25 var(--font-display); letter-spacing: -0.3px; }
+.t-body    { font: 400 18px/1.70 var(--font-text);    letter-spacing: -0.1px; }
+.t-caption { font: 400 14px/1.55 var(--font-text);    letter-spacing: -0.05px; }
+.t-label   { font: 600 12px/1.4  var(--font-text);    letter-spacing: 0.04em; }
+.t-overline{ font: 700 11px/1.3  var(--font-text);    letter-spacing: 0.10em; text-transform: uppercase; }
 
-/* ─── Base reset ────────────────────────────────────────────────── */
+/* ── Base reset ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
   font-family: var(--font-text);
-  color: var(--c-charcoal);
-  background: var(--c-soft-white);
+  background: var(--c-bg);
+  color: var(--c-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

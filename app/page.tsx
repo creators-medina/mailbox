@@ -1,22 +1,21 @@
 import type { Metadata } from 'next';
-import { Nav, PromoStrip } from '@/components/Nav';
-import { FeatureGrid, ProductTile, Footer } from '@/components/Tiles';
+import { Nav } from '@/components/Nav';
+import { Footer } from '@/components/Tiles';
 import PricingSection from '@/components/PricingSection';
 import ContactForm from '@/components/ContactForm';
 
 export const metadata: Metadata = {
-  title: 'My Biz Mailbox — Professional Business Address in Rockwall, TX',
+  title: 'My Biz Address — Professional Business Address in Rockwall, TX',
   description:
-    'Get a real street address in Rockwall, TX for your LLC, packages, and business mail. Protect your home privacy and build instant credibility. Plans from $29/mo.',
+    'Receive business mail at a real Rockwall address, get envelope notifications, and manage your mail from anywhere. Starting at $29.99/mo.',
 };
 
-/* ─── JSON-LD ─────────────────────────────────────────────────── */
+/* ── JSON-LD ─────────────────────────────────────────────────────── */
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
-  name: 'My Biz Mailbox',
-  description:
-    'Professional business mailbox and address services in Rockwall, TX. Real street address for your LLC, packages, and mail.',
+  name: 'My Biz Address',
+  description: 'Virtual mailbox and professional business address service in Rockwall, TX.',
   url: 'https://mybizmailbox.biz',
   telephone: '+14698934120',
   address: {
@@ -27,123 +26,149 @@ const jsonLd = {
     postalCode: '75087',
     addressCountry: 'US',
   },
-  openingHoursSpecification: [
-    {
-      '@type': 'OpeningHoursSpecification',
-      dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
-      opens: '09:00',
-      closes: '18:00',
-    },
-  ],
-  priceRange: '$$',
+  openingHoursSpecification: [{
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    opens: '09:00',
+    closes: '18:00',
+  }],
 };
 
-/* ─── Hero address card visual ────────────────────────────────── */
-function AddressCardVisual() {
+/* ── Dashboard mockup ────────────────────────────────────────────── */
+const mailItems = [
+  { sender: 'Wells Fargo Business',  desc: 'Account statement',       date: 'Today',  badge: 'New',     cls: 'mock-badge-new' },
+  { sender: 'TX Secretary of State', desc: 'Annual report notice',    date: 'Dec 18', badge: 'Held',    cls: 'mock-badge-held' },
+  { sender: 'USPS Certified Mail',   desc: 'Package (0.8 lbs)',       date: 'Dec 17', badge: 'Ready',   cls: 'mock-badge-ready' },
+  { sender: 'City of Rockwall',      desc: 'Business license renewal',date: 'Dec 15', badge: 'Scanned', cls: 'mock-badge-scanned' },
+];
+
+function EnvelopeIcon() {
   return (
-    <div className="address-card">
-      <div className="address-card-logo-row">
-        <div className="address-card-logo-mark">
-          <svg viewBox="0 0 32 32" fill="none" strokeWidth="1.75"
-               strokeLinecap="round" strokeLinejoin="round" stroke="currentColor">
-            <rect x="3" y="7" width="26" height="18" rx="3"/>
-            <path d="M4 9 L16 18 L28 9"/>
-          </svg>
-        </div>
+    <svg viewBox="0 0 16 12" width="14" height="10" fill="none"
+         stroke="var(--c-gold-2,#d4aa50)" strokeWidth="1.4"
+         strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="1" width="14" height="10" rx="1.5"/>
+      <path d="M1 3l7 5 7-5"/>
+    </svg>
+  );
+}
+
+function DashboardMockup() {
+  return (
+    <div className="mock-shell">
+      {/* Window chrome dots */}
+      <div className="mock-chrome">
+        <span className="mock-dot mock-dot-1"/>
+        <span className="mock-dot mock-dot-2"/>
+        <span className="mock-dot mock-dot-3"/>
+      </div>
+
+      {/* App header */}
+      <div className="mock-header">
         <div>
-          <div className="address-card-biz-name">Your Business Name Here</div>
-          <div className="address-card-biz-type">LLC · Rockwall, TX</div>
+          <div className="mock-header-title">My Biz Address</div>
+          <div className="mock-header-sub">Dashboard</div>
+        </div>
+        <div style={{
+          width: 28, height: 28, borderRadius: '50%',
+          background: 'rgba(196,154,60,0.18)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          font: '700 11px/1 var(--font-text,sans-serif)',
+          color: 'var(--c-gold-2,#d4aa50)',
+        }}>
+          MB
         </div>
       </div>
 
-      <div className="address-card-divider" />
-
-      <div style={{ marginBottom: 16 }}>
-        <div className="address-card-label">Business address</div>
-        <div className="address-card-value">
-          802 North Goliad Street<br />
-          Rockwall, TX  75087
+      {/* Address display */}
+      <div className="mock-address-block">
+        <div>
+          <div className="mock-address-text">802 North Goliad St, Suite 247</div>
+          <div className="mock-address-text">Rockwall, TX 75087</div>
+        </div>
+        <div className="mock-active-badge">
+          <span className="mock-active-dot"/>
+          Active
         </div>
       </div>
 
-      <div>
-        <div className="address-card-label">For use on</div>
-        <div className="address-card-value" style={{ fontSize: 13, color: 'var(--c-gray-text,#6b7280)' }}>
-          State filings · Business cards · Google listing · Contracts
-        </div>
+      {/* Mail list */}
+      <div className="mock-section-header">
+        <span className="mock-section-title">Recent mail</span>
+        <span className="mock-section-count">4 items</span>
       </div>
 
-      <div className="address-card-badge">
-        <span className="address-card-badge-dot" />
-        <span className="address-card-badge-text">Active — mail ready</span>
+      {mailItems.map(item => (
+        <div key={item.sender} className="mock-mail-item">
+          <div className="mock-envelope"><EnvelopeIcon /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="mock-mail-sender">{item.sender}</div>
+            <div className="mock-mail-desc">{item.desc}</div>
+          </div>
+          <div className="mock-mail-right">
+            <div className="mock-mail-date">{item.date}</div>
+            <span className={`mock-badge ${item.cls}`}>{item.badge}</span>
+          </div>
+        </div>
+      ))}
+
+      {/* Footer bar */}
+      <div style={{
+        padding: '12px 20px',
+        borderTop: '1px solid var(--c-border,rgba(255,255,255,0.07))',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ font: '400 11px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+          4 of 12 items shown
+        </span>
+        <span style={{
+          font: '600 11px/1 var(--font-text,sans-serif)',
+          color: 'var(--c-gold-2,#d4aa50)', cursor: 'pointer',
+        }}>
+          View all →
+        </span>
       </div>
     </div>
   );
 }
 
-/* ─── Service icons ───────────────────────────────────────────── */
-function Icon({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="feature-icon-wrap">{children}</div>
-  );
+/* ── Shared icon component ───────────────────────────────────────── */
+function PropIcon({ children }: { children: React.ReactNode }) {
+  return <div className="prop-icon">{children}</div>;
 }
 
-const iconStroke = { fill: 'none', stroke: 'var(--c-navy,#1d3557)', strokeWidth: '1.6',
-  strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+const S = { fill: 'none', stroke: 'var(--c-gold-2,#d4aa50)' as string,
+  strokeWidth: '1.6', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
-function IconAddress()  { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg></Icon>; }
-function IconPackage()  { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><path d="M3 9l9-5 9 5v11l-9 5-9-5V9z"/><path d="M12 4v16M3 9l9 5 9-5"/></svg></Icon>; }
-function IconScan()     { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h6M8 16h4"/></svg></Icon>; }
-function IconKey()      { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><circle cx="9" cy="12" r="4"/><path d="M13 12h8M17 10v4"/></svg></Icon>; }
-function IconStamp()    { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><rect x="6" y="3" width="12" height="10" rx="2"/><path d="M4 19h16M8 13v6M16 13v6"/></svg></Icon>; }
-function IconRoom()     { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M8 6V4M16 6V4"/></svg></Icon>; }
-function IconPrivacy()  { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><path d="M12 3L4 7v5c0 5 3.5 9.7 8 11 4.5-1.3 8-6 8-11V7z"/><path d="M9 12l2 2 4-4"/></svg></Icon>; }
-function IconBell()     { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><path d="M6 10a6 6 0 0112 0v4l2 2H4l2-2v-4"/><path d="M10 18a2 2 0 004 0"/></svg></Icon>; }
-function IconCheck()    { return <Icon><svg viewBox="0 0 24 24" width="20" height="20" {...iconStroke}><path d="M20 6L9 17l-5-5"/></svg></Icon>; }
-
-/* ─── FAQ data ────────────────────────────────────────────────── */
+/* ── FAQ items ───────────────────────────────────────────────────── */
 const faqs = [
   {
-    q: 'What is a business mailbox service?',
-    a: 'A business mailbox gives your company a real street address — not a P.O. box — where you can receive mail and packages. It also provides a stable, professional address you can use for LLC registration, Google Business listings, business cards, and client contracts.',
+    q: 'What address will I use?',
+    a: '802 North Goliad Street, Rockwall, TX 75087, with a unique suite number assigned to your business. This is a real street address — not a P.O. box — and is accepted for LLC registration, banking, licensing, and Google Business.',
   },
   {
-    q: 'Can I use this address to register my LLC in Texas?',
-    a: 'Yes. Our address at 802 North Goliad Street, Rockwall TX 75087 meets Texas Secretary of State requirements for LLC registration and can serve as your registered agent address or principal place of business.',
+    q: 'Can I use this address for my business?',
+    a: 'Yes. The address meets Texas Secretary of State requirements for LLC and business entity registration. You can list it as your principal place of business on state filings, Google, your website, and business cards.',
   },
   {
-    q: 'How does mail forwarding work?',
-    a: 'We scan the exterior of each piece of mail and send you an email notification. You can then request forwarding to any address worldwide, request a scan of the contents, or hold it for in-person pickup. Forwarding is billed separately based on weight and destination.',
+    q: 'Do you scan my mail?',
+    a: 'Basic plans include envelope notifications — we photograph the outside of each piece so you can see who sent it. Full content scanning (opening and photographing the contents) is available as an add-on for $9.99/mo.',
   },
   {
-    q: 'What carriers do you accept packages from?',
-    a: 'We accept deliveries from all major carriers — USPS, UPS, FedEx, Amazon Logistics, DHL, and most regional carriers. If it ships to a street address, we can receive it.',
+    q: 'Can I pick up mail locally?',
+    a: 'Yes. Local pickup is included in every plan. Our Rockwall location is open Monday through Saturday, 9 am to 6 pm. Simply come in with your ID and we\'ll have your items ready.',
   },
   {
-    q: 'How quickly will I be notified when mail arrives?',
-    a: 'You receive an email notification as soon as your mail or package is checked in — typically within a few hours of arrival during business hours. Notifications include an exterior scan so you can identify the sender without visiting.',
+    q: 'Can I add a business phone number?',
+    a: 'Yes. For $9.99/mo you get a local Rockwall phone number that forwards calls to any number you choose. Voicemail, caller ID, and basic call forwarding are included.',
   },
   {
-    q: 'What are your hours?',
-    a: 'Our Rockwall location is open Monday through Saturday, 9 am to 6 pm. Executive plan members have 24/7 key-fob access to the mailbox area for after-hours pickup.',
-  },
-  {
-    q: "What happens to my packages if I can't come in?",
-    a: 'We hold packages securely on-site for up to 30 days at no extra charge. After 30 days a small storage fee applies. You can request forwarding at any time if pickup is not convenient.',
-  },
-  {
-    q: 'Where exactly are you located in Rockwall, TX?',
-    a: 'We are at 802 North Goliad Street, Rockwall, TX 75087 — just minutes from I-30 and the Rockwall town center, with ample parking on site.',
+    q: 'How do I get started?',
+    a: 'Click "Get started," choose your plan, and complete the short signup form. You\'ll also need to sign USPS Form 1583 (required by the postal service for all commercial mail services). We\'ll guide you through the whole process — most customers are set up the same day.',
   },
 ];
 
-/* ─── Business types ──────────────────────────────────────────── */
-const bizTypes = [
-  'Contractors', 'Realtors', 'Attorneys', 'Insurance agents',
-  'Mortgage brokers', 'eCommerce sellers', 'Consultants',
-  'Home-based businesses', 'Sole proprietors', 'LLCs',
-  'Financial advisors', 'Freelancers',
-];
+/* ─────────────────────────────────────────────────────────────────── */
 
 export default function Home() {
   return (
@@ -153,50 +178,67 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Promo strip */}
-      <PromoStrip />
-
-      {/* Nav */}
       <Nav />
 
-      {/* ─── 1. Hero ─────────────────────────────────────────────── */}
-      <section className="w-section navy tall">
-        <div className="w-section-inner" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', textAlign: 'left' }}>
-          {/* Left: copy */}
+      {/* ── 1. Hero ─────────────────────────────────────────────── */}
+      <section className="w-section dark tall">
+        <div
+          className="w-section-inner"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 64,
+            alignItems: 'center',
+            textAlign: 'left',
+          }}
+        >
+          {/* Copy */}
           <div>
-            <div className="w-hero-eyebrow">Rockwall, TX · Est. 2024</div>
-            <h1 className="w-hero-title" style={{ fontSize: 52, marginBottom: 20 }}>
-              Give your business a professional Rockwall address.
+            <div className="w-hero-eyebrow">Rockwall, TX · Virtual Mailbox</div>
+            <h1 className="w-hero-title" style={{ fontSize: 54 }}>
+              Your Rockwall business address,&nbsp;online.
             </h1>
             <p className="w-hero-sub" style={{ margin: '0 0 36px', maxWidth: '100%' }}>
-              A real street address at 802 North Goliad Street —
-              for your LLC filings, business cards, packages, and Google listing.
-              Keep your home address private and look established from day one.
+              Receive business mail at a real Rockwall address, get envelope
+              notifications, and manage your mail from anywhere.
             </p>
-            <div className="w-cta-row" style={{ justifyContent: 'flex-start' }}>
-              <a className="w-cta-pill filled" href="#pricing">Reserve your address</a>
-              <a className="w-cta-pill outline" href="#how-it-works">See how it works ›</a>
+            <div className="w-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 20 }}>
+              <a className="w-cta-pill filled" href="#pricing">Get your address</a>
+              <a className="w-cta-pill outline" href="#how-it-works">View plans ›</a>
             </div>
-            <p style={{ font: '400 13px/1.5 var(--font-text,-apple-system,sans-serif)', color: 'rgba(255,255,255,0.45)', marginTop: 20 }}>
-              No setup fee · Same-day activation · Cancel anytime
+            <p style={{
+              font: '400 13px/1 var(--font-text,sans-serif)',
+              color: 'var(--c-text-3)',
+            }}>
+              Starting at $29.99/mo · No setup fee · Cancel anytime
             </p>
           </div>
-          {/* Right: address card */}
+
+          {/* Mockup */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <AddressCardVisual />
+            <DashboardMockup />
           </div>
         </div>
+
+        {/* Mobile: mockup below copy */}
+        <style>{`
+          @media (max-width: 880px) {
+            .hero-grid { grid-template-columns: 1fr !important; }
+            .hero-grid > :first-child { text-align: center; }
+            .hero-grid .w-cta-row { justify-content: center !important; }
+          }
+        `}</style>
       </section>
 
-      {/* ─── Trust stats bar ─────────────────────────────────────── */}
-      <section className="w-section white compact">
+      {/* ── Stats bar ───────────────────────────────────────────── */}
+      <section className="w-section medium compact">
         <div className="w-section-inner">
           <div className="stats-bar">
             {[
-              { num: '200+',      label: 'Rockwall businesses served' },
-              { num: 'All',       label: 'Major carriers accepted' },
-              { num: 'Same day',  label: 'Activation after signup' },
-              { num: 'Mon–Sat',   label: '9 am – 6 pm open hours' },
+              { num: '200+',      label: 'Businesses served' },
+              { num: 'All carriers', label: 'USPS, UPS, FedEx, Amazon' },
+              { num: 'Same day',  label: 'Address activation' },
+              { num: 'Mon–Sat',   label: '9 am – 6 pm · Rockwall' },
             ].map(s => (
               <div key={s.label} className="stats-bar-item">
                 <span className="stats-bar-num">{s.num}</span>
@@ -207,176 +249,200 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── 2. Built for Local Business Owners ──────────────────── */}
-      <section className="w-section cream">
+      {/* ── 2. Value props ──────────────────────────────────────── */}
+      <section id="services" className="w-section dark">
         <div className="w-section-inner">
-          <span className="section-label">Who we serve</span>
-          <h2 className="w-hero-title" style={{ fontSize: 46 }}>
-            Built for Rockwall&rsquo;s working professionals.
+          <span className="section-label">What you get</span>
+          <h2 className="w-hero-title" style={{ fontSize: 48 }}>
+            A complete business address service.
           </h2>
           <p className="w-hero-sub">
-            Whether you&rsquo;re an independent contractor, a licensed professional, or a
-            growing LLC — a professional address builds credibility from day one.
-          </p>
-          <div className="biz-type-grid">
-            {bizTypes.map(t => (
-              <div key={t} className="biz-type-chip">
-                <span className="biz-type-chip-dot" />
-                {t}
-              </div>
-            ))}
-          </div>
-
-          {/* Callout box */}
-          <div className="callout-box">
-            <div className="callout-box-title">
-              Your home address is public record. Your business address doesn&rsquo;t have to be.
-            </div>
-            <p className="callout-box-body">
-              When you register an LLC in Texas, your address becomes visible on the Secretary of
-              State&rsquo;s public records. Using a professional address at My Biz Mailbox keeps
-              your personal information private while giving your business a legitimate, permanent home.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 3. Why businesses choose us ─────────────────────────── */}
-      <section id="services" className="w-section white">
-        <div className="w-section-inner">
-          <span className="section-label">Why My Biz Mailbox</span>
-          <h2 className="w-hero-title" style={{ fontSize: 46 }}>
-            Everything a professional address should be.
-          </h2>
-          <p className="w-hero-sub">
-            We handle your mail, packages, and business identity so you can focus
-            on running your business — not watching your front porch.
+            More than a mailbox. Everything you need to operate with a
+            professional address and manage your mail online.
           </p>
 
-          {/* 3-col feature grid */}
-          <div className="w-tiles cols-3" style={{ marginTop: 52, textAlign: 'left' }}>
+          <div className="w-tiles cols-2" style={{ marginTop: 52, textAlign: 'left', maxWidth: 860, margin: '52px auto 0' }}>
             {[
               {
-                icon: <IconAddress />,
-                title: 'Real street address',
-                body: 'Not a P.O. box. A legitimate street address accepted by the state of Texas for LLC registration, banking, and licensing.',
+                icon: (
+                  <PropIcon>
+                    <svg viewBox="0 0 20 20" width="20" height="20" {...S}>
+                      <rect x="2" y="3" width="16" height="14" rx="2"/>
+                      <path d="M2 7h16M7 7v10"/>
+                    </svg>
+                  </PropIcon>
+                ),
+                title: 'Real Rockwall business address',
+                body: 'A legitimate street address at 802 North Goliad Street — not a P.O. box. Accepted for LLC registration, banking, licensing, and Google Business listing.',
               },
               {
-                icon: <IconPrivacy />,
-                title: 'Home privacy protected',
-                body: 'Keep your personal address off state records, Google, and your business cards. Your home stays out of public view.',
+                icon: (
+                  <PropIcon>
+                    <svg viewBox="0 0 20 20" width="20" height="20" {...S}>
+                      <path d="M3 4h14a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1z"/>
+                      <path d="M2 6l8 5 8-5"/>
+                    </svg>
+                  </PropIcon>
+                ),
+                title: 'Envelope notifications',
+                body: 'Get an email the moment mail arrives, including a photo of the envelope so you know who sent it — before you ever leave your desk.',
               },
               {
-                icon: <IconPackage />,
-                title: 'Packages from every carrier',
-                body: 'USPS, UPS, FedEx, Amazon, DHL — we accept deliveries from all major carriers and sign on your behalf.',
+                icon: (
+                  <PropIcon>
+                    <svg viewBox="0 0 20 20" width="20" height="20" {...S}>
+                      <rect x="3" y="2" width="14" height="16" rx="2"/>
+                      <path d="M6 7h8M6 10h8M6 13h5"/>
+                    </svg>
+                  </PropIcon>
+                ),
+                title: 'Online mail management',
+                body: 'View your mail inbox online from any device. Request scanning, forwarding, or shredding for each piece — without making a trip to pick it up.',
               },
               {
-                icon: <IconBell />,
-                title: 'Instant email alerts',
-                body: 'Get notified the moment your mail or package arrives — with an exterior scan so you know who it&rsquo;s from before you drive in.',
+                icon: (
+                  <PropIcon>
+                    <svg viewBox="0 0 20 20" width="20" height="20" {...S}>
+                      <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z"/>
+                    </svg>
+                  </PropIcon>
+                ),
+                title: 'Secure local handling',
+                body: 'Your mail is handled by our local Rockwall team, stored securely, and never shared. Pick up in person Mon–Sat or request forwarding to any address.',
               },
-              {
-                icon: <IconScan />,
-                title: 'Mail scanning & forwarding',
-                body: 'Request a digital scan of any piece of mail, or have it forwarded to any address — nationwide or international.',
-              },
-              {
-                icon: <IconCheck />,
-                title: 'Same-day activation',
-                body: 'Sign up online, complete your USPS Form 1583, and your address is active the same business day.',
-              },
-            ].map(f => (
-              <div key={f.title} className="w-tile light" style={{ padding: '32px 28px' }}>
-                {f.icon}
-                <h3 className="w-tile-title" style={{ marginTop: 16 }}>{f.title}</h3>
-                <p className="w-tile-sub" style={{ margin: 0 }}
-                   dangerouslySetInnerHTML={{ __html: f.body }} />
+            ].map(p => (
+              <div key={p.title} className="w-tile dark" style={{ padding: '32px 28px' }}>
+                {p.icon}
+                <h3 className="w-tile-title" style={{ marginTop: 4 }}>{p.title}</h3>
+                <p className="w-tile-sub" style={{ margin: 0 }}>{p.body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── How it works ─────────────────────────────────────────── */}
-      <section id="how-it-works" className="w-section navy">
+      {/* ── 3. How it works ─────────────────────────────────────── */}
+      <section id="how-it-works" className="w-section medium">
         <div className="w-section-inner">
           <span className="section-label">Simple process</span>
-          <h2 className="w-hero-title" style={{ fontSize: 46 }}>
+          <h2 className="w-hero-title" style={{ fontSize: 48 }}>
             Up and running today.
           </h2>
           <p className="w-hero-sub">
-            Three steps. Takes less than five minutes. No office visit required.
+            Three steps. Takes less than five minutes. No office visit required to get started.
           </p>
 
-          <div className="w-tiles cols-3" style={{ marginTop: 52 }}>
+          <div className="w-tiles cols-3" style={{ marginTop: 52, textAlign: 'left' }}>
             {[
               {
-                num: '1',
-                title: 'Choose a plan',
-                body: 'Pick the plan that fits your mail volume. Upgrade or downgrade anytime — no contracts.',
+                n: '1',
+                title: 'Choose your plan',
+                body: 'Select the Business Address plan at $29.99/mo and add any optional services — mail scanning, a business phone number, or Google Business setup.',
               },
               {
-                num: '2',
-                title: 'Set your address',
-                body: 'Use 802 North Goliad Street, Rockwall TX 75087 on your LLC filing, business accounts, website, and shipping labels.',
+                n: '2',
+                title: 'Get your business address',
+                body: 'Receive your unique suite number at 802 North Goliad Street, Rockwall TX 75087. Use it on your LLC filing, bank accounts, business cards, and website.',
               },
               {
-                num: '3',
-                title: 'Receive mail & packages',
-                body: 'We sign for everything, send you instant email notifications, and hold your items securely until you&rsquo;re ready.',
+                n: '3',
+                title: 'Receive and manage mail online',
+                body: 'We accept all deliveries and send you an email notification for every piece. View your mail, request scans, or arrange forwarding — all from your dashboard.',
               },
             ].map(s => (
-              <div key={s.num} className="w-tile dark" style={{ padding: '40px 32px' }}>
-                <div className="step-number">{s.num}.</div>
+              <div key={s.n} className="w-tile dark" style={{ padding: '36px 28px' }}>
+                <div className="step-badge">{s.n}</div>
                 <h3 className="w-tile-title">{s.title}</h3>
-                <p className="w-tile-sub" dangerouslySetInnerHTML={{ __html: s.body }} />
+                <p className="w-tile-sub" style={{ margin: 0 }}>{s.body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── 4. Trust / Reviews section ──────────────────────────── */}
-      <section className="w-section cream">
-        <div className="w-section-inner">
-          <span className="section-label">Reviews</span>
-          <h2 className="w-hero-title" style={{ fontSize: 46 }}>
-            Trusted by Rockwall businesses.
-          </h2>
-          <p className="w-hero-sub">
-            From contractors to consultants — local business owners rely on
-            My Biz Mailbox for their professional address.
-          </p>
+      {/* ── 4. Pricing ──────────────────────────────────────────── */}
+      <PricingSection />
 
-          <div className="w-tiles cols-3" style={{ marginTop: 52 }}>
+      {/* ── 5. Trust section ────────────────────────────────────── */}
+      <section className="w-section dark">
+        <div
+          className="w-section-inner"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 80,
+            alignItems: 'start',
+            textAlign: 'left',
+          }}
+        >
+          {/* Left: copy */}
+          <div>
+            <span className="section-label">Why choose us</span>
+            <h2 className="w-hero-title" style={{ fontSize: 44, textAlign: 'left', margin: '0 0 20px' }}>
+              A local Rockwall team you can trust.
+            </h2>
+            <p style={{
+              font: '400 18px/1.7 var(--font-text,sans-serif)',
+              color: 'var(--c-text-2)',
+              maxWidth: 440, margin: '0 0 36px',
+            }}>
+              We&rsquo;re not a national chain or an automated system.
+              We&rsquo;re a local business in Rockwall — our team handles
+              your mail with care, and we&rsquo;re available by phone when
+              you need us.
+            </p>
+            <a className="w-cta-pill filled" href="#contact">Talk to our team</a>
+          </div>
+
+          {/* Right: trust points */}
+          <div>
             {[
               {
-                quote: 'Separating my home address from my LLC registration was the best decision I made when I started out. My Biz Mailbox made the switch completely painless — same-day setup and I never missed a piece of mail.',
-                name: 'Marcus R.',
-                role: 'Commercial real estate consultant · Rockwall, TX',
+                icon: (
+                  <svg viewBox="0 0 20 20" width="18" height="18" {...S}>
+                    <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z"/>
+                  </svg>
+                ),
+                title: 'Local Rockwall team',
+                body: 'Our staff is based in Rockwall. When you call, a real person answers. When you visit, we know your name.',
               },
               {
-                quote: 'I run an e-commerce brand and ship dozens of packages a week. The instant notifications and professional receiving process have saved me hours. My clients see a real Rockwall address — not my garage.',
-                name: 'Diane T.',
-                role: 'eCommerce retailer · Rowlett, TX',
+                icon: (
+                  <svg viewBox="0 0 20 20" width="18" height="18" {...S}>
+                    <path d="M10 2l2.5 5h5.5l-4.5 4 1.5 6L10 14l-5 3 1.5-6L2 7h5.5z"/>
+                  </svg>
+                ),
+                title: 'Secure, private handling',
+                body: 'Your mail is stored in a locked facility. We never open or read your mail without your request, and your information is never shared.',
               },
               {
-                quote: 'As a licensed financial advisor, my business address appears on every document I file. Having a professional Rockwall address gives my clients confidence, and the notary service on site is a huge bonus.',
-                name: 'Priya S.',
-                role: 'Independent financial advisor · Forney, TX',
+                icon: (
+                  <svg viewBox="0 0 20 20" width="18" height="18" {...S}>
+                    <rect x="3" y="3" width="14" height="14" rx="3"/>
+                    <path d="M7 10l2.5 2.5L14 8"/>
+                  </svg>
+                ),
+                title: 'Professional business presence',
+                body: 'A real street address keeps your home private while giving clients, partners, and agencies a credible, permanent location for your business.',
               },
-            ].map(r => (
-              <div key={r.name} className="review-card">
-                <div className="review-stars">
-                  {[1,2,3,4,5].map(i => (
-                    <span key={i} className="review-star">★</span>
-                  ))}
+              {
+                icon: (
+                  <svg viewBox="0 0 20 20" width="18" height="18" {...S}>
+                    <circle cx="10" cy="10" r="8"/>
+                    <path d="M10 6v4l2.5 2.5"/>
+                  </svg>
+                ),
+                title: 'Privacy-first approach',
+                body: 'Your home address stays off state filings, public records, and Google — protecting your family\'s privacy as your business grows.',
+              },
+            ].map(t => (
+              <div key={t.title} className="trust-item">
+                <div className="prop-icon" style={{ marginBottom: 0, flexShrink: 0 }}>
+                  {t.icon}
                 </div>
-                <p className="review-quote">&ldquo;{r.quote}&rdquo;</p>
                 <div>
-                  <div className="review-author-name">{r.name}</div>
-                  <div className="review-author-role">{r.role}</div>
+                  <div className="trust-item-title">{t.title}</div>
+                  <p className="trust-item-body">{t.body}</p>
                 </div>
               </div>
             ))}
@@ -384,146 +450,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── 5. Pricing ───────────────────────────────────────────── */}
-      <PricingSection
-        starterPriceId={process.env.STRIPE_STARTER_PRICE_ID ?? ''}
-        proPriceId={process.env.STRIPE_PRO_PRICE_ID ?? ''}
-        execPriceId={process.env.STRIPE_EXEC_PRICE_ID ?? ''}
-      />
-
-      {/* ─── 6. Stop using your home address ─────────────────────── */}
-      <section className="w-section white">
-        <div className="w-section-inner">
-          <span className="section-label">Why it matters</span>
-          <h2 className="w-hero-title" style={{ fontSize: 46 }}>
-            Stop using your home address for business.
-          </h2>
-          <p className="w-hero-sub">
-            It&rsquo;s not just about appearances. It&rsquo;s about protecting your family,
-            your privacy, and your professional reputation.
-          </p>
-
-          <div className="w-tiles cols-2" style={{ marginTop: 52, maxWidth: 800, margin: '52px auto 0' }}>
-            {[
-              {
-                icon: <IconPrivacy />,
-                title: 'Your home address is public record',
-                body: 'Texas LLC filings are publicly searchable. Clients, competitors, and anyone with an internet connection can find your home address if you list it as your business address.',
-              },
-              {
-                icon: <IconCheck />,
-                title: 'A real address builds instant credibility',
-                body: 'A street address on a business card or Google listing signals permanence and legitimacy. Clients and partners take you more seriously when your address is a real commercial location.',
-              },
-              {
-                icon: <IconStamp />,
-                title: 'Banks and agencies require it',
-                body: 'Many banks, licensing boards, and government agencies require a non-residential business address. A P.O. box often isn&rsquo;t acceptable — a real street address always is.',
-              },
-              {
-                icon: <IconPackage />,
-                title: 'Never miss a delivery again',
-                body: 'Packages left on your porch can be stolen, damaged, or missed. We sign for everything, check it in within hours, and notify you immediately — every carrier, every time.',
-              },
-            ].map(f => (
-              <div key={f.title} className="w-tile light" style={{ padding: '32px 28px' }}>
-                {f.icon}
-                <h3 className="w-tile-title" style={{ marginTop: 16 }}>{f.title}</h3>
-                <p className="w-tile-sub" style={{ margin: 0 }}
-                   dangerouslySetInnerHTML={{ __html: f.body }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Services detail ──────────────────────────────────────── */}
-      <section className="w-section cream">
-        <div className="w-section-inner">
-          <span className="section-label">All services</span>
-          <h2 className="w-hero-title" style={{ fontSize: 46 }}>
-            More than a mailbox.
-          </h2>
-          <p className="w-hero-sub">
-            My Biz Mailbox is a full business address service — with every feature
-            a professional needs to operate with confidence.
-          </p>
-
-          <div className="w-tiles cols-3" style={{ marginTop: 52 }}>
-            {[
-              { icon: <IconAddress />, title: 'Business street address', eyebrow: 'Identity', sub: 'A permanent, real street address accepted for LLC filing, banking, licensing, and Google Business.' },
-              { icon: <IconPackage />, title: 'Package receiving', eyebrow: 'Packages', sub: 'We accept deliveries from all carriers, sign on your behalf, and check them in the same day.' },
-              { icon: <IconScan />,    title: 'Mail scanning & forwarding', eyebrow: 'Mail', sub: 'Request a digital scan or forward any piece of mail to any address, anywhere in the world.' },
-              { icon: <IconKey />,     title: '24/7 mailbox access', eyebrow: 'Access', sub: 'Executive members get round-the-clock key-fob access for after-hours pickup on your schedule.' },
-              { icon: <IconStamp />,   title: 'Notary services', eyebrow: 'Documents', sub: 'A certified notary is on site during business hours — no appointment required for most documents.' },
-              { icon: <IconRoom />,    title: 'Meeting room access', eyebrow: 'Space', sub: 'Book a private conference room by the hour for client meetings, closings, or focused work.' },
-            ].map(s => (
-              <ProductTile
-                key={s.title}
-                theme="light"
-                eyebrow={s.eyebrow}
-                title={s.title}
-                sub={s.sub}
-              >
-                {s.icon}
-              </ProductTile>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── SEO content ──────────────────────────────────────────── */}
-      <section className="w-section white">
-        <div className="w-section-inner">
-          <span className="section-label">Local expertise</span>
-          <h2 className="w-hero-title" style={{ fontSize: 40 }}>
-            Why Rockwall, TX businesses choose My Biz Mailbox.
-          </h2>
-          <div className="seo-body">
-            <p>
-              Running a small business, LLC, or sole proprietorship in Texas comes with one
-              persistent challenge: your official address follows you everywhere — state
-              registrations, bank accounts, Google Business listings, and client-facing
-              materials. Using a home address works until it doesn&rsquo;t, exposing your
-              personal residence to public records and making it harder to maintain a
-              professional image as your company grows. My Biz Mailbox gives Rockwall-area
-              businesses a legitimate street address at 802 North Goliad Street that meets
-              Texas Secretary of State requirements and serves as a stable anchor for all
-              your business correspondence.
-            </p>
-            <p>
-              For remote workers, freelancers, and home-based businesses across the greater
-              DFW metroplex — from Rowlett and Garland to Forney and Greenville — a Rockwall
-              address signals stability to clients and partners without requiring you to lease
-              expensive office space. Whether you&rsquo;re a consultant billing Fortune 500
-              clients, a product company shipping from a warehouse, or a licensed professional
-              who needs a compliant address for your state board filings, we have a plan sized
-              to match.
-            </p>
-            <p>
-              Package receiving is a core part of what we do. We accept deliveries from every
-              major carrier — USPS, UPS, FedEx, Amazon, DHL, and regional services — and
-              check them in the same day they arrive. You get an email notification with an
-              exterior scan so you always know what has landed and when. Packages are held
-              securely on site for up to 30 days, and Executive members can pick them up any
-              time day or night.
-            </p>
-            <p>
-              The Dallas–Fort Worth area is one of the fastest-growing business corridors in
-              the country, and Rockwall sits at its eastern edge — close to the metro,
-              distinct enough to stand out. As your company scales, My Biz Mailbox scales
-              with you: add mail scanning, upgrade your mail volume, or book our on-site
-              meeting rooms when you need a professional space to close a deal.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── FAQ ──────────────────────────────────────────────────── */}
-      <section id="faq" className="w-section cream">
+      {/* ── 6. FAQ ──────────────────────────────────────────────── */}
+      <section id="faq" className="w-section light">
         <div className="w-section-inner">
           <span className="section-label">FAQ</span>
-          <h2 className="w-hero-title" style={{ fontSize: 46 }}>
+          <h2 className="w-hero-title" style={{ fontSize: 48 }}>
             Common questions.
           </h2>
           <p className="w-hero-sub">
@@ -540,42 +471,39 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Contact ──────────────────────────────────────────────── */}
+      {/* ── 7. Contact ──────────────────────────────────────────── */}
       <section id="contact" className="w-section white">
         <div className="w-section-inner" style={{ textAlign: 'left' }}>
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', marginBottom: 0 }}>
             <span className="section-label">Contact</span>
-            <h2 className="w-hero-title" style={{ fontSize: 46 }}>Get in touch.</h2>
+            <h2 className="w-hero-title" style={{ fontSize: 48 }}>Get in touch.</h2>
             <p className="w-hero-sub">
-              Questions about plans, services, or your specific situation?
-              We&rsquo;re here to help.
+              Questions about plans, your address, or how things work?
+              We&rsquo;re happy to help.
             </p>
           </div>
           <div className="contact-grid">
-            {/* Left: info */}
+            {/* Info */}
             <div>
               <p className="contact-info-label">Address</p>
               <p className="contact-info-value">802 North Goliad Street<br />Rockwall, TX 75087</p>
               <p className="contact-info-label">Phone</p>
               <p className="contact-info-value">
-                <a href="tel:+14698934120" style={{ color: 'var(--c-navy,#1d3557)', textDecoration: 'none', fontWeight: 600 }}>
+                <a href="tel:+14698934120" style={{ color: 'var(--c-light-text,#0d0d0d)', textDecoration: 'none', fontWeight: 700 }}>
                   (469) 893-4120
                 </a>
               </p>
               <p className="contact-info-label">Hours</p>
-              <p className="contact-info-value">Mon–Sat, 9 am–6 pm</p>
-              <p className="contact-info-label">Sign up online</p>
-              <p className="contact-info-value" style={{ marginBottom: 0 }}>
-                <a
-                  href="https://mybizmailbox.coworksapp.com/membership-signup/6953"
-                  className="w-cta-pill filled"
-                  style={{ display: 'inline-flex', marginTop: 6 }}
-                >
-                  Reserve your address ›
-                </a>
-              </p>
+              <p className="contact-info-value">Monday – Saturday<br />9 am – 6 pm</p>
+              <a
+                href="https://mybizmailbox.coworksapp.com/membership-signup/6953"
+                className="w-cta-pill filled"
+                style={{ display: 'inline-flex', marginTop: 8 }}
+              >
+                Get started now ›
+              </a>
             </div>
-            {/* Right: form */}
+            {/* Form */}
             <div>
               <ContactForm />
             </div>
@@ -583,32 +511,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── 7. Strong CTA footer ─────────────────────────────────── */}
-      <section className="w-section navy" style={{ padding: '100px 28px' }}>
+      {/* ── CTA strip ───────────────────────────────────────────── */}
+      <section className="w-section dark" style={{ padding: '100px 28px' }}>
         <div className="w-section-inner">
-          <div className="w-hero-eyebrow">Ready to get started?</div>
+          <div className="w-hero-eyebrow">Ready?</div>
           <h2 className="w-hero-title" style={{ fontSize: 52 }}>
             Your Rockwall business address is waiting.
           </h2>
           <p className="w-hero-sub">
-            Join over 200 local businesses that have made the switch.
-            Setup takes less than five minutes — your address is active the same day.
+            Join over 200 local businesses. Setup takes less than five minutes
+            and your address is active the same day.
           </p>
-          <div className="w-cta-row" style={{ marginTop: 8 }}>
-            <a className="w-cta-pill filled" href="#pricing">
-              Reserve your address
+          <div className="w-cta-row">
+            <a className="w-cta-pill filled" href="https://mybizmailbox.coworksapp.com/membership-signup/6953">
+              Get your address
             </a>
-            <a className="w-cta-pill outline" href="#contact">
-              Talk to us first ›
-            </a>
+            <a className="w-cta-pill outline" href="#contact">Talk to us first ›</a>
           </div>
-          <p style={{ font: '400 13px/1.5 var(--font-text,-apple-system,sans-serif)', color: 'rgba(255,255,255,0.38)', marginTop: 24 }}>
+          <p style={{
+            font: '400 13px/1 var(--font-text,sans-serif)',
+            color: 'var(--c-text-3)', marginTop: 24,
+          }}>
             802 North Goliad Street · Rockwall, TX 75087 · (469) 893-4120
           </p>
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
     </>
   );
