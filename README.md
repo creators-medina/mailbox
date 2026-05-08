@@ -1,8 +1,6 @@
-# My Biz Mailbox — marketing website
+# My Biz Address — Marketing Website
 
-Production Next.js 14 site for **My Biz Mailbox**, a physical business mailbox service at 802 North Goliad Street, Rockwall, TX 75087.
-
-Built on the Apple-inspired design system in this repo (`colors_and_type.css`, `website.css`, `Nav.jsx`, `Tiles.jsx`).
+Production Next.js 14 site for **My Biz Address**, a virtual mailbox and professional business address service at 802 North Goliad Street, Rockwall, TX 75087.
 
 ---
 
@@ -19,76 +17,125 @@ Visit `http://localhost:3000`.
 
 ---
 
-## Environment variables
+## Backend Setup
+
+### Supabase
+
+1. Create a new project at [supabase.com](https://supabase.com).
+2. Copy your project URL and keys from **Settings → API**.
+3. Add the values to `.env.local` (see Environment Variables below).
+4. Apply the database migrations:
+   ```bash
+   # Option A — Supabase CLI
+   supabase link --project-ref <your-project-ref>
+   supabase db push
+
+   # Option B — Supabase SQL editor
+   # Paste the contents of supabase/migrations/001_initial_schema.sql
+   ```
+5. Set up storage buckets by following `supabase/storage-setup.md`.
+
+> **Note:** Replace `types/database.ts` with generated types once your schema is stable:
+> ```bash
+> supabase gen types typescript --project-id <ref> > types/database.ts
+> ```
+
+### Stripe
+
+1. Log in to [dashboard.stripe.com](https://dashboard.stripe.com).
+2. Create four products:
+   - **Business Address** — $29.99/month (recurring) → `STRIPE_PRICE_BUSINESS_ADDRESS_MONTHLY`
+   - **Mail Scanning** — $9.99/month (recurring) → `STRIPE_PRICE_MAIL_SCANNING_MONTHLY`
+   - **Business Phone Number** — $9.99/month (recurring) → `STRIPE_PRICE_BUSINESS_PHONE_MONTHLY`
+   - **Google Business Profile Setup** — $49.99 one-time → `STRIPE_PRICE_GOOGLE_BUSINESS_SETUP_ONE_TIME`
+     *(Must be type `one_time`, not recurring, for `add_invoice_items` to work)*
+3. Copy each Price ID (`price_…`) into `.env.local`.
+4. Set `NEXT_PUBLIC_BASE_URL` to your production domain (e.g. `https://mybizmailbox.biz`).
+5. **Phase 4:** Add a Stripe webhook endpoint at `/api/webhooks/stripe` for subscription lifecycle events.
+
+---
+
+## Environment Variables
+
+### Supabase
 
 | Variable | Description |
 |---|---|
-| `STRIPE_SECRET_KEY` | Secret key from your Stripe dashboard |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (not used server-side but good to have) |
-| `STRIPE_STARTER_PRICE_ID` | Stripe Price ID for the $29/mo Starter plan |
-| `STRIPE_PRO_PRICE_ID` | Stripe Price ID for the $49/mo Professional plan |
-| `STRIPE_EXEC_PRICE_ID` | Stripe Price ID for the $99/mo Executive plan |
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key — safe for the browser |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key — **server-only, never expose to client** |
+
+### Stripe
+
+| Variable | Description |
+|---|---|
+| `STRIPE_SECRET_KEY` | Secret key from Stripe dashboard |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (Phase 4) |
+| `NEXT_PUBLIC_BASE_URL` | Base URL for success/cancel redirect (e.g. `https://mybizmailbox.biz`) |
+| `STRIPE_PRICE_BUSINESS_ADDRESS_MONTHLY` | Price ID — $29.99/mo base plan |
+| `STRIPE_PRICE_MAIL_SCANNING_MONTHLY` | Price ID — $9.99/mo add-on |
+| `STRIPE_PRICE_BUSINESS_PHONE_MONTHLY` | Price ID — $9.99/mo add-on |
+| `STRIPE_PRICE_GOOGLE_BUSINESS_SETUP_ONE_TIME` | Price ID — $49.99 one-time add-on |
+
+### Email / Analytics
+
+| Variable | Description |
+|---|---|
 | `RESEND_API_KEY` | API key from resend.com |
-| `CONTACT_EMAIL` | Email address that receives contact form submissions |
+| `CONTACT_EMAIL` | Receives contact form submissions |
 | `NEXT_PUBLIC_GA_ID` | Google Analytics 4 Measurement ID (e.g. `G-XXXXXXXXXX`) |
 
 ---
 
-## Creating Stripe products and price IDs
+## Project Structure
 
-1. Log in to [dashboard.stripe.com](https://dashboard.stripe.com).
-2. Go to **Products** → **Add product**.
-3. Create three recurring products:
-   - **Starter** — $29.00 / month
-   - **Professional** — $49.00 / month
-   - **Executive** — $99.00 / month
-4. After saving each product, copy its **Price ID** (starts with `price_…`).
-5. Paste each into `.env.local` under the matching variable.
+```
+app/
+  page.tsx          — Public marketing homepage
+  signup/           — Plan selection + Stripe checkout entry
+  login/            — Auth (sign in / sign up / password reset)
+  account/          — Protected customer dashboard (Phase 4)
+  success/          — Post-checkout confirmation
+  cancel/           — Checkout cancelled
+  api/
+    checkout/       — Stripe Checkout session creation
+    contact/        — Contact form (Resend)
+lib/
+  stripe.ts         — Stripe server helper
+  supabase/
+    client.ts       — Browser Supabase client
+    server.ts       — Server Supabase client (cookie-based)
+    admin.ts        — Service role client (server-only)
+types/
+  database.ts       — Supabase Database type (replace with generated)
+supabase/
+  migrations/       — SQL migrations
+  storage-setup.md  — Storage bucket setup instructions
+components/
+  Nav.tsx           — Site navigation
+  Tiles.tsx         — ProductTile, FeatureGrid, Footer
+  PricingSection.tsx
+  ContactForm.tsx
+```
+
+---
+
+## Phase Roadmap
+
+| Phase | Status | Description |
+|---|---|---|
+| 1 | ✅ Done | Public marketing site, dark premium redesign |
+| 2 | ✅ Done | Stripe checkout flow, `/signup` page |
+| 3 | ✅ Done | Supabase foundation, auth pages, DB schema, RLS |
+| 4 | Pending | Stripe webhooks, customer account creation, mail inbox dashboard |
+| 5 | Pending | Admin CRM, mail item management, scan uploads |
 
 ---
 
 ## Deploying to Vercel
 
 1. Push this repo to GitHub.
-2. Go to [vercel.com/new](https://vercel.com/new) and import the repo.
-3. Vercel auto-detects Next.js via `vercel.json`.
-4. Add all environment variables in the Vercel project settings.
-5. Deploy.
-
-After first deploy, set your custom domain `mybizmailbox.biz` in Vercel's **Domains** tab.
-
----
-
-## Design system
-
-The design system files at the repo root are the source of truth:
-
-| File | Role |
-|---|---|
-| `colors_and_type.css` | CSS custom properties, type scale, surface helpers |
-| `website.css` | Layout classes: nav, sections, hero, tiles, pills, footer |
-| `Nav.jsx` | Original React components (Babel/UMD) |
-| `Tiles.jsx` | Original React components (Babel/UMD) |
-| `index.html` | Standalone demo of the design system |
-
-The Next.js app re-exports the same components as proper TypeScript ES modules from `components/Nav.tsx` and `components/Tiles.tsx`.
-
-Design rules (non-negotiable):
-- Binary sections only: `#000000` or `#f5f5f7`
-- One accent: `#0071e3` on light, `#2997ff` on dark
-- No gradients, textures, glow, glassmorphism
-- No shadows except `rgba(0,0,0,0.22) 3px 5px 30px 0px`
-- Sentence case everywhere, no exclamation points, no emoji
-- Max content width 980 px centered
-
----
-
-## Pre-launch checklist
-
-- [ ] Replace YouTube embed URL in `app/page.tsx` (section 4) with your real video
-- [ ] Fill all `.env.local` values and add them to Vercel
-- [ ] Verify Stripe webhook endpoint if needed
-- [ ] Confirm `CONTACT_EMAIL` receives test submissions
-- [ ] Add real testimonials and remove placeholder names
-- [ ] Set `NEXT_PUBLIC_GA_ID` and confirm GA events fire
-- [ ] Point DNS for `mybizmailbox.biz` to Vercel
+2. Import at [vercel.com/new](https://vercel.com/new) — Next.js is auto-detected via `vercel.json`.
+3. Add all environment variables in Vercel project settings.
+4. Set your custom domain `mybizmailbox.biz` under **Domains**.

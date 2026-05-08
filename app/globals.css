@@ -284,6 +284,15 @@
   border-color: var(--c-gold, #c49a3c);
 }
 
+/* ── Auth text link ───────────────────────────────────────────────── */
+.auth-text-link {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font: 500 13px/1 var(--font-text, sans-serif);
+  color: var(--c-gold-2, #d4aa50); text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.auth-text-link:hover { color: #fff; }
+
 /* ── Signup page layout ───────────────────────────────────────────── */
 .signup-section-label {
   font: 700 11px/1 var(--font-text, sans-serif);
