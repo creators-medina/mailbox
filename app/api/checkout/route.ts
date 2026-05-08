@@ -58,6 +58,7 @@ export async function POST(req: Request) {
       metadata: {
         customer_name: name,
         business_name: businessName,
+        email,
         phone: phone ?? '',
         addon_mail_scanning: String(!!addons.mailScanning),
         addon_business_phone: String(!!addons.businessPhone),
