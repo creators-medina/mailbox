@@ -1,7 +1,4 @@
-// Phase 1: static pricing display — no Stripe checkout yet.
-// CTA links to #contact. Wire up Stripe in a later phase.
-
-const SIGNUP_URL = 'https://mybizmailbox.coworksapp.com/membership-signup/6953';
+const SIGNUP_URL = '/signup';
 
 const coreFeatures = [
   'Real Rockwall, TX business address',
