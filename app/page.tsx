@@ -8,15 +8,15 @@ import { BUSINESS } from '@/lib/config/business';
 export const metadata: Metadata = {
   title: 'My Biz Address — Professional Business Address in Rockwall, TX',
   description:
-    'Receive business mail at a real Rockwall address, get envelope notifications, and manage your mail from anywhere. Starting at $29.99/mo.',
+    'Get a real Rockwall, TX business address, receive mail securely, and manage it all online. Starting at $29.99/mo. No contracts.',
 };
 
-/* ── JSON-LD ─────────────────────────────────────────────────────── */
+/* ── JSON-LD ────────────────────────────────────────────────────────────────── */
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   name: BUSINESS.brandName,
-  description: 'Virtual mailbox and professional business address service in Rockwall, TX.',
+  description: 'Professional business address and mail receiving service in Rockwall, TX.',
   url: BUSINESS.websiteUrl,
   telephone: BUSINESS.phoneE164,
   address: {
@@ -35,17 +35,45 @@ const jsonLd = {
   }],
 };
 
-/* ── Dashboard mockup ────────────────────────────────────────────── */
+/* ── Dashboard mockup ────────────────────────────────────────────────────────────────── */
 const mailItems = [
-  { sender: 'Wells Fargo Business',  desc: 'Account statement',       date: 'Today',  badge: 'New',     cls: 'mock-badge-new' },
-  { sender: 'TX Secretary of State', desc: 'Annual report notice',    date: 'Dec 18', badge: 'Held',    cls: 'mock-badge-held' },
-  { sender: 'USPS Certified Mail',   desc: 'Package (0.8 lbs)',       date: 'Dec 17', badge: 'Ready',   cls: 'mock-badge-ready' },
-  { sender: 'City of Rockwall',      desc: 'Business license renewal',date: 'Dec 15', badge: 'Scanned', cls: 'mock-badge-scanned' },
+  {
+    sender: 'Wells Fargo Business',
+    desc: 'Account statement · Letter',
+    date: 'Today',
+    badge: 'New',
+    cls: 'mock-badge-new',
+    actions: ['Open & scan', 'Forward'],
+  },
+  {
+    sender: 'TX Secretary of State',
+    desc: 'Annual report notice · Letter',
+    date: 'Dec 18',
+    badge: 'Held',
+    cls: 'mock-badge-held',
+    actions: [],
+  },
+  {
+    sender: 'USPS Certified Mail',
+    desc: 'Package · 0.8 lbs',
+    date: 'Dec 17',
+    badge: 'Ready',
+    cls: 'mock-badge-ready',
+    actions: ['Hold for pickup'],
+  },
+  {
+    sender: 'City of Rockwall',
+    desc: 'Business license renewal',
+    date: 'Dec 15',
+    badge: 'Scanned',
+    cls: 'mock-badge-scanned',
+    actions: [],
+  },
 ];
 
 function EnvelopeIcon() {
   return (
-    <svg viewBox="0 0 16 12" width="14" height="10" fill="none"
+    <svg viewBox="0 0 16 12" width="13" height="10" fill="none"
          stroke="var(--c-gold-2,#C99A5A)" strokeWidth="1.4"
          strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="1" width="14" height="10" rx="1.5"/>
@@ -57,22 +85,23 @@ function EnvelopeIcon() {
 function DashboardMockup() {
   return (
     <div className="mock-shell">
-      {/* Window chrome dots */}
       <div className="mock-chrome">
         <span className="mock-dot mock-dot-1"/>
         <span className="mock-dot mock-dot-2"/>
         <span className="mock-dot mock-dot-3"/>
+        <span style={{ marginLeft: 10, font: '400 10px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+          mybizaddress.com/account
+        </span>
       </div>
 
-      {/* App header */}
       <div className="mock-header">
         <div>
           <div className="mock-header-title">My Biz Address</div>
-          <div className="mock-header-sub">Dashboard</div>
+          <div className="mock-header-sub">Mail dashboard</div>
         </div>
         <div style={{
           width: 28, height: 28, borderRadius: '50%',
-          background: 'rgba(184,135,70,0.18)',
+          background: 'rgba(181,138,82,0.18)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           font: '700 11px/1 var(--font-text,sans-serif)',
           color: 'var(--c-gold-2,#C99A5A)',
@@ -81,11 +110,10 @@ function DashboardMockup() {
         </div>
       </div>
 
-      {/* Address display */}
       <div className="mock-address-block">
         <div>
-          <div className="mock-address-text">802 North Goliad St, Suite 247</div>
-          <div className="mock-address-text">Rockwall, TX 75087</div>
+          <div className="mock-address-text" style={{ fontWeight: 600, marginBottom: 2 }}>Suite 247</div>
+          <div className="mock-address-text">802 N Goliad St · Rockwall, TX 75087</div>
         </div>
         <div className="mock-active-badge">
           <span className="mock-active-dot"/>
@@ -93,39 +121,43 @@ function DashboardMockup() {
         </div>
       </div>
 
-      {/* Mail list */}
       <div className="mock-section-header">
         <span className="mock-section-title">Recent mail</span>
         <span className="mock-section-count">4 items</span>
       </div>
 
       {mailItems.map(item => (
-        <div key={item.sender} className="mock-mail-item">
-          <div className="mock-envelope"><EnvelopeIcon /></div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="mock-mail-sender">{item.sender}</div>
-            <div className="mock-mail-desc">{item.desc}</div>
+        <div key={item.sender} className="mock-mail-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div className="mock-envelope"><EnvelopeIcon /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="mock-mail-sender">{item.sender}</div>
+              <div className="mock-mail-desc">{item.desc}</div>
+            </div>
+            <div className="mock-mail-right">
+              <div className="mock-mail-date">{item.date}</div>
+              <span className={`mock-badge ${item.cls}`}>{item.badge}</span>
+            </div>
           </div>
-          <div className="mock-mail-right">
-            <div className="mock-mail-date">{item.date}</div>
-            <span className={`mock-badge ${item.cls}`}>{item.badge}</span>
-          </div>
+          {item.actions.length > 0 && (
+            <div className="mock-actions">
+              {item.actions.map(a => (
+                <span key={a} className="mock-action-chip">{a}</span>
+              ))}
+            </div>
+          )}
         </div>
       ))}
 
-      {/* Footer bar */}
       <div style={{
         padding: '12px 20px',
-        borderTop: '1px solid var(--c-border,rgba(255,255,255,0.07))',
+        borderTop: '1px solid var(--c-border,rgba(255,255,255,0.08))',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <span style={{ font: '400 11px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
           4 of 12 items shown
         </span>
-        <span style={{
-          font: '600 11px/1 var(--font-text,sans-serif)',
-          color: 'var(--c-gold-2,#C99A5A)', cursor: 'pointer',
-        }}>
+        <span style={{ font: '600 11px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', cursor: 'pointer' }}>
           View all →
         </span>
       </div>
@@ -133,7 +165,6 @@ function DashboardMockup() {
   );
 }
 
-/* ── Shared icon component ───────────────────────────────────────── */
 function PropIcon({ children }: { children: React.ReactNode }) {
   return <div className="prop-icon">{children}</div>;
 }
@@ -141,7 +172,6 @@ function PropIcon({ children }: { children: React.ReactNode }) {
 const S = { fill: 'none', stroke: 'var(--c-gold-2,#C99A5A)' as string,
   strokeWidth: '1.6', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
-/* ── FAQ items ───────────────────────────────────────────────────── */
 const faqs = [
   {
     q: 'What address will I use?',
@@ -153,7 +183,7 @@ const faqs = [
   },
   {
     q: 'Do you scan my mail?',
-    a: 'Basic plans include envelope notifications — we photograph the outside of each piece so you can see who sent it. Full content scanning (opening and photographing the contents) is available as an add-on for $9.99/mo.',
+    a: 'Basic plans include envelope notifications — we photograph the outside of each piece so you know who sent it before leaving your desk. Full content scanning (opening and photographing the contents) is available as an add-on for $9.99/mo.',
   },
   {
     q: 'Can I pick up mail locally?',
@@ -169,7 +199,18 @@ const faqs = [
   },
 ];
 
-/* ─────────────────────────────────────────────────────────────────── */
+const audiences = [
+  'LLC Owners',
+  'Consultants',
+  'Contractors',
+  'Real Estate Investors',
+  'Attorneys',
+  'CPAs',
+  'Remote Businesses',
+  'Home-Based Businesses',
+  'E-Commerce Sellers',
+  'Property Managers',
+];
 
 export default function Home() {
   return (
@@ -181,10 +222,10 @@ export default function Home() {
 
       <Nav />
 
-      {/* ── 1. Hero ─────────────────────────────────────────────── */}
+      {/* ── 1. Hero ─────────────────────────────────────────────────────────── */}
       <section className="w-section dark tall">
         <div
-          className="w-section-inner"
+          className="w-section-inner hero-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
@@ -193,53 +234,71 @@ export default function Home() {
             textAlign: 'left',
           }}
         >
-          {/* Copy */}
           <div>
-            <div className="w-hero-eyebrow">Rockwall, TX · Virtual Mailbox</div>
+            <div className="w-hero-eyebrow">Rockwall, TX · Mail Receiving Service</div>
             <h1 className="w-hero-title" style={{ fontSize: 54 }}>
-              Your Rockwall business address,&nbsp;online.
+              A professional Rockwall business address.
             </h1>
-            <p className="w-hero-sub" style={{ margin: '0 0 36px', maxWidth: '100%' }}>
-              Receive business mail at a real Rockwall address, get envelope
-              notifications, and manage your mail from anywhere.
+            <p className="w-hero-sub" style={{ margin: '0 0 32px', maxWidth: '100%' }}>
+              Get a real Rockwall business address, receive mail securely,
+              and manage it online from anywhere.
             </p>
             <div className="w-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 20 }}>
               <a className="w-cta-pill filled" href="/signup">Get your address</a>
-              <a className="w-cta-pill outline" href="#how-it-works">View plans ›</a>
+              <a className="w-cta-pill outline" href="/#pricing">View plans ›</a>
+            </div>
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 4 }}>
+              {[
+                'Real Rockwall address',
+                'Secure mail handling',
+                'Local pickup available',
+              ].map(t => (
+                <span key={t} style={{
+                  font: '500 12px/1 var(--font-text,sans-serif)',
+                  color: 'var(--c-text-3)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}>
+                  <span style={{
+                    width: 4, height: 4, borderRadius: '50%',
+                    background: 'var(--c-gold,#B58A52)',
+                    display: 'inline-block', flexShrink: 0,
+                  }}/>
+                  {t}
+                </span>
+              ))}
             </div>
             <p style={{
-              font: '400 13px/1 var(--font-text,sans-serif)',
-              color: 'var(--c-text-3)',
+              font: '400 12px/1 var(--font-text,sans-serif)',
+              color: 'var(--c-text-3)', marginTop: 16,
             }}>
-              Starting at $29.99/mo · No setup fee · Cancel anytime
+              Starting at $29.99/mo · No contracts · Cancel anytime
             </p>
           </div>
 
-          {/* Mockup */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <DashboardMockup />
           </div>
         </div>
 
-        {/* Mobile: mockup below copy */}
         <style>{`
           @media (max-width: 880px) {
             .hero-grid { grid-template-columns: 1fr !important; }
             .hero-grid > :first-child { text-align: center; }
             .hero-grid .w-cta-row { justify-content: center !important; }
+            .hero-grid > :first-child > div:last-of-type { justify-content: center; }
           }
         `}</style>
       </section>
 
-      {/* ── Stats bar ───────────────────────────────────────────── */}
+      {/* ── Stats bar ─────────────────────────────────────────────────────────── */}
       <section className="w-section medium compact">
         <div className="w-section-inner">
           <div className="stats-bar">
             {[
-              { num: '200+',      label: 'Businesses served' },
+              { num: '200+',         label: 'Businesses served' },
               { num: 'All carriers', label: 'USPS, UPS, FedEx, Amazon' },
-              { num: 'Same day',  label: 'Address activation' },
-              { num: 'Mon–Sat',   label: '9 am – 6 pm · Rockwall' },
+              { num: 'Same day',     label: 'Address activation' },
+              { num: 'Mon–Sat',      label: '9 am – 6 pm · Rockwall' },
             ].map(s => (
               <div key={s.label} className="stats-bar-item">
                 <span className="stats-bar-num">{s.num}</span>
@@ -250,7 +309,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 2. Value props ──────────────────────────────────────── */}
+      {/* ── 2. Value props ────────────────────────────────────────────────────────── */}
       <section id="services" className="w-section dark">
         <div className="w-section-inner">
           <span className="section-label">What you get</span>
@@ -298,13 +357,14 @@ export default function Home() {
                   </PropIcon>
                 ),
                 title: 'Online mail management',
-                body: 'View your mail inbox online from any device. Request scanning, forwarding, or shredding for each piece — without making a trip to pick it up.',
+                body: 'View your mail from any device. Request scanning, forwarding, or shredding for each piece — scan, forward, or hold without making a trip.',
               },
               {
                 icon: (
                   <PropIcon>
                     <svg viewBox="0 0 20 20" width="20" height="20" {...S}>
-                      <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z"/>
+                      <rect x="3" y="3" width="14" height="14" rx="3"/>
+                      <path d="M7 10l2.5 2.5L14 8"/>
                     </svg>
                   </PropIcon>
                 ),
@@ -322,7 +382,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 3. How it works ─────────────────────────────────────── */}
+      {/* ── 3. How it works ────────────────────────────────────────────────────────── */}
       <section id="how-it-works" className="w-section medium">
         <div className="w-section-inner">
           <span className="section-label">Simple process</span>
@@ -348,7 +408,7 @@ export default function Home() {
               {
                 n: '3',
                 title: 'Receive and manage mail online',
-                body: 'We accept all deliveries and send you an email notification for every piece. View your mail, request scans, or arrange forwarding — all from your dashboard.',
+                body: 'We accept all deliveries and notify you for every piece. View your mail, request scans, or arrange forwarding — all from your online dashboard.',
               },
             ].map(s => (
               <div key={s.n} className="w-tile dark" style={{ padding: '36px 28px' }}>
@@ -361,10 +421,40 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 4. Pricing ──────────────────────────────────────────── */}
+      {/* ── 3.5 Who It’s For ───────────────────────────────────────────────────────── */}
+      <section className="w-section light">
+        <div className="w-section-inner">
+          <span className="section-label">Who it&rsquo;s for</span>
+          <h2 className="w-hero-title" style={{ fontSize: 44 }}>
+            Built for Rockwall business owners.
+          </h2>
+          <p className="w-hero-sub">
+            Perfect for local businesses that need a professional address
+            without renting an office.
+          </p>
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: 10,
+            justifyContent: 'center', marginTop: 40,
+          }}>
+            {audiences.map(a => (
+              <span key={a} style={{
+                font: '500 14px/1.3 var(--font-text,sans-serif)',
+                color: 'var(--c-light-text,#1F2937)',
+                background: '#fff',
+                border: '1px solid var(--c-light-border,rgba(0,0,0,0.09))',
+                borderRadius: 'var(--r-lg,16px)',
+                padding: '12px 22px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+              }}>{a}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. Pricing ─────────────────────────────────────────────────────────── */}
       <PricingSection />
 
-      {/* ── 5. Trust section ────────────────────────────────────── */}
+      {/* ── 5. Trust section ────────────────────────────────────────────────────────── */}
       <section className="w-section dark">
         <div
           className="w-section-inner"
@@ -376,45 +466,43 @@ export default function Home() {
             textAlign: 'left',
           }}
         >
-          {/* Left: copy */}
           <div>
             <span className="section-label">Why choose us</span>
             <h2 className="w-hero-title" style={{ fontSize: 44, textAlign: 'left', margin: '0 0 20px' }}>
-              A local Rockwall team you can trust.
+              Local handling.<br />Professional presence.
             </h2>
             <p style={{
-              font: '400 18px/1.7 var(--font-text,sans-serif)',
+              font: '400 18px/1.75 var(--font-text,sans-serif)',
               color: 'var(--c-text-2)',
               maxWidth: 440, margin: '0 0 36px',
             }}>
-              We&rsquo;re not a national chain or an automated system.
-              We&rsquo;re a local business in Rockwall — our team handles
-              your mail with care, and we&rsquo;re available by phone when
-              you need us.
+              We&rsquo;re a local Rockwall business — our team handles
+              your mail with care, and we&rsquo;re here when you need us.
             </p>
             <a className="w-cta-pill filled" href="#contact">Talk to our team</a>
           </div>
 
-          {/* Right: trust points */}
           <div>
             {[
               {
                 icon: (
                   <svg viewBox="0 0 20 20" width="18" height="18" {...S}>
-                    <path d="M10 2l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z"/>
+                    <path d="M10 2c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8z"/>
+                    <path d="M10 6v4l2.5 2.5"/>
                   </svg>
                 ),
-                title: 'Local Rockwall team',
-                body: 'Our staff is based in Rockwall. When you call, a real person answers. When you visit, we know your name.',
+                title: 'Your mail is handled by a local team.',
+                body: 'Our Rockwall staff handles every piece personally. When you call or visit, you\'re working with the same people who manage your mail.',
               },
               {
                 icon: (
                   <svg viewBox="0 0 20 20" width="18" height="18" {...S}>
-                    <path d="M10 2l2.5 5h5.5l-4.5 4 1.5 6L10 14l-5 3 1.5-6L2 7h5.5z"/>
+                    <path d="M3 9l7-7 7 7v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9z"/>
+                    <path d="M8 19V12h4v7"/>
                   </svg>
                 ),
-                title: 'Secure, private handling',
-                body: 'Your mail is stored in a locked facility. We never open or read your mail without your request, and your information is never shared.',
+                title: 'Your home address stays private.',
+                body: 'Keep your home off state filings, public records, and Google — protecting your family\'s privacy as your business grows.',
               },
               {
                 icon: (
@@ -423,18 +511,17 @@ export default function Home() {
                     <path d="M7 10l2.5 2.5L14 8"/>
                   </svg>
                 ),
-                title: 'Professional business presence',
-                body: 'A real street address keeps your home private while giving clients, partners, and agencies a credible, permanent location for your business.',
+                title: 'Your business looks established from day one.',
+                body: 'A real street address gives clients, banks, and agencies a credible location they can verify and trust.',
               },
               {
                 icon: (
                   <svg viewBox="0 0 20 20" width="18" height="18" {...S}>
-                    <circle cx="10" cy="10" r="8"/>
-                    <path d="M10 6v4l2.5 2.5"/>
+                    <path d="M10 2l2.5 5h5.5l-4.5 4 1.5 6L10 14l-5 3 1.5-6L2 7h5.5z"/>
                   </svg>
                 ),
-                title: 'Privacy-first approach',
-                body: 'Your home address stays off state filings, public records, and Google — protecting your family\'s privacy as your business grows.',
+                title: 'Secure mail storage.',
+                body: 'Your mail is held in a locked facility. We never open or read it without your request, and your information is never shared.',
               },
             ].map(t => (
               <div key={t.title} className="trust-item">
@@ -451,7 +538,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 6. FAQ ──────────────────────────────────────────────── */}
+      {/* ── 6. FAQ ─────────────────────────────────────────────────────────── */}
       <section id="faq" className="w-section light">
         <div className="w-section-inner">
           <span className="section-label">FAQ</span>
@@ -472,7 +559,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── 7. Contact ──────────────────────────────────────────── */}
+      {/* ── 7. Contact ─────────────────────────────────────────────────────────── */}
       <section id="contact" className="w-section white">
         <div className="w-section-inner" style={{ textAlign: 'left' }}>
           <div style={{ textAlign: 'center', marginBottom: 0 }}>
@@ -484,7 +571,6 @@ export default function Home() {
             </p>
           </div>
           <div className="contact-grid">
-            {/* Info */}
             <div>
               <p className="contact-info-label">Address</p>
               <p className="contact-info-value">{BUSINESS.addressLine1}<br />{BUSINESS.addressLine2}</p>
@@ -504,7 +590,6 @@ export default function Home() {
                 Get started now ›
               </a>
             </div>
-            {/* Form */}
             <div>
               <ContactForm />
             </div>
@@ -512,10 +597,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── CTA strip ───────────────────────────────────────────── */}
+      {/* ── CTA strip ─────────────────────────────────────────────────────────── */}
       <section className="w-section dark" style={{ padding: '100px 28px' }}>
         <div className="w-section-inner">
-          <div className="w-hero-eyebrow">Ready?</div>
+          <div className="w-hero-eyebrow">Ready to get started?</div>
           <h2 className="w-hero-title" style={{ fontSize: 52 }}>
             Your Rockwall business address is waiting.
           </h2>
