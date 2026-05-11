@@ -1,5 +1,6 @@
 /* ─── colors_and_type.css ─────────────────────────────────────────
-   My Biz Address — dark, premium, modern professional.
+   My Biz Address — warm premium local-business palette.
+   Rockwall, TX · trustworthy · established · approachable
    ──────────────────────────────────────────────────────────────── */
 
 :root {
@@ -9,34 +10,39 @@
   --font-text:    "SF Pro Text",    ui-sans-serif, -apple-system,
                   BlinkMacSystemFont, "Inter var", "Inter", sans-serif;
 
-  /* ── Dark palette ───────────────────────────────────────────── */
-  --c-bg:           #0d0d0d;   /* page / hero background        */
-  --c-bg-2:         #141414;   /* secondary dark section        */
-  --c-surface:      #1a1a1a;   /* card surface on dark          */
-  --c-surface-2:    #222222;   /* hover / nested card           */
-  --c-border:       rgba(255, 255, 255, 0.07);
-  --c-border-2:     rgba(255, 255, 255, 0.13);
+  /* ── Dark palette — deep navy ───────────────────────────────── */
+  --c-bg:           #0B1F33;   /* deep navy hero / page background */
+  --c-bg-2:         #111827;   /* charcoal navy secondary section  */
+  --c-surface:      #162032;   /* card surface on dark             */
+  --c-surface-2:    #1E2D42;   /* hover / nested card              */
+  --c-border:       rgba(255, 255, 255, 0.08);
+  --c-border-2:     rgba(255, 255, 255, 0.14);
 
   /* ── Text on dark ───────────────────────────────────────────── */
   --c-text:         #ffffff;
-  --c-text-2:       rgba(255, 255, 255, 0.60);
-  --c-text-3:       rgba(255, 255, 255, 0.32);
+  --c-text-2:       rgba(255, 255, 255, 0.65);
+  --c-text-3:       rgba(255, 255, 255, 0.35);
 
-  /* ── Warm gold accent ───────────────────────────────────────── */
-  --c-gold:         #c49a3c;
-  --c-gold-2:       #d4aa50;   /* lighter, for small labels     */
+  /* ── Warm bronze accent ─────────────────────────────────────── */
+  --c-gold:         #B88746;   /* bronze — primary accent          */
+  --c-gold-2:       #C99A5A;   /* lighter bronze for small labels  */
 
-  /* ── Light / contrast sections ─────────────────────────────── */
-  --c-light-bg:     #f2f1ed;
+  /* ── Light / warm sections ──────────────────────────────────── */
+  --c-light-bg:     #F7F2EA;   /* warm cream                       */
   --c-light-bg-2:   #ffffff;
-  --c-light-text:   #0d0d0d;
-  --c-light-text-2: #555555;
-  --c-light-border: rgba(0, 0, 0, 0.08);
+  --c-light-text:   #1F2937;   /* dark charcoal                    */
+  --c-light-text-2: #6B7280;   /* soft gray body text              */
+  --c-light-border: rgba(0, 0, 0, 0.09);
 
-  /* ── Shadows ────────────────────────────────────────────────── */
-  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.50), 0 1px 4px rgba(0, 0, 0, 0.35);
-  --shadow-deep: 0 12px 48px rgba(0, 0, 0, 0.65), 0 4px 16px rgba(0, 0, 0, 0.40);
+  /* ── Semantic ───────────────────────────────────────────────── */
+  --c-success:      #2F6F4E;   /* forest green for confirmations   */
+  --c-stone:        #E8DED2;   /* soft stone — dividers, secondary */
+  --c-copper:       #A66A3F;   /* muted copper — secondary accent  */
+
+  /* ── Shadows — warm and subtle ──────────────────────────────── */
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.20);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.28), 0 1px 4px rgba(0, 0, 0, 0.18);
+  --shadow-deep: 0 12px 48px rgba(0, 0, 0, 0.42), 0 4px 16px rgba(0, 0, 0, 0.22);
 
   /* ── Radii ───────────────────────────────────────────────────── */
   --r-sm:   6px;

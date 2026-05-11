@@ -46,7 +46,7 @@ const mailItems = [
 function EnvelopeIcon() {
   return (
     <svg viewBox="0 0 16 12" width="14" height="10" fill="none"
-         stroke="var(--c-gold-2,#d4aa50)" strokeWidth="1.4"
+         stroke="var(--c-gold-2,#C99A5A)" strokeWidth="1.4"
          strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="1" width="14" height="10" rx="1.5"/>
       <path d="M1 3l7 5 7-5"/>
@@ -72,10 +72,10 @@ function DashboardMockup() {
         </div>
         <div style={{
           width: 28, height: 28, borderRadius: '50%',
-          background: 'rgba(196,154,60,0.18)',
+          background: 'rgba(184,135,70,0.18)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           font: '700 11px/1 var(--font-text,sans-serif)',
-          color: 'var(--c-gold-2,#d4aa50)',
+          color: 'var(--c-gold-2,#C99A5A)',
         }}>
           MB
         </div>
@@ -124,7 +124,7 @@ function DashboardMockup() {
         </span>
         <span style={{
           font: '600 11px/1 var(--font-text,sans-serif)',
-          color: 'var(--c-gold-2,#d4aa50)', cursor: 'pointer',
+          color: 'var(--c-gold-2,#C99A5A)', cursor: 'pointer',
         }}>
           View all →
         </span>
@@ -138,7 +138,7 @@ function PropIcon({ children }: { children: React.ReactNode }) {
   return <div className="prop-icon">{children}</div>;
 }
 
-const S = { fill: 'none', stroke: 'var(--c-gold-2,#d4aa50)' as string,
+const S = { fill: 'none', stroke: 'var(--c-gold-2,#C99A5A)' as string,
   strokeWidth: '1.6', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
 /* ── FAQ items ───────────────────────────────────────────────────── */
@@ -490,7 +490,7 @@ export default function Home() {
               <p className="contact-info-value">{BUSINESS.addressLine1}<br />{BUSINESS.addressLine2}</p>
               <p className="contact-info-label">Phone</p>
               <p className="contact-info-value">
-                <a href={`tel:${BUSINESS.phoneE164}`} style={{ color: 'var(--c-light-text,#0d0d0d)', textDecoration: 'none', fontWeight: 700 }}>
+                <a href={`tel:${BUSINESS.phoneE164}`} style={{ color: 'var(--c-light-text,#1F2937)', textDecoration: 'none', fontWeight: 700 }}>
                   {BUSINESS.phone}
                 </a>
               </p>
