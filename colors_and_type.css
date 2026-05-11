@@ -1,6 +1,6 @@
 /* ─── colors_and_type.css ─────────────────────────────────────────
-   My Biz Address — warm premium local-business palette.
-   Rockwall, TX · trustworthy · established · approachable
+   My Biz Address — premium local business palette.
+   Rockwall, TX · trustworthy · established · warm · professional
    ──────────────────────────────────────────────────────────────── */
 
 :root {
@@ -11,38 +11,39 @@
                   BlinkMacSystemFont, "Inter var", "Inter", sans-serif;
 
   /* ── Dark palette — deep navy ───────────────────────────────── */
-  --c-bg:           #0B1F33;   /* deep navy hero / page background */
-  --c-bg-2:         #111827;   /* charcoal navy secondary section  */
-  --c-surface:      #162032;   /* card surface on dark             */
-  --c-surface-2:    #1E2D42;   /* hover / nested card              */
+  --c-bg:           #071B2D;   /* primary navy — hero / page background */
+  --c-bg-2:         #10253B;   /* secondary navy — medium sections      */
+  --c-surface:      #162032;   /* card surface on dark                  */
+  --c-surface-2:    #1E2D42;   /* hover / nested card                   */
   --c-border:       rgba(255, 255, 255, 0.08);
   --c-border-2:     rgba(255, 255, 255, 0.14);
 
   /* ── Text on dark ───────────────────────────────────────────── */
-  --c-text:         #ffffff;
-  --c-text-2:       rgba(255, 255, 255, 0.65);
-  --c-text-3:       rgba(255, 255, 255, 0.35);
+  --c-text:         #F8FAFC;                     /* warm white           */
+  --c-text-2:       rgba(248, 250, 252, 0.60);   /* muted               */
+  --c-text-3:       rgba(248, 250, 252, 0.32);   /* dimmer              */
 
-  /* ── Warm bronze accent ─────────────────────────────────────── */
-  --c-gold:         #B88746;   /* bronze — primary accent          */
-  --c-gold-2:       #C99A5A;   /* lighter bronze for small labels  */
+  /* ── Bronze accent ──────────────────────────────────────────── */
+  --c-gold:         #B58A52;   /* refined bronze — primary accent       */
+  --c-gold-2:       #C99A5A;   /* lighter bronze for labels             */
 
   /* ── Light / warm sections ──────────────────────────────────── */
-  --c-light-bg:     #F7F2EA;   /* warm cream                       */
+  --c-light-bg:     #F5F0E8;   /* warm cream                            */
   --c-light-bg-2:   #ffffff;
-  --c-light-text:   #1F2937;   /* dark charcoal                    */
-  --c-light-text-2: #6B7280;   /* soft gray body text              */
+  --c-light-text:   #1F2937;   /* dark charcoal                         */
+  --c-light-text-2: #6B7280;   /* muted gray body text                  */
   --c-light-border: rgba(0, 0, 0, 0.09);
 
   /* ── Semantic ───────────────────────────────────────────────── */
-  --c-success:      #2F6F4E;   /* forest green for confirmations   */
-  --c-stone:        #E8DED2;   /* soft stone — dividers, secondary */
-  --c-copper:       #A66A3F;   /* muted copper — secondary accent  */
+  --c-success:      #3C7A57;   /* trust green — confirmations           */
+  --c-trust-green:  #3C7A57;   /* alias                                 */
+  --c-stone:        #D9D0C4;   /* soft stone — dividers, secondary      */
+  --c-copper:       #A66A3F;   /* muted copper — secondary accent       */
 
-  /* ── Shadows — warm and subtle ──────────────────────────────── */
-  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.20);
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.28), 0 1px 4px rgba(0, 0, 0, 0.18);
-  --shadow-deep: 0 12px 48px rgba(0, 0, 0, 0.42), 0 4px 16px rgba(0, 0, 0, 0.22);
+  /* ── Shadows — warm and subtle ─────────────────────────────── */
+  --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.22);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.30), 0 1px 4px rgba(0, 0, 0, 0.18);
+  --shadow-deep: 0 12px 48px rgba(0, 0, 0, 0.44), 0 4px 16px rgba(0, 0, 0, 0.22);
 
   /* ── Radii ───────────────────────────────────────────────────── */
   --r-sm:   6px;
@@ -56,8 +57,8 @@
 .t-hero    { font: 800 72px/1.04 var(--font-display); letter-spacing: -1.2px; }
 .t-section { font: 700 46px/1.08 var(--font-display); letter-spacing: -0.6px; }
 .t-tile    { font: 700 22px/1.25 var(--font-display); letter-spacing: -0.3px; }
-.t-body    { font: 400 18px/1.70 var(--font-text);    letter-spacing: -0.1px; }
-.t-caption { font: 400 14px/1.55 var(--font-text);    letter-spacing: -0.05px; }
+.t-body    { font: 400 18px/1.75 var(--font-text);    letter-spacing: -0.1px; }
+.t-caption { font: 400 14px/1.60 var(--font-text);    letter-spacing: -0.05px; }
 .t-label   { font: 600 12px/1.4  var(--font-text);    letter-spacing: 0.04em; }
 .t-overline{ font: 700 11px/1.3  var(--font-text);    letter-spacing: 0.10em; text-transform: uppercase; }
 

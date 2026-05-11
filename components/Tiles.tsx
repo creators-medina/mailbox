@@ -67,22 +67,27 @@ export function Footer() {
       <div className="w-footer-inner">
         {/* Logo row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 44 }}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
-               stroke="var(--c-gold, #B88746)" strokeWidth="1.75"
-               strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2"/>
-            <path d="M2 7l10 7 10-7"/>
-          </svg>
+          <div style={{
+            width: 28, height: 28,
+            background: 'rgba(181,138,82,0.12)',
+            border: '1.5px solid var(--c-gold, #B58A52)',
+            borderRadius: 6,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            font: '700 10px/1 var(--font-display, sans-serif)',
+            color: 'var(--c-gold, #B58A52)',
+            letterSpacing: '-0.2px',
+            flexShrink: 0,
+          }}>MB</div>
           <div>
             <div style={{
               font: '700 14px/1.1 var(--font-text, sans-serif)',
-              color: 'rgba(255,255,255,0.88)', letterSpacing: '-0.1px',
+              color: 'rgba(248,250,252,0.88)', letterSpacing: '-0.1px',
             }}>
               My Biz Address
             </div>
             <div style={{
               font: '400 12px/1.3 var(--font-text, sans-serif)',
-              color: 'rgba(255,255,255,0.35)', marginTop: 3,
+              color: 'rgba(248,250,252,0.35)', marginTop: 3,
             }}>
               {BUSINESS.addressStreet} · {BUSINESS.addressCity}, {BUSINESS.addressState} {BUSINESS.addressZip}
             </div>

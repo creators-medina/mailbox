@@ -19,12 +19,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--c-bg,#0B1F33)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--c-bg,#071B2D)' }}>
 
       {/* ── Sidebar ─────────────────────────────────────────────── */}
       <nav style={{
         width: 220, flexShrink: 0,
-        background: 'var(--c-surface,#1a1a1a)',
+        background: 'var(--c-surface,#162032)',
         borderRight: '1px solid var(--c-border,rgba(255,255,255,0.07))',
         display: 'flex', flexDirection: 'column',
         position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',

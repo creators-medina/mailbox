@@ -27,7 +27,7 @@ export default function SuccessPage() {
           </p>
 
           <div style={{
-            background: 'var(--c-surface,#1a1a1a)',
+            background: 'var(--c-surface,#162032)',
             border: '1px solid var(--c-border-2,rgba(255,255,255,0.13))',
             borderRadius: 14, padding: '20px 24px',
             maxWidth: 460, margin: '0 auto 36px', textAlign: 'left',
@@ -40,8 +40,8 @@ export default function SuccessPage() {
               <div key={i} style={{ display: 'flex', gap: 14, padding: '10px 0', borderBottom: i < 2 ? '1px solid var(--c-border,rgba(255,255,255,0.07))' : 'none' }}>
                 <span style={{
                   width: 22, height: 22, borderRadius: '50%',
-                  background: 'rgba(184,135,70,0.15)',
-                  border: '1px solid rgba(184,135,70,0.25)',
+                  background: 'rgba(181,138,82,0.15)',
+                  border: '1px solid rgba(181,138,82,0.25)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   font: '700 11px/1 var(--font-text,sans-serif)',
                   color: 'var(--c-gold-2,#C99A5A)', flexShrink: 0, marginTop: 1,
