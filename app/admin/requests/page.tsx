@@ -94,7 +94,7 @@ export default async function AdminRequestsPage({
                   <td style={{ color: 'var(--c-text-3)', whiteSpace: 'nowrap', fontSize: 12 }}>
                     {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </td>
-                  <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#d4aa50)' }}>
+                  <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#C99A5A)' }}>
                     {r.customers?.suite_number ?? '—'}
                   </td>
                   <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{r.request_type}</td>

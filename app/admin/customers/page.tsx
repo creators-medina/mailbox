@@ -77,7 +77,7 @@ export default async function AdminCustomersPage({
             <tbody>
               {customers.map(c => (
                 <tr key={c.id}>
-                  <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#d4aa50)' }}>
+                  <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#C99A5A)' }}>
                     {c.suite_number ?? '—'}
                   </td>
                   <td>{c.profiles?.business_name || c.profiles?.full_name || '—'}</td>
