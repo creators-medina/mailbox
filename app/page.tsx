@@ -3,6 +3,7 @@ import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
 import PricingSection from '@/components/PricingSection';
 import ContactForm from '@/components/ContactForm';
+import { BUSINESS } from '@/lib/config/business';
 
 export const metadata: Metadata = {
   title: 'My Biz Address — Professional Business Address in Rockwall, TX',
@@ -14,23 +15,23 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
-  name: 'My Biz Address',
+  name: BUSINESS.brandName,
   description: 'Virtual mailbox and professional business address service in Rockwall, TX.',
-  url: 'https://mybizmailbox.biz',
-  telephone: '+14698934120',
+  url: BUSINESS.websiteUrl,
+  telephone: BUSINESS.phoneE164,
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '802 North Goliad Street',
-    addressLocality: 'Rockwall',
-    addressRegion: 'TX',
-    postalCode: '75087',
+    streetAddress: BUSINESS.addressStreet,
+    addressLocality: BUSINESS.addressCity,
+    addressRegion: BUSINESS.addressState,
+    postalCode: BUSINESS.addressZip,
     addressCountry: 'US',
   },
   openingHoursSpecification: [{
     '@type': 'OpeningHoursSpecification',
     dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
-    opens: '09:00',
-    closes: '18:00',
+    opens: BUSINESS.hoursOpen,
+    closes: BUSINESS.hoursClose,
   }],
 };
 
@@ -486,15 +487,15 @@ export default function Home() {
             {/* Info */}
             <div>
               <p className="contact-info-label">Address</p>
-              <p className="contact-info-value">802 North Goliad Street<br />Rockwall, TX 75087</p>
+              <p className="contact-info-value">{BUSINESS.addressLine1}<br />{BUSINESS.addressLine2}</p>
               <p className="contact-info-label">Phone</p>
               <p className="contact-info-value">
-                <a href="tel:+14698934120" style={{ color: 'var(--c-light-text,#0d0d0d)', textDecoration: 'none', fontWeight: 700 }}>
-                  (469) 893-4120
+                <a href={`tel:${BUSINESS.phoneE164}`} style={{ color: 'var(--c-light-text,#0d0d0d)', textDecoration: 'none', fontWeight: 700 }}>
+                  {BUSINESS.phone}
                 </a>
               </p>
               <p className="contact-info-label">Hours</p>
-              <p className="contact-info-value">Monday – Saturday<br />9 am – 6 pm</p>
+              <p className="contact-info-value">{BUSINESS.hoursLong.replace(', ', '\n').split('\n').map((l, i) => <span key={i}>{l}{i === 0 ? <br /> : ''}</span>)}</p>
               <a
                 href="/signup"
                 className="w-cta-pill filled"
@@ -532,7 +533,7 @@ export default function Home() {
             font: '400 13px/1 var(--font-text,sans-serif)',
             color: 'var(--c-text-3)', marginTop: 24,
           }}>
-            802 North Goliad Street · Rockwall, TX 75087 · (469) 893-4120
+            {BUSINESS.addressFull} · {BUSINESS.phone}
           </p>
         </div>
       </section>

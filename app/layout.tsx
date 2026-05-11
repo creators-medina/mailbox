@@ -1,33 +1,35 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
+import { BUSINESS } from '@/lib/config/business';
 import '../colors_and_type.css';
 import '../website.css';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
 
+const TITLE = `${BUSINESS.brandName} — ${BUSINESS.tagline}`;
+const DESCRIPTION =
+  'Get a real Rockwall, TX business address for your LLC, receive mail and packages, and manage everything online. Starting at $29.99/mo.';
+
 export const metadata: Metadata = {
-  title: 'My Biz Address — Professional Business Address in Rockwall, TX',
-  description:
-    'Get a real Rockwall, TX business address for your LLC, receive mail and packages, and manage everything online. Starting at $29.99/mo.',
-  metadataBase: new URL('https://mybizmailbox.biz'),
+  title: TITLE,
+  description: DESCRIPTION,
+  metadataBase: new URL(BUSINESS.websiteUrl),
   openGraph: {
-    title: 'My Biz Address — Professional Business Address in Rockwall, TX',
-    description:
-      'Get a real Rockwall, TX business address, receive mail and packages, and manage everything online. Starting at $29.99/mo.',
-    url: 'https://mybizmailbox.biz',
-    siteName: 'My Biz Address',
+    title: TITLE,
+    description: DESCRIPTION,
+    url: BUSINESS.websiteUrl,
+    siteName: BUSINESS.brandName,
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'My Biz Address — Professional Business Address in Rockwall, TX',
-    description:
-      'Get a real Rockwall, TX business address, receive mail and packages, and manage everything online. Starting at $29.99/mo.',
+    title: TITLE,
+    description: DESCRIPTION,
   },
-  alternates: { canonical: 'https://mybizmailbox.biz' },
+  alternates: { canonical: BUSINESS.websiteUrl },
   robots: { index: true, follow: true },
 };
 

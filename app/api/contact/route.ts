@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     await resend.emails.send({
-      from: 'My Biz Mailbox <contact@mybizmailbox.biz>',
+      from: 'My Biz Address <contact@mybizmailbox.biz>',
       to: process.env.CONTACT_EMAIL!,
       reply_to: email,
       subject: `New inquiry from ${name}`,

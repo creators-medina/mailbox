@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
+import { SHORT_ADDRESS } from '@/lib/config/business';
 
 type Addons = {
   mailScanning: boolean;
@@ -175,7 +176,7 @@ export default function SignupPage() {
                       Business Address
                     </div>
                     <div style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-2)', marginTop: 3 }}>
-                      802 North Goliad St · Rockwall, TX
+                      {SHORT_ADDRESS}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>

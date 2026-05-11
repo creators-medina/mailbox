@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
+import { BUSINESS } from '@/lib/config/business';
 
 export const metadata: Metadata = {
   title: 'Payment received — My Biz Address',
@@ -63,8 +64,8 @@ export default function SuccessPage() {
             color: 'var(--c-text-3)', marginTop: 20,
           }}>
             Questions? Call{' '}
-            <a href="tel:+14698934120" style={{ color: 'var(--c-text-2)', textDecoration: 'none', fontWeight: 600 }}>
-              (469) 893-4120
+            <a href={`tel:${BUSINESS.phoneE164}`} style={{ color: 'var(--c-text-2)', textDecoration: 'none', fontWeight: 600 }}>
+              {BUSINESS.phone}
             </a>
           </p>
         </div>

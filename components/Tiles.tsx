@@ -1,4 +1,5 @@
 import React from 'react';
+import { BUSINESS } from '@/lib/config/business';
 
 interface ProductTileProps {
   theme?: 'dark' | 'light';
@@ -83,7 +84,7 @@ export function Footer() {
               font: '400 12px/1.3 var(--font-text, sans-serif)',
               color: 'rgba(255,255,255,0.35)', marginTop: 3,
             }}>
-              802 North Goliad St · Rockwall, TX 75087
+              {BUSINESS.addressStreet} · {BUSINESS.addressCity}, {BUSINESS.addressState} {BUSINESS.addressZip}
             </div>
           </div>
         </div>
