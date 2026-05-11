@@ -39,7 +39,7 @@ export default function PricingSection() {
           One straightforward plan.
         </h2>
         <p className="w-hero-sub">
-          No contracts. No hidden fees. Cancel anytime.
+          Simple, transparent pricing for Rockwall business owners.
           Add only what your business needs.
         </p>
 
@@ -54,8 +54,8 @@ export default function PricingSection() {
             <div className="pricing-period">/month</div>
           </div>
           <p className="pricing-tagline">
-            Everything you need to have a professional business address
-            in Rockwall, TX and manage your mail online.
+            Everything you need for a professional business address
+            in Rockwall, TX — with secure mail handling and online access.
           </p>
           <ul className="pricing-features">
             {coreFeatures.map(f => (
@@ -78,12 +78,19 @@ export default function PricingSection() {
               width: '100%', border: 'none',
             }}
           >
-            Get started
+            Get your address today
           </a>
           <p style={{
             font: '400 12px/1.5 var(--font-text,sans-serif)',
             color: 'var(--c-light-text-2,#6B7280)',
-            textAlign: 'center', marginTop: 14, marginBottom: 0,
+            textAlign: 'center', marginTop: 12, marginBottom: 0,
+          }}>
+            No long-term contracts · Cancel anytime · Secure checkout
+          </p>
+          <p style={{
+            font: '400 12px/1.5 var(--font-text,sans-serif)',
+            color: 'var(--c-light-text-2,#6B7280)',
+            textAlign: 'center', marginTop: 8, marginBottom: 0,
           }}>
             Questions? Call us at{' '}
             <a href="tel:+14698934120" style={{ color: 'var(--c-light-text,#1F2937)', fontWeight: 600 }}>

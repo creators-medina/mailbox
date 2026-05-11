@@ -79,7 +79,6 @@ export default function SignupPage() {
         body: JSON.stringify({ ...form, addons }),
       });
 
-      // Safely parse JSON — the body may be empty or non-JSON on server errors
       let data: { url?: string; error?: string } = {};
       const contentType = res.headers.get('content-type') ?? '';
       if (contentType.includes('application/json')) {
@@ -113,16 +112,33 @@ export default function SignupPage() {
           </h1>
           <p style={{
             font: '400 17px/1.6 var(--font-text,sans-serif)',
-            color: 'var(--c-text-2)', maxWidth: 480, marginBottom: 52,
+            color: 'var(--c-text-2)', maxWidth: 480, marginBottom: 40,
           }}>
             Fill in your info, pick any add-ons, and proceed to secure checkout.
-            Your address is active the same day.
+            Your Rockwall address is active the same day.
           </p>
+          {/* Trust strip */}
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 44 }}>
+            {['Real Rockwall address', 'Secure checkout via Stripe', 'No long-term contracts'].map(t => (
+              <span key={t} style={{
+                font: '500 12px/1 var(--font-text,sans-serif)',
+                color: 'var(--c-text-3)',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <span style={{
+                  width: 4, height: 4, borderRadius: '50%',
+                  background: 'var(--c-gold,#B58A52)',
+                  display: 'inline-block', flexShrink: 0,
+                }}/>
+                {t}
+              </span>
+            ))}
+          </div>
 
           <form onSubmit={handleSubmit}>
             <div className="signup-grid">
 
-              {/* ── Left: personal info ──────────────────────────────────── */}
+              {/* ── Left: personal info ───────────────────────────────────────────── */}
               <div>
                 <p className="signup-section-label">Your information</p>
 
@@ -171,13 +187,14 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* ── Right: plan + add-ons + summary ───────────────────── */}
+              {/* ── Right: plan + add-ons + summary ───────────────────────────────── */}
               <div>
                 {/* Base plan (always included) */}
                 <p className="signup-section-label">Your plan</p>
                 <div style={{
-                  background: 'var(--c-surface,#1a1a1a)',
-                  border: '1px solid var(--c-border-2,rgba(255,255,255,0.13))',
+                  background: 'var(--c-surface,#162032)',
+                  border: '1px solid var(--c-border-2,rgba(255,255,255,0.14))',
+                  borderLeft: '3px solid var(--c-gold,#B58A52)',
                   borderRadius: 14, padding: '18px 20px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   marginBottom: 20,
@@ -212,7 +229,7 @@ export default function SignupPage() {
                       <div className={`addon-select-check${addons[a.key] ? ' checked' : ''}`}>
                         {addons[a.key] && (
                           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                            <path d="M1 4l3 3 5-6" stroke="#0B1F33" strokeWidth="2"
+                            <path d="M1 4l3 3 5-6" stroke="#071B2D" strokeWidth="2"
                                   strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         )}
@@ -237,7 +254,7 @@ export default function SignupPage() {
 
                 {/* Order total */}
                 <div style={{
-                  background: 'var(--c-surface,#1a1a1a)',
+                  background: 'var(--c-surface,#162032)',
                   border: '1px solid var(--c-border,rgba(255,255,255,0.07))',
                   borderRadius: 14, padding: '20px 20px 24px',
                   marginBottom: 16,
