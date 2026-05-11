@@ -40,11 +40,11 @@ export default function SuccessPage() {
               <div key={i} style={{ display: 'flex', gap: 14, padding: '10px 0', borderBottom: i < 2 ? '1px solid var(--c-border,rgba(255,255,255,0.07))' : 'none' }}>
                 <span style={{
                   width: 22, height: 22, borderRadius: '50%',
-                  background: 'rgba(196,154,60,0.15)',
-                  border: '1px solid rgba(196,154,60,0.25)',
+                  background: 'rgba(184,135,70,0.15)',
+                  border: '1px solid rgba(184,135,70,0.25)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   font: '700 11px/1 var(--font-text,sans-serif)',
-                  color: 'var(--c-gold-2,#d4aa50)', flexShrink: 0, marginTop: 1,
+                  color: 'var(--c-gold-2,#C99A5A)', flexShrink: 0, marginTop: 1,
                 }}>
                   {i + 1}
                 </span>

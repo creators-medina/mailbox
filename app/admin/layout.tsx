@@ -19,9 +19,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--c-bg,#0d0d0d)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--c-bg,#0B1F33)' }}>
 
-      {/* ── Sidebar ─────────────────────────────────────────────────── */}
+      {/* ── Sidebar ─────────────────────────────────────────────── */}
       <nav style={{
         width: 220, flexShrink: 0,
         background: 'var(--c-surface,#1a1a1a)',
@@ -45,7 +45,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </a>
           <div style={{
             font: '700 13px/1 var(--font-display,sans-serif)',
-            color: 'var(--c-gold-2,#d4aa50)',
+            color: 'var(--c-gold-2,#C99A5A)',
           }}>
             Admin Panel
           </div>
@@ -71,7 +71,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </nav>
 
-      {/* ── Main content ─────────────────────────────────────────────── */}
+      {/* ── Main content ────────────────────────────────────────────── */}
       <main style={{ flex: 1, padding: '40px 48px', minWidth: 0, color: '#fff' }}>
         {children}
       </main>

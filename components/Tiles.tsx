@@ -68,7 +68,7 @@ export function Footer() {
         {/* Logo row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 44 }}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
-               stroke="var(--c-gold, #c49a3c)" strokeWidth="1.75"
+               stroke="var(--c-gold, #B88746)" strokeWidth="1.75"
                strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="4" width="20" height="16" rx="2"/>
             <path d="M2 7l10 7 10-7"/>
