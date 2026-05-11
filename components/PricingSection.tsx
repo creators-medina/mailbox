@@ -82,11 +82,11 @@ export default function PricingSection() {
           </a>
           <p style={{
             font: '400 12px/1.5 var(--font-text,sans-serif)',
-            color: 'var(--c-light-text-2,#555)',
+            color: 'var(--c-light-text-2,#6B7280)',
             textAlign: 'center', marginTop: 14, marginBottom: 0,
           }}>
             Questions? Call us at{' '}
-            <a href="tel:+14698934120" style={{ color: 'var(--c-light-text,#0d0d0d)', fontWeight: 600 }}>
+            <a href="tel:+14698934120" style={{ color: 'var(--c-light-text,#1F2937)', fontWeight: 600 }}>
               (469) 893-4120
             </a>
           </p>
@@ -97,7 +97,7 @@ export default function PricingSection() {
           <p style={{
             font: '700 11px/1 var(--font-text,sans-serif)',
             letterSpacing: '0.10em', textTransform: 'uppercase',
-            color: 'var(--c-light-text-2,#555)', marginBottom: 28,
+            color: 'var(--c-light-text-2,#6B7280)', marginBottom: 28,
           }}>
             Optional add-ons
           </p>

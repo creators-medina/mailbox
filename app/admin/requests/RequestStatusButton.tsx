@@ -47,7 +47,7 @@ export default function RequestStatusButton({ id, current }: { id: string; curre
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '8px 14px',
                 font: '500 12px/1.2 var(--font-text,sans-serif)',
-                color: s === status ? 'var(--c-gold-2,#d4aa50)' : 'var(--c-text-2)',
+                color: s === status ? 'var(--c-gold-2,#C99A5A)' : 'var(--c-text-2)',
                 background: 'none', border: 'none', cursor: 'pointer',
               }}
             >

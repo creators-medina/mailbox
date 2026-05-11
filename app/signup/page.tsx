@@ -122,7 +122,7 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit}>
             <div className="signup-grid">
 
-              {/* ── Left: personal info ──────────────────────────── */}
+              {/* ── Left: personal info ──────────────────────────────────── */}
               <div>
                 <p className="signup-section-label">Your information</p>
 
@@ -171,7 +171,7 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* ── Right: plan + add-ons + summary ─────────────── */}
+              {/* ── Right: plan + add-ons + summary ───────────────────── */}
               <div>
                 {/* Base plan (always included) */}
                 <p className="signup-section-label">Your plan</p>
@@ -212,7 +212,7 @@ export default function SignupPage() {
                       <div className={`addon-select-check${addons[a.key] ? ' checked' : ''}`}>
                         {addons[a.key] && (
                           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                            <path d="M1 4l3 3 5-6" stroke="#0d0d0d" strokeWidth="2"
+                            <path d="M1 4l3 3 5-6" stroke="#0B1F33" strokeWidth="2"
                                   strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         )}
@@ -222,7 +222,7 @@ export default function SignupPage() {
                           <span style={{ font: '700 14px/1.3 var(--font-display,sans-serif)', color: '#fff' }}>
                             {a.name}
                           </span>
-                          <span style={{ font: '700 14px/1 var(--font-display,sans-serif)', color: 'var(--c-gold-2,#d4aa50)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          <span style={{ font: '700 14px/1 var(--font-display,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                             {a.price}
                             <span style={{ font: '400 11px/1 var(--font-text,sans-serif)', color: 'var(--c-text-2)' }}>{a.period}</span>
                           </span>
@@ -252,7 +252,7 @@ export default function SignupPage() {
                   {oneTimeTotal > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12 }}>
                       <span style={{ font: '400 13px/1 var(--font-text,sans-serif)', color: 'var(--c-text-2)' }}>One-time setup fee</span>
-                      <span style={{ font: '600 15px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#d4aa50)' }}>
+                      <span style={{ font: '600 15px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)' }}>
                         ${oneTimeTotal.toFixed(2)}
                       </span>
                     </div>
