@@ -46,7 +46,6 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Fetch profile and customer in parallel
   const [profileRes, customerRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('customers').select('*').eq('profile_id', user.id).maybeSingle(),
@@ -91,7 +90,6 @@ export default async function AccountPage() {
       <section className="w-section dark" style={{ minHeight: '100vh', paddingTop: 96, paddingBottom: 80 }}>
         <div className="w-section-inner" style={{ maxWidth: 900, textAlign: 'left' }}>
 
-          {/* ── Header row ─────────────────────────────────────── */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div className="w-hero-eyebrow" style={{ marginBottom: 6 }}>Dashboard</div>
@@ -102,7 +100,6 @@ export default async function AccountPage() {
             <SignOutButton />
           </div>
 
-          {/* ── A. Address card ────────────────────────────────── */}
           <div className="dash-card" style={{ marginBottom: 20, borderColor: customer?.status === 'active' ? 'rgba(74,222,128,0.18)' : 'var(--c-border-2,rgba(255,255,255,0.13))' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: customer ? 20 : 0 }}>
               <span className="dash-card-title" style={{ margin: 0 }}>Your business address</span>
@@ -115,7 +112,7 @@ export default async function AccountPage() {
             {customer ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 20px', alignItems: 'start' }}>
                 <span style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)', paddingTop: 3 }}>Suite</span>
-                <span style={{ font: '800 32px/1 var(--font-display,sans-serif)', letterSpacing: '-0.5px', color: 'var(--c-gold-2,#d4aa50)' }}>
+                <span style={{ font: '800 32px/1 var(--font-display,sans-serif)', letterSpacing: '-0.5px', color: 'var(--c-gold-2,#C99A5A)' }}>
                   {customer.suite_number ?? '—'}
                 </span>
                 <span style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>Address</span>
@@ -130,10 +127,8 @@ export default async function AccountPage() {
             )}
           </div>
 
-          {/* ── Main 2-col grid ────────────────────────────────── */}
           <div className="dash-grid" style={{ marginBottom: 20 }}>
 
-            {/* ── C. Mail feed ──────────────────────────────────── */}
             <div className="dash-card">
               <span className="dash-card-title">Mail inbox</span>
               {mailItems.length > 0 ? (
@@ -143,11 +138,11 @@ export default async function AccountPage() {
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%' }}>
                         <div style={{
                           width: 34, height: 34, borderRadius: 8, flexShrink: 0, marginTop: 1,
-                          background: 'var(--c-surface-2,#222)',
+                          background: 'var(--c-surface-2,#1E2D42)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                           <svg viewBox="0 0 16 12" width="13" height="10" fill="none"
-                               stroke="var(--c-gold-2,#d4aa50)" strokeWidth="1.4"
+                               stroke="var(--c-gold-2,#C99A5A)" strokeWidth="1.4"
                                strokeLinecap="round" strokeLinejoin="round">
                             <rect x="1" y="1" width="14" height="10" rx="1.5"/>
                             <path d="M1 3l7 5 7-5"/>
@@ -189,10 +184,8 @@ export default async function AccountPage() {
               )}
             </div>
 
-            {/* ── Right column ─────────────────────────────────── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-              {/* ── B. Subscription card ──────────────────────── */}
               <div className="dash-card">
                 <span className="dash-card-title">Subscription</span>
                 <div className="addon-row" style={{ paddingTop: 0 }}>
@@ -232,11 +225,10 @@ export default async function AccountPage() {
                 )}
               </div>
 
-              {/* ── Account links ─────────────────────────────── */}
               <div className="dash-card">
                 <span className="dash-card-title">Account</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <a href="/#contact" style={{ font: '500 14px/1.3 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#d4aa50)', textDecoration: 'none' }}>
+                  <a href="/#contact" style={{ font: '500 14px/1.3 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none' }}>
                     Contact support ›
                   </a>
                   {customer?.stripe_customer_id && <BillingButton />}
@@ -246,7 +238,6 @@ export default async function AccountPage() {
             </div>
           </div>
 
-          {/* ── D. Recent requests ─────────────────────────────── */}
           {mailRequests.length > 0 && (
             <div className="dash-card" style={{ marginBottom: 20 }}>
               <span className="dash-card-title">Recent requests</span>
