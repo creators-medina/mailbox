@@ -36,7 +36,7 @@ export default async function AdminOverviewPage() {
         Overview
       </h1>
 
-      {/* ── Stats ──────────────────────────────────────────────────── */}
+      {/* ── Stats ──────────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 40 }}>
         {stats.map(s => (
           <div key={s.label} className="dash-card">
@@ -50,7 +50,7 @@ export default async function AdminOverviewPage() {
         ))}
       </div>
 
-      {/* ── Quick links ─────────────────────────────────────────────── */}
+      {/* ── Quick links ───────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 40 }}>
         {[
           { label: 'View all customers →', href: '/admin/customers' },
@@ -62,7 +62,7 @@ export default async function AdminOverviewPage() {
         ))}
       </div>
 
-      {/* ── Recent signups ──────────────────────────────────────────── */}
+      {/* ── Recent signups ────────────────────────────────────────────────────── */}
       <div className="dash-card">
         <span className="dash-card-title">Recent signups</span>
         {customers.length === 0 ? (
@@ -84,7 +84,7 @@ export default async function AdminOverviewPage() {
               {customers.map(c => (
                 <tr key={c.id}>
                   <td>
-                    <a href={`/admin/customers/${c.id}`} style={{ color: 'var(--c-gold-2,#d4aa50)', textDecoration: 'none' }}>
+                    <a href={`/admin/customers/${c.id}`} style={{ color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none' }}>
                       {c.suite_number ?? '—'}
                     </a>
                   </td>

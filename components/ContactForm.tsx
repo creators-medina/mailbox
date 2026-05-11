@@ -35,13 +35,13 @@ export default function ContactForm() {
       <div style={{ padding: '32px 0' }}>
         <p style={{
           font: '700 20px/1.3 var(--font-display,sans-serif)',
-          color: 'var(--c-light-text,#0d0d0d)', marginBottom: 8,
+          color: 'var(--c-light-text,#1F2937)', marginBottom: 8,
         }}>
           Message received.
         </p>
         <p style={{
           font: '400 15px/1.6 var(--font-text,sans-serif)',
-          color: 'var(--c-light-text-2,#555)',
+          color: 'var(--c-light-text-2,#6B7280)',
         }}>
           We&rsquo;ll get back to you within one business day.
         </p>

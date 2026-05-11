@@ -82,7 +82,7 @@ export default async function AdminMailQueuePage({
                   <td style={{ color: 'var(--c-text-3)', whiteSpace: 'nowrap', fontSize: 12 }}>
                     {new Date(m.received_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </td>
-                  <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#d4aa50)' }}>
+                  <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#C99A5A)' }}>
                     {m.customers?.suite_number ?? '—'}
                   </td>
                   <td>{m.sender ?? '—'}</td>

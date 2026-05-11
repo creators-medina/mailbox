@@ -100,14 +100,14 @@ export default async function CustomerDetailPage({
 
   return (
     <div>
-      {/* ── Header ──────────────────────────────────────────────────── */}
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 28 }}>
         <a href="/admin/customers" style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)', textDecoration: 'none' }}>
           ← All customers
         </a>
         <h1 style={{ font: '700 24px/1.2 var(--font-display,sans-serif)', color: '#fff', margin: '8px 0 0' }}>
           {p?.business_name || p?.full_name || 'Customer'}
-          <span style={{ font: '500 16px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#d4aa50)', marginLeft: 12 }}>
+          <span style={{ font: '500 16px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', marginLeft: 12 }}>
             {customer.suite_number ?? '—'}
           </span>
         </h1>
@@ -115,7 +115,7 @@ export default async function CustomerDetailPage({
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
 
-        {/* ── Profile ─────────────────────────────────────────────── */}
+        {/* ── Profile ───────────────────────────────────────────────────────── */}
         <div className="dash-card">
           <span className="dash-card-title">Profile</span>
           <dl className="admin-dl">
@@ -131,7 +131,7 @@ export default async function CustomerDetailPage({
           </dl>
         </div>
 
-        {/* ── Subscription ────────────────────────────────────────── */}
+        {/* ── Subscription ────────────────────────────────────────────────────── */}
         <div className="dash-card">
           <span className="dash-card-title">Subscription</span>
           {sub ? (
@@ -159,7 +159,7 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      {/* ── Mail items ──────────────────────────────────────────────── */}
+      {/* ── Mail items ────────────────────────────────────────────────────────── */}
       <div className="dash-card" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <span className="dash-card-title" style={{ margin: 0 }}>Mail items</span>
@@ -188,7 +188,7 @@ export default async function CustomerDetailPage({
         )}
       </div>
 
-      {/* ── Requests ────────────────────────────────────────────────── */}
+      {/* ── Requests ────────────────────────────────────────────────────────────── */}
       <div className="dash-card" style={{ marginBottom: 20 }}>
         <span className="dash-card-title">Mail requests</span>
         {requests.length === 0 ? (
@@ -212,7 +212,7 @@ export default async function CustomerDetailPage({
         )}
       </div>
 
-      {/* ── Admin notes ─────────────────────────────────────────────── */}
+      {/* ── Admin notes ─────────────────────────────────────────────────────────── */}
       <div className="dash-card">
         <span className="dash-card-title">Internal notes</span>
         <div style={{ marginBottom: 20 }}>

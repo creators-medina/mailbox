@@ -71,11 +71,11 @@ export default function LoginPage() {
 
           {status === 'success' ? (
             <div style={{
-              background: 'rgba(196,154,60,0.10)',
-              border: '1px solid rgba(196,154,60,0.25)',
+              background: 'rgba(184,135,70,0.10)',
+              border: '1px solid rgba(184,135,70,0.25)',
               borderRadius: 12, padding: '20px 22px',
             }}>
-              <p style={{ font: '500 15px/1.6 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#d4aa50)', margin: 0 }}>
+              <p style={{ font: '500 15px/1.6 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', margin: 0 }}>
                 {message}
               </p>
             </div>
