@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 
 type Addons = {
@@ -14,23 +15,59 @@ type CheckoutBody = {
   addons: Addons;
 };
 
-export async function POST(req: Request) {
-  const stripe = getStripe();
+const REQUIRED_PRICES = [
+  'STRIPE_PRICE_BUSINESS_ADDRESS_MONTHLY',
+  'STRIPE_PRICE_MAIL_SCANNING_MONTHLY',
+  'STRIPE_PRICE_BUSINESS_PHONE_MONTHLY',
+  'STRIPE_PRICE_GOOGLE_BUSINESS_SETUP_ONE_TIME',
+] as const;
 
+export async function POST(req: Request) {
   try {
-    const body = await req.json() as CheckoutBody;
+    // Validate required env vars before touching Stripe
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: 'Checkout is not configured yet. Please contact us.' },
+        { status: 503 },
+      );
+    }
+
+    const missingPrices = REQUIRED_PRICES.filter(k => !process.env[k]);
+    if (missingPrices.length > 0) {
+      console.error('[checkout] Missing price env vars:', missingPrices);
+      return NextResponse.json(
+        { error: 'Missing Stripe price configuration. Please contact us.' },
+        { status: 503 },
+      );
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseUrl) {
+      console.error('[checkout] NEXT_PUBLIC_BASE_URL is not set');
+      return NextResponse.json(
+        { error: 'Unable to start checkout. Please try again.' },
+        { status: 503 },
+      );
+    }
+
+    let body: CheckoutBody;
+    try {
+      body = await req.json() as CheckoutBody;
+    } catch {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+    }
+
     const { email, name, businessName, phone, addons } = body;
 
     if (!email || !name || !businessName) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'email, name, and businessName are required' },
         { status: 400 },
       );
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://mybizmailbox.biz';
+    const stripe = getStripe();
 
-    // Recurring subscription items: base plan + optional recurring add-ons
     const lineItems = [
       { price: process.env.STRIPE_PRICE_BUSINESS_ADDRESS_MONTHLY!, quantity: 1 },
       ...(addons.mailScanning
@@ -41,9 +78,7 @@ export async function POST(req: Request) {
         : []),
     ];
 
-    // Google Business Setup is a one-time fee. Stripe Checkout (subscription mode)
-    // supports add_invoice_items for one-time charges billed on the first invoice only.
-    // The price must be configured as type "one_time" (not recurring) in your Stripe dashboard.
+    // Google Business Setup is a one-time fee billed on the first invoice only.
     const addInvoiceItems = addons.googleBusinessSetup
       ? [{ price: process.env.STRIPE_PRICE_GOOGLE_BUSINESS_SETUP_ONE_TIME! }]
       : undefined;
@@ -66,9 +101,12 @@ export async function POST(req: Request) {
       },
     });
 
-    return Response.json({ url: session.url });
+    return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error('[checkout]', err);
-    return Response.json({ error: 'Failed to create checkout session' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Unable to start checkout. Please try again.' },
+      { status: 500 },
+    );
   }
 }

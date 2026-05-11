@@ -78,9 +78,20 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, addons }),
       });
-      const data = await res.json() as { url?: string; error?: string };
+
+      // Safely parse JSON — the body may be empty or non-JSON on server errors
+      let data: { url?: string; error?: string } = {};
+      const contentType = res.headers.get('content-type') ?? '';
+      if (contentType.includes('application/json')) {
+        try {
+          data = await res.json() as typeof data;
+        } catch {
+          // JSON parse failed despite content-type header
+        }
+      }
+
       if (!res.ok || !data.url) {
-        throw new Error(data.error ?? 'Failed to start checkout');
+        throw new Error(data.error ?? 'Unable to start checkout. Please try again.');
       }
       window.location.href = data.url;
     } catch (err) {
