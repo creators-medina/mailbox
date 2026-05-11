@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
+import { BUSINESS } from '@/lib/config/business';
 import SignOutButton from './SignOutButton';
 import MailItemActions from './MailItemActions';
 import BillingButton from './BillingButton';
@@ -119,7 +120,7 @@ export default async function AccountPage() {
                 </span>
                 <span style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>Address</span>
                 <span style={{ font: '500 16px/1.5 var(--font-text,sans-serif)', color: '#fff' }}>
-                  {customer.business_address_line ?? '802 North Goliad Street, Rockwall, TX 75087'}
+                  {customer.business_address_line ?? BUSINESS.addressFull}
                 </span>
               </div>
             ) : (

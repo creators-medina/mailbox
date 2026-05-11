@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import type Stripe from 'stripe';
 import { getStripe } from '@/lib/stripe';
 import { createAdminClientAny } from '@/lib/supabase/admin';
-import { assignSuiteNumber } from '@/lib/mailbox/suite';
+import { assignSuiteNumber, buildCustomerAddress } from '@/lib/mailbox/suite';
 import type { Database } from '@/types/database';
 
 type ProfileRow  = Database['public']['Tables']['profiles']['Row'];
@@ -129,7 +129,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       .eq('id', customerId);
   } else {
     const suiteNumber = await assignSuiteNumber();
-    const addressLine = `802 North Goliad Street, Suite ${suiteNumber}, Rockwall, TX 75087`;
+    const addressLine = buildCustomerAddress(suiteNumber);
 
     const newCustomerRes = await admin
       .from('customers')
