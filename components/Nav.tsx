@@ -1,10 +1,10 @@
 export function Nav() {
   const links = [
-    { label: 'Services',     href: '#services' },
-    { label: 'How it works', href: '#how-it-works' },
-    { label: 'Pricing',      href: '#pricing' },
-    { label: 'FAQ',          href: '#faq' },
-    { label: 'Contact',      href: '#contact' },
+    { label: 'Services',     href: '/#services' },
+    { label: 'How it works', href: '/#how-it-works' },
+    { label: 'Pricing',      href: '/#pricing' },
+    { label: 'FAQ',          href: '/#faq' },
+    { label: 'Contact',      href: '/#contact' },
   ];
 
   return (

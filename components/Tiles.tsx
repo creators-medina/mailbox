@@ -30,27 +30,27 @@ export function Footer() {
     {
       h: 'Services',
       items: [
-        { label: 'Business Address',          href: '#services' },
-        { label: 'Mail Scanning',             href: '#services' },
-        { label: 'Business Phone Number',     href: '#services' },
-        { label: 'Google Business Setup',     href: '#services' },
+        { label: 'Business Address',          href: '/#services' },
+        { label: 'Mail Scanning',             href: '/#services' },
+        { label: 'Business Phone Number',     href: '/#services' },
+        { label: 'Google Business Setup',     href: '/#services' },
       ],
     },
     {
       h: 'Company',
       items: [
         { label: 'About',   href: '#' },
-        { label: 'Contact', href: '#contact' },
+        { label: 'Contact', href: '/#contact' },
         { label: 'Careers', href: '#' },
       ],
     },
     {
       h: 'Help',
       items: [
-        { label: 'FAQ',          href: '#faq' },
-        { label: 'How it works', href: '#how-it-works' },
-        { label: 'Pricing',      href: '#pricing' },
-        { label: 'Contact us',   href: '#contact' },
+        { label: 'FAQ',          href: '/#faq' },
+        { label: 'How it works', href: '/#how-it-works' },
+        { label: 'Pricing',      href: '/#pricing' },
+        { label: 'Contact us',   href: '/#contact' },
       ],
     },
     {
