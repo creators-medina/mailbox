@@ -25,7 +25,7 @@ export default function BillingButton() {
         disabled={isPending}
         style={{
           font: '500 14px/1.3 var(--font-text,sans-serif)',
-          color: 'var(--c-gold-2,#d4aa50)',
+          color: 'var(--c-gold-2,#C99A5A)',
           background: 'none', border: 'none', cursor: isPending ? 'not-allowed' : 'pointer',
           padding: 0, opacity: isPending ? 0.6 : 1, textDecoration: 'none',
         }}

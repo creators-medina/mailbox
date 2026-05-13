@@ -53,7 +53,7 @@ export default function MailItemActions({ mailItemId }: { mailItemId: string }) 
               padding: '4px 10px', borderRadius: 6,
               font: '500 11px/1.2 var(--font-text,sans-serif)',
               color: 'var(--c-text-2)',
-              background: 'var(--c-surface-2,#222)',
+              background: 'var(--c-surface-2,#1E2D42)',
               border: '1px solid var(--c-border,rgba(255,255,255,0.07))',
               cursor: isPending ? 'not-allowed' : 'pointer',
               opacity: isPending ? 0.5 : 1,
