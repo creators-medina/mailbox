@@ -9,6 +9,8 @@ import { BUSINESS } from '@/lib/config/business';
 import SignOutButton from './SignOutButton';
 import MailItemActions from './MailItemActions';
 import BillingButton from './BillingButton';
+import ForwardingRequestForm from './ForwardingRequestForm';
+import type { EligibleItem } from './ForwardingRequestForm';
 
 type ProfileRow      = Database['public']['Tables']['profiles']['Row'];
 type CustomerRow     = Database['public']['Tables']['customers']['Row'];
@@ -117,6 +119,19 @@ export default async function AccountPage() {
       }
     }
   }
+
+  // Items eligible for a forwarding request:
+  //   • not in a terminal status (already forwarded / shredded / picked up)
+  //   • no open (pending or in_progress) forwarding request already exists
+  const openForwardItemIds = new Set(
+    mailRequests
+      .filter(r => r.request_type === 'forward' &&
+                   (r.status === 'pending' || r.status === 'in_progress'))
+      .map(r => r.mail_item_id),
+  );
+  const forwardingEligible: EligibleItem[] = mailItems
+    .filter(item => !TERMINAL_STATUSES.has(item.status) && !openForwardItemIds.has(item.id))
+    .map(item => ({ id: item.id, sender: item.sender, received_at: item.received_at }));
 
   const displayName = profile?.business_name || profile?.full_name || user.email || 'there';
   const statusKey   = customer?.status ?? 'pending';
@@ -377,7 +392,7 @@ export default async function AccountPage() {
 
           {/* Recent requests */}
           {mailRequests.length > 0 && (
-            <div className="dash-card">
+            <div className="dash-card" style={{ marginBottom: 20 }}>
               <span className="dash-card-title">Recent requests</span>
               <div>
                 {mailRequests.map(r => (
@@ -403,6 +418,11 @@ export default async function AccountPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Request forwarding — only shown when customer has a record */}
+          {customer && (
+            <ForwardingRequestForm items={forwardingEligible} />
           )}
 
         </div>
