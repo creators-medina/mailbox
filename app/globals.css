@@ -415,9 +415,10 @@ html { scroll-behavior: smooth; }
   letter-spacing: 0.04em; text-transform: uppercase;
   padding: 3px 8px; border-radius: 4px;
 }
-.mock-badge-new     { background: rgba(181,138,82,0.18); color: var(--c-gold-2, #C99A5A); }
-.mock-badge-scanned { background: rgba(96,165,250,0.15); color: #93c5fd; }
-.mock-badge-ready   { background: rgba(74,222,128,0.15); color: #4ade80; }
+.mock-badge-new     { background: rgba(181,138,82,0.18);  color: var(--c-gold-2, #C99A5A); }
+.mock-badge-scanned { background: rgba(96,165,250,0.15);  color: #93c5fd; }
+.mock-badge-shipped { background: rgba(20,184,166,0.14);  color: #2dd4bf; }
+.mock-badge-ready   { background: rgba(74,222,128,0.15);  color: #4ade80; }
 .mock-badge-held    { background: rgba(255,255,255,0.07); color: var(--c-text-2); }
 
 /* ── Mail action chips (mockup) ─────────────────────────────────────────────────────────── */
@@ -544,6 +545,7 @@ html { scroll-behavior: smooth; }
 .admin-status-picked_up   { background: rgba(74,222,128,0.14);  color: #4ade80; }
 .admin-status-shredded    { background: rgba(255,255,255,0.07); color: var(--c-text-2); }
 .admin-status-in_progress { background: rgba(96,165,250,0.14);  color: #93c5fd; }
+.admin-status-shipped     { background: rgba(20,184,166,0.14);  color: #2dd4bf; }
 .admin-status-completed   { background: rgba(74,222,128,0.14);  color: #4ade80; }
 
 .admin-link {

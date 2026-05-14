@@ -28,6 +28,29 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Forwarding-specific display maps (customer-facing)
+const FORWARD_STATUS_LABELS: Record<string, string> = {
+  pending:     'Requested',
+  in_progress: 'Queued',
+  shipped:     'Shipped',
+  completed:   'Delivered',
+  cancelled:   'Canceled',
+};
+const FORWARD_STATUS_CLASS: Record<string, string> = {
+  pending:     'mock-badge-new',
+  in_progress: 'mock-badge-scanned',
+  shipped:     'mock-badge-shipped',
+  completed:   'mock-badge-ready',
+  cancelled:   'mock-badge-held',
+};
+
+// Extract the destination name from the structured notes block
+function parseDestName(notes: string | null): string {
+  if (!notes) return '—';
+  const line = notes.split('\n').find(l => l.trimStart().startsWith('Name:'));
+  return line ? line.replace(/^.*Name:\s+/, '').trim() : '—';
+}
+
 const MAIL_STATUS_CLASS: Record<string, string> = {
   received:  'mock-badge-new',
   notified:  'mock-badge-new',
@@ -90,7 +113,7 @@ export default async function AccountPage() {
       admin.from('mail_items').select('*').eq('customer_id', customer.id)
         .order('received_at', { ascending: false }).limit(25),
       admin.from('mail_requests').select('*').eq('customer_id', customer.id)
-        .order('created_at', { ascending: false }).limit(10),
+        .order('created_at', { ascending: false }).limit(25),
     ]);
     subscription        = sr.data  as SubscriptionRow | null;
     const rawItems      = (mr.data ?? []) as MailItemRow[];
@@ -120,13 +143,16 @@ export default async function AccountPage() {
     }
   }
 
-  // Items eligible for a forwarding request:
-  //   • not in a terminal status (already forwarded / shredded / picked up)
-  //   • no open (pending or in_progress) forwarding request already exists
+  // Separate forwarding requests from other request types for display
+  const forwardingRequests = mailRequests.filter(r => r.request_type === 'forward');
+  const otherRequests      = mailRequests.filter(r => r.request_type !== 'forward');
+
+  // Items eligible for a new forwarding request:
+  //   • not in a terminal mail status (already forwarded / shredded / picked up)
+  //   • no open forwarding request (pending, in_progress, or shipped)
   const openForwardItemIds = new Set(
-    mailRequests
-      .filter(r => r.request_type === 'forward' &&
-                   (r.status === 'pending' || r.status === 'in_progress'))
+    forwardingRequests
+      .filter(r => r.status === 'pending' || r.status === 'in_progress' || r.status === 'shipped')
       .map(r => r.mail_item_id),
   );
   const forwardingEligible: EligibleItem[] = mailItems
@@ -390,12 +416,51 @@ export default async function AccountPage() {
             </div>
           </div>
 
-          {/* Recent requests */}
-          {mailRequests.length > 0 && (
+          {/* Forwarding history */}
+          {customer && (
+            <div className="dash-card" style={{ marginBottom: 20 }}>
+              <span className="dash-card-title">Forwarding requests</span>
+              {forwardingRequests.length > 0 ? (
+                <div>
+                  {forwardingRequests.map(r => (
+                    <div key={r.id} className="dash-mail-item">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 2 }}>
+                          To: {parseDestName(r.notes)}
+                        </div>
+                        <div style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+                          {fmt(r.created_at)}
+                          {r.completed_at ? ` · Delivered ${fmt(r.completed_at)}` : ''}
+                        </div>
+                        {r.admin_notes && (
+                          <div style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-2)', marginTop: 4 }}>
+                            {r.admin_notes}
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className={`mock-badge ${FORWARD_STATUS_CLASS[r.status] ?? 'mock-badge-held'}`}
+                        style={{ flexShrink: 0 }}
+                      >
+                        {FORWARD_STATUS_LABELS[r.status] ?? r.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ font: '400 13px/1.6 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '12px 0 0' }}>
+                  No forwarding requests yet. Use the form below to request forwarding for your mail.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Other recent requests (scan, pickup, shred) */}
+          {otherRequests.length > 0 && (
             <div className="dash-card" style={{ marginBottom: 20 }}>
               <span className="dash-card-title">Recent requests</span>
               <div>
-                {mailRequests.map(r => (
+                {otherRequests.map(r => (
                   <div key={r.id} className="dash-mail-item">
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 3, textTransform: 'capitalize' }}>
