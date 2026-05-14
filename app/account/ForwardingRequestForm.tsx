@@ -84,7 +84,9 @@ export default function ForwardingRequestForm({ items }: { items: EligibleItem[]
     destName: '', street: '', city: '', state: '',
     postal: '', country: '', carrier: 'No preference', note: '',
   });
-  const [errors, setErrors]     = useState<Errors>({});
+  const [errors, setErrors]       = useState<Errors>({});
+  const [isPending, setIsPending] = useState(false);
+  const [serverError, setServerError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   function toggle(id: string) {
@@ -113,12 +115,38 @@ export default function ForwardingRequestForm({ items }: { items: EligibleItem[]
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    // Phase 3G-2 will POST to /api/mail-requests
-    console.log('[ForwardingRequestForm] shell submit:', { selectedIds: Array.from(selected), ...fields });
-    setSubmitted(true);
+    setIsPending(true);
+    setServerError('');
+    try {
+      const res = await fetch('/api/forwarding-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mail_item_ids: Array.from(selected),
+          dest_name:     fields.destName,
+          street:        fields.street,
+          city:          fields.city,
+          state:         fields.state,
+          postal:        fields.postal,
+          country:       fields.country,
+          carrier:       fields.carrier,
+          note:          fields.note,
+        }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        const data = await res.json() as { error?: string };
+        setServerError(data.error ?? 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setServerError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsPending(false);
+    }
   }
 
   // ── Empty state ──────────────────────────────────────────────────────────
@@ -164,11 +192,11 @@ export default function ForwardingRequestForm({ items }: { items: EligibleItem[]
           <div>
             <p style={{ font: '600 13px/1.3 var(--font-text,sans-serif)',
                         color: '#4ade80', margin: '0 0 2px' }}>
-              Request submitted.
+              Forwarding request submitted.
             </p>
             <p style={{ font: '400 12px/1.4 var(--font-text,sans-serif)',
                         color: 'var(--c-text-3)', margin: 0 }}>
-              API submission will be wired in Phase 3G-2.
+              We&rsquo;ll prepare your shipment and notify you when it&rsquo;s on its way.
             </p>
           </div>
         </div>
@@ -353,22 +381,31 @@ export default function ForwardingRequestForm({ items }: { items: EligibleItem[]
           />
         </div>
 
+        {/* ── Server error ───────────────────────────────────────────── */}
+        {serverError && (
+          <p style={{ ...ERR, marginBottom: 14, font: '400 13px/1.5 var(--font-text,sans-serif)' }}>
+            {serverError}
+          </p>
+        )}
+
         {/* ── Submit ─────────────────────────────────────────────────── */}
         <button
           type="submit"
+          disabled={isPending}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '11px 22px', borderRadius: 980,
             font: '600 14px/1 var(--font-text,sans-serif)',
             color: 'var(--c-bg,#071B2D)',
-            background: 'var(--c-gold,#B58A52)',
-            border: '1.5px solid var(--c-gold,#B58A52)',
-            cursor: 'pointer',
+            background: isPending ? 'var(--c-copper,#A66A3F)' : 'var(--c-gold,#B58A52)',
+            border: `1.5px solid ${isPending ? 'var(--c-copper,#A66A3F)' : 'var(--c-gold,#B58A52)'}`,
+            cursor: isPending ? 'not-allowed' : 'pointer',
+            opacity: isPending ? 0.75 : 1,
             boxShadow: '0 2px 8px rgba(181,138,82,0.28)',
-            transition: 'background 140ms ease',
+            transition: 'background 140ms ease, opacity 140ms ease',
           }}
         >
-          Submit forwarding request
+          {isPending ? 'Submitting…' : 'Submit forwarding request'}
         </button>
 
       </form>
