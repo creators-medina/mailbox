@@ -6,13 +6,15 @@ import TabOverview from './drawer/TabOverview';
 import TabActivity from './drawer/TabActivity';
 import TabNotes from './drawer/TabNotes';
 import TabTasks from './drawer/TabTasks';
+import TabMessages from './drawer/TabMessages';
 import TabRaw from './drawer/TabRaw';
 
-type TabKey = 'overview' | 'activity' | 'notes' | 'tasks' | 'raw';
+type TabKey = 'overview' | 'activity' | 'messages' | 'notes' | 'tasks' | 'raw';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'activity', label: 'Activity' },
+  { key: 'messages', label: 'Messages' },
   { key: 'notes', label: 'Notes' },
   { key: 'tasks', label: 'Tasks' },
   { key: 'raw', label: 'Raw' },
@@ -315,6 +317,9 @@ export default function LeadDrawer({
           )}
           {tab === 'activity' && (
             <TabActivity leadId={lead.id} staff={staff} refreshKey={activityNonce} />
+          )}
+          {tab === 'messages' && (
+            <TabMessages leadId={lead.id} staff={staff} refreshKey={activityNonce} />
           )}
           {tab === 'notes' && (
             <TabNotes

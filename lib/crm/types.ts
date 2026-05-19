@@ -53,14 +53,18 @@ export type ActivityType =
   | 'tag_added'
   | 'tag_removed'
   | 'email_sent'
+  | 'email_received'
   | 'sms_sent'
+  | 'sms_received'
   | 'call_logged'
   | 'task_created'
   | 'task_completed'
   | 'lead_archived'
   | 'lead_restored'
   | 'assignment_changed'
-  | 'comment_added';
+  | 'comment_added'
+  | 'message_failed'
+  | 'internal_message_added';
 
 export type Activity = {
   id: string;
@@ -104,4 +108,65 @@ export type StaffUser = {
   full_name: string | null;
   email: string | null;
   role: string;
+};
+
+export type Channel = 'email' | 'sms' | 'internal' | 'phone' | 'system';
+export type Direction = 'inbound' | 'outbound' | 'internal' | 'system';
+export type ConversationStatus = 'open' | 'closed' | 'archived';
+export type DeliveryStatus =
+  | 'draft'
+  | 'queued'
+  | 'sent'
+  | 'delivered'
+  | 'failed'
+  | 'bounced'
+  | 'opened'
+  | 'clicked'
+  | 'received';
+
+export type Conversation = {
+  id: string;
+  lead_id: string;
+  channel: Channel;
+  subject: string | null;
+  status: ConversationStatus;
+  last_message_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Message = {
+  id: string;
+  conversation_id: string;
+  lead_id: string;
+  channel: Channel;
+  direction: Direction;
+  subject: string | null;
+  body: string | null;
+  body_html: string | null;
+  from_address: string | null;
+  to_address: string | null;
+  cc_addresses: string[];
+  bcc_addresses: string[];
+  provider: string | null;
+  provider_message_id: string | null;
+  delivery_status: DeliveryStatus;
+  error_message: string | null;
+  metadata: Record<string, unknown>;
+  sent_by: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MessageAttachment = {
+  id: string;
+  message_id: string;
+  storage_bucket: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  byte_size: number | null;
+  created_at: string;
 };
