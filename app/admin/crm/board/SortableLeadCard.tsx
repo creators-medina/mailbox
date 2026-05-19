@@ -2,16 +2,18 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Lead } from '@/lib/crm/types';
+import type { Lead, StaffUser } from '@/lib/crm/types';
 import LeadCard from './LeadCard';
 
 export default function SortableLeadCard({
   lead,
   stageColor,
+  assignee,
   onOpen,
 }: {
   lead: Lead;
   stageColor: string;
+  assignee: StaffUser | null;
   onOpen: (id: string) => void;
 }) {
   const {
@@ -31,7 +33,7 @@ export default function SortableLeadCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <LeadCard lead={lead} stageColor={stageColor} onOpen={onOpen} />
+      <LeadCard lead={lead} stageColor={stageColor} assignee={assignee} onOpen={onOpen} />
     </div>
   );
 }

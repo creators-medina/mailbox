@@ -1,6 +1,8 @@
 'use client';
 
-import type { Lead } from '@/lib/crm/types';
+import type { Lead, StaffUser } from '@/lib/crm/types';
+import { relativeTime } from '@/lib/crm/format';
+import Avatar from './Avatar';
 
 function fullName(lead: Lead): string {
   const parts = [lead.first_name, lead.last_name].filter(Boolean);
@@ -8,24 +10,16 @@ function fullName(lead: Lead): string {
   return lead.email || 'Unnamed lead';
 }
 
-function relativeDate(iso: string): string {
-  const d = new Date(iso);
-  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 30) return `${days}d ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
-}
-
 export default function LeadCard({
   lead,
   stageColor,
+  assignee,
   onOpen,
   dragging = false,
 }: {
   lead: Lead;
   stageColor: string;
+  assignee: StaffUser | null;
   onOpen?: (id: string) => void;
   dragging?: boolean;
 }) {
@@ -33,9 +27,6 @@ export default function LeadCard({
     <button
       type="button"
       onPointerUp={(e) => {
-        // Only treat as a click if there was no drag movement. The DnD
-        // sensor activates on 6px+ drag, so a static pointerUp here is
-        // safely a click.
         if (e.button === 0 && onOpen) onOpen(lead.id);
       }}
       style={{
@@ -51,19 +42,37 @@ export default function LeadCard({
         font: 'inherit',
         boxShadow: dragging ? '0 6px 18px rgba(0,0,0,0.45)' : 'none',
         transform: dragging ? 'rotate(1.5deg)' : undefined,
+        opacity: lead.archived ? 0.55 : 1,
       }}
     >
       <div
         style={{
-          font: '600 13px/1.3 var(--font-display,sans-serif)',
-          color: '#fff',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 8,
           marginBottom: 4,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
         }}
       >
-        {fullName(lead)}
+        <div
+          style={{
+            font: '600 13px/1.3 var(--font-display,sans-serif)',
+            color: '#fff',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            flex: 1,
+          }}
+        >
+          {fullName(lead)}
+        </div>
+        <Avatar
+          userId={assignee?.id ?? null}
+          name={assignee?.full_name}
+          email={assignee?.email}
+          size={22}
+          title={assignee ? `Assigned to ${assignee.full_name || assignee.email}` : 'Unassigned'}
+        />
       </div>
       {lead.email && (
         <div
@@ -136,7 +145,7 @@ export default function LeadCard({
             color: 'var(--c-text-3)',
           }}
         >
-          {relativeDate(lead.created_at)}
+          {relativeTime(lead.created_at)}
         </span>
       </div>
     </button>

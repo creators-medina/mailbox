@@ -45,3 +45,63 @@ export type Lead = {
   created_at: string;
   updated_at: string;
 };
+
+export type ActivityType =
+  | 'lead_created'
+  | 'stage_changed'
+  | 'note_added'
+  | 'tag_added'
+  | 'tag_removed'
+  | 'email_sent'
+  | 'sms_sent'
+  | 'call_logged'
+  | 'task_created'
+  | 'task_completed'
+  | 'lead_archived'
+  | 'lead_restored'
+  | 'assignment_changed'
+  | 'comment_added';
+
+export type Activity = {
+  id: string;
+  lead_id: string;
+  type: string; // intentionally `string` so future types render generically
+  title: string;
+  description: string | null;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type Task = {
+  id: string;
+  lead_id: string;
+  assigned_to: string | null;
+  title: string;
+  description: string | null;
+  due_at: string | null;
+  completed_at: string | null;
+  priority: TaskPriority;
+  order_index: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Comment = {
+  id: string;
+  lead_id: string;
+  user_id: string | null;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StaffUser = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string;
+};

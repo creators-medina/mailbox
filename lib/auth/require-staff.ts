@@ -26,9 +26,15 @@ export async function requireStaff() {
 
 // For API route handlers — returns false instead of redirecting.
 export async function checkIsStaff(): Promise<boolean> {
+  return (await currentStaffUserId()) !== null;
+}
+
+// Resolve the current staff user's id, or null if not signed in / not staff.
+// Used for activity attribution and ownership checks.
+export async function currentStaffUserId(): Promise<string | null> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
+  if (!user) return null;
 
   const admin = createAdminClientAny();
   const { data } = await admin
@@ -37,5 +43,6 @@ export async function checkIsStaff(): Promise<boolean> {
     .eq('id', user.id)
     .single();
 
-  return STAFF_ROLES.has((data as { role: string } | null)?.role ?? '');
+  const role = (data as { role: string } | null)?.role ?? '';
+  return STAFF_ROLES.has(role) ? user.id : null;
 }

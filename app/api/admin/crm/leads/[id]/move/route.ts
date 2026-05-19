@@ -1,6 +1,7 @@
 import 'server-only';
-import { checkIsStaff } from '@/lib/auth/require-staff';
+import { currentStaffUserId } from '@/lib/auth/require-staff';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { logStageChange } from '@/lib/crm/activity';
 
 // POST — move a lead between stages and reorder.
 // Body: { stage_id: string, ordered_lead_ids: string[] }
@@ -15,7 +16,8 @@ export async function POST(
   req: Request,
   { params }: { params: { id: string } },
 ) {
-  if (!(await checkIsStaff())) {
+  const actorId = await currentStaffUserId();
+  if (!actorId) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -55,6 +57,15 @@ export async function POST(
     return Response.json({ error: 'Destination stage not found or archived.' }, { status: 404 });
   }
 
+  // Read the prior stage so we can log a stage transition if it changed.
+  const { data: priorLead } = await admin
+    .from('crm_leads')
+    .select('stage_id')
+    .eq('id', params.id)
+    .maybeSingle();
+  const priorStageId =
+    (priorLead as { stage_id: string } | null)?.stage_id ?? null;
+
   // Update the moved lead's stage (and pipeline if needed) first so the
   // renumber loop sees consistent rows.
   const { error: moveErr } = await admin
@@ -62,6 +73,25 @@ export async function POST(
     .update({ stage_id: stageRow.id, pipeline_id: stageRow.pipeline_id })
     .eq('id', params.id);
   if (moveErr) return Response.json({ error: moveErr.message }, { status: 500 });
+
+  if (priorStageId && priorStageId !== stageRow.id) {
+    void (async () => {
+      const { data: stageRows } = await admin
+        .from('crm_stages')
+        .select('id, name')
+        .in('id', [priorStageId, stageRow.id]);
+      const nameOf = Object.fromEntries(
+        ((stageRows ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]),
+      );
+      await logStageChange(
+        params.id,
+        nameOf[priorStageId] ?? 'previous stage',
+        nameOf[stageRow.id] ?? 'new stage',
+        actorId,
+        { from_stage_id: priorStageId, to_stage_id: stageRow.id },
+      );
+    })();
+  }
 
   // Sequentially renumber every lead in the new order. We don't need a
   // sentinel here because order_index has no unique constraint.

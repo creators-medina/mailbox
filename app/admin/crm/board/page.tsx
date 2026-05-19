@@ -3,16 +3,23 @@ import Link from 'next/link';
 import { requireStaff } from '@/lib/auth/require-staff';
 import { listPipelines, listStages, getDefaultPipeline, getPipeline } from '@/lib/crm/queries';
 import { listLeadsForPipeline } from '@/lib/crm/leads';
+import { listStaffUsers } from '@/lib/crm/users';
 import BoardClient from './BoardClient';
+import type { Lead } from '@/lib/crm/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BoardPage({
-  searchParams,
-}: {
-  searchParams: { p?: string };
-}) {
-  await requireStaff();
+type SP = {
+  p?: string;
+  q?: string;
+  assigned?: string;
+  tag?: string;
+  source?: string;
+  archived?: string;
+};
+
+export default async function BoardPage({ searchParams }: { searchParams: SP }) {
+  const { user } = await requireStaff();
 
   const pipelines = (await listPipelines(false)).filter((p) => !p.is_archived);
 
@@ -27,7 +34,11 @@ export default async function BoardPage({
   }
 
   const stages = (await listStages(active.id, false)).filter((s) => !s.is_archived);
-  const leads = await listLeadsForPipeline(active.id, false);
+  const includeArchived = searchParams.archived === '1';
+  const allLeads = await listLeadsForPipeline(active.id, includeArchived);
+  const staff = await listStaffUsers();
+
+  const leads = applyFilters(allLeads, searchParams);
 
   return (
     <BoardClient
@@ -36,8 +47,51 @@ export default async function BoardPage({
       activePipelineName={active.name}
       stages={stages}
       leads={leads}
+      totalUnfilteredCount={allLeads.length}
+      staff={staff}
+      currentUserId={user.id}
+      filters={{
+        q: searchParams.q ?? '',
+        assigned: searchParams.assigned ?? '',
+        tag: searchParams.tag ?? '',
+        source: searchParams.source ?? '',
+        archived: includeArchived,
+      }}
     />
   );
+}
+
+function applyFilters(leads: Lead[], sp: SP): Lead[] {
+  let out = leads;
+  if (sp.q) {
+    const q = sp.q.toLowerCase();
+    out = out.filter((l) => {
+      const fields = [
+        l.first_name,
+        l.last_name,
+        l.email,
+        l.phone,
+        l.notes,
+        l.source,
+      ];
+      return fields.some((f) => f?.toLowerCase().includes(q));
+    });
+  }
+  if (sp.assigned) {
+    if (sp.assigned === '__unassigned__') {
+      out = out.filter((l) => !l.assigned_to);
+    } else {
+      out = out.filter((l) => l.assigned_to === sp.assigned);
+    }
+  }
+  if (sp.tag) {
+    const t = sp.tag.toLowerCase();
+    out = out.filter((l) => l.tags.some((x) => x.toLowerCase() === t));
+  }
+  if (sp.source) {
+    out = out.filter((l) => l.source === sp.source);
+  }
+  return out;
 }
 
 function EmptyBoard({ reason }: { reason: 'no-pipelines' }) {

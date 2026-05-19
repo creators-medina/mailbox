@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { logLeadCreated } from './activity';
 import type { Lead } from './types';
 
 export async function listLeadsForPipeline(
@@ -29,7 +30,9 @@ export async function getLead(id: string): Promise<Lead | null> {
 }
 
 // Create a lead at the end of `stageId`. Caller resolves the destination
-// pipeline + stage (e.g. the default pipeline's first active stage).
+// pipeline + stage (e.g. the default pipeline's first active stage). Pass
+// `actor_id` to attribute the resulting `lead_created` activity to a staff
+// user; defaults to null for anonymous submissions like the contact form.
 export async function createLead(input: {
   pipeline_id: string;
   stage_id: string;
@@ -41,6 +44,7 @@ export async function createLead(input: {
   notes?: string | null;
   tags?: string[];
   raw_submission?: unknown;
+  actor_id?: string | null;
 }): Promise<Lead | null> {
   const admin = createAdminClientAny();
 
@@ -77,7 +81,9 @@ export async function createLead(input: {
     console.error('[crm.createLead]', error);
     return null;
   }
-  return data as Lead;
+  const lead = data as Lead;
+  await logLeadCreated(lead.id, lead.source, input.actor_id ?? null);
+  return lead;
 }
 
 // Resolve a (pipeline, stage) pair to drop a new lead into.

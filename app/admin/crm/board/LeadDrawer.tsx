@@ -1,40 +1,58 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { Lead, Stage } from '@/lib/crm/types';
+import { useEffect, useMemo, useState } from 'react';
+import type { Lead, Stage, StaffUser } from '@/lib/crm/types';
+import TabOverview from './drawer/TabOverview';
+import TabActivity from './drawer/TabActivity';
+import TabNotes from './drawer/TabNotes';
+import TabTasks from './drawer/TabTasks';
+import TabRaw from './drawer/TabRaw';
+
+type TabKey = 'overview' | 'activity' | 'notes' | 'tasks' | 'raw';
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'activity', label: 'Activity' },
+  { key: 'notes', label: 'Notes' },
+  { key: 'tasks', label: 'Tasks' },
+  { key: 'raw', label: 'Raw' },
+];
 
 type Props = {
   open: boolean;
   lead: Lead | null;
   stage: Stage | null;
   stages: Stage[];
+  staff: StaffUser[];
+  pipelineName: string;
+  currentUserId: string | null;
   onClose: () => void;
   onUpdated: () => void;
 };
 
-const FIELD_LABEL: React.CSSProperties = {
-  display: 'block',
-  font: '500 11px/1.2 var(--font-text,sans-serif)',
-  color: 'var(--c-text-3)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-  marginBottom: 6,
-};
-
-export default function LeadDrawer({ open, lead, stage, stages, onClose, onUpdated }: Props) {
-  const [notes, setNotes] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
+export default function LeadDrawer({
+  open,
+  lead,
+  stage,
+  stages,
+  staff,
+  pipelineName,
+  currentUserId,
+  onClose,
+  onUpdated,
+}: Props) {
+  const [tab, setTab] = useState<TabKey>('overview');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Bumped whenever the lead changes server-side so child tabs refetch.
+  const [activityNonce, setActivityNonce] = useState(0);
+  const bumpActivity = () => setActivityNonce((n) => n + 1);
 
+  // Reset to Overview every time a different lead is opened.
   useEffect(() => {
-    if (lead) {
-      setNotes(lead.notes ?? '');
-      setTagsInput(lead.tags.join(', '));
-      setError(null);
-    }
+    if (lead) setTab('overview');
   }, [lead?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Keyboard: Esc to close.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape' && open) onClose();
@@ -43,67 +61,38 @@ export default function LeadDrawer({ open, lead, stage, stages, onClose, onUpdat
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // Forward updates to the parent and signal child tabs to refetch.
+  const handleUpdated = useMemo(
+    () => () => {
+      onUpdated();
+      bumpActivity();
+    },
+    [onUpdated],
+  );
+
   if (!lead) return null;
 
-  async function patch(body: Record<string, unknown>) {
-    if (!lead || busy) return false;
+  const headerName =
+    [lead.first_name, lead.last_name].filter(Boolean).join(' ') ||
+    lead.email ||
+    'Unnamed lead';
+
+  async function archiveLead() {
+    if (!confirm('Archive this lead? It will disappear from the board.')) return;
     setBusy(true);
-    setError(null);
-    const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
+    const res = await fetch(`/api/admin/crm/leads/${lead!.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ archived: true }),
     });
     setBusy(false);
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(data?.error || 'Action failed.');
-      return false;
-    }
-    onUpdated();
-    return true;
-  }
-
-  async function move(stageId: string) {
-    if (!lead || busy || stageId === lead.stage_id) return;
-    setBusy(true);
-    setError(null);
-    // Move to end of destination by sending [...existing, leadId].
-    const ordered = [stageId];
-    const res = await fetch(`/api/admin/crm/leads/${lead.id}/move`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage_id: stageId, ordered_lead_ids: ordered }),
-    });
-    setBusy(false);
-    if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(data?.error || 'Could not move.');
+      alert('Could not archive.');
       return;
     }
-    onUpdated();
+    handleUpdated();
+    onClose();
   }
-
-  function saveNotes() {
-    return patch({ notes: notes.trim() || null });
-  }
-
-  function saveTags() {
-    const tags = tagsInput
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean);
-    return patch({ tags });
-  }
-
-  function archive() {
-    if (!confirm('Archive this lead? It will disappear from the board.')) return;
-    patch({ archived: true }).then((ok) => {
-      if (ok) onClose();
-    });
-  }
-
-  const submission = lead.raw_submission as Record<string, unknown> | null;
 
   return (
     <>
@@ -127,177 +116,129 @@ export default function LeadDrawer({ open, lead, stage, stages, onClose, onUpdat
           right: 0,
           top: 0,
           height: '100vh',
-          width: 'min(460px, 96vw)',
+          width: 'min(520px, 96vw)',
           background: 'var(--c-bg,#071B2D)',
           borderLeft: '1px solid var(--c-border,rgba(255,255,255,0.07))',
           color: '#fff',
           zIndex: 51,
           transform: open ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'transform 220ms cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: open ? '-20px 0 60px rgba(0,0,0,0.5)' : 'none',
+          boxShadow: open ? '-24px 0 60px rgba(0,0,0,0.55)' : 'none',
         }}
       >
         <header
           style={{
-            padding: 20,
+            padding: '20px 20px 0',
             borderBottom: '1px solid var(--c-border,rgba(255,255,255,0.07))',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 12,
           }}
         >
-          <div>
-            <div
-              style={{
-                font: '700 18px/1.2 var(--font-display,sans-serif)',
-                marginBottom: 4,
-              }}
-            >
-              {[lead.first_name, lead.last_name].filter(Boolean).join(' ') ||
-                lead.email ||
-                'Unnamed lead'}
-            </div>
-            <div
-              style={{
-                font: '400 12px/1.4 var(--font-text,sans-serif)',
-                color: 'var(--c-text-3)',
-              }}
-            >
-              {lead.source} · created {new Date(lead.created_at).toLocaleString()}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
+          <div
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--c-text-2)',
-              font: '400 22px/1 sans-serif',
-              cursor: 'pointer',
-              padding: 4,
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 14,
             }}
           >
-            ×
-          </button>
+            <div>
+              <div
+                style={{
+                  font: '700 18px/1.2 var(--font-display,sans-serif)',
+                  marginBottom: 4,
+                }}
+              >
+                {headerName}
+              </div>
+              <div
+                style={{
+                  font: '400 12px/1.4 var(--font-text,sans-serif)',
+                  color: 'var(--c-text-3)',
+                }}
+              >
+                {lead.source} · created {new Date(lead.created_at).toLocaleString()}
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--c-text-2)',
+                font: '400 22px/1 sans-serif',
+                cursor: 'pointer',
+                padding: 4,
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          <nav role="tablist" style={{ display: 'flex', gap: 4 }}>
+            {TABS.map((t) => {
+              const active = t.key === tab;
+              return (
+                <button
+                  key={t.key}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTab(t.key)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '10px 6px',
+                    marginRight: 8,
+                    cursor: 'pointer',
+                    color: active ? '#fff' : 'var(--c-text-3)',
+                    font: `${active ? '600' : '500'} 12px/1 var(--font-text,sans-serif)`,
+                    borderBottom: `2px solid ${active ? 'var(--c-gold-2,#C99A5A)' : 'transparent'}`,
+                    transition: 'color 120ms ease, border-color 120ms ease',
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </nav>
         </header>
 
         <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
-          <section style={{ marginBottom: 20 }}>
-            <label style={FIELD_LABEL}>Stage</label>
-            <select
-              className="admin-select"
-              value={lead.stage_id}
-              onChange={(e) => move(e.target.value)}
-              disabled={busy}
-              style={{ width: '100%' }}
-            >
-              {stages.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}{s.is_closed ? ` · ${s.close_type ?? 'closed'}` : ''}
-                </option>
-              ))}
-            </select>
-            {stage && (
-              <div
-                style={{
-                  marginTop: 8,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  font: '400 12px/1 var(--font-text,sans-serif)',
-                  color: 'var(--c-text-2)',
-                }}
-              >
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: stage.color }} />
-                Currently in {stage.name}
-              </div>
-            )}
-          </section>
-
-          <section style={{ marginBottom: 20 }}>
-            <label style={FIELD_LABEL}>Contact</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <Row label="Email" value={lead.email} />
-              <Row label="Phone" value={lead.phone} />
-            </div>
-          </section>
-
-          <section style={{ marginBottom: 20 }}>
-            <label htmlFor="lead-tags" style={FIELD_LABEL}>
-              Tags (comma-separated)
-            </label>
-            <input
-              id="lead-tags"
-              className="admin-search-input"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="e.g. vip, follow-up, mailing-list"
-              style={{ width: '100%', marginBottom: 8 }}
+          {tab === 'overview' && (
+            <TabOverview
+              lead={lead}
+              stage={stage}
+              stages={stages}
+              staff={staff}
+              busy={busy}
+              setBusy={setBusy}
+              onUpdated={handleUpdated}
+              pipelineName={pipelineName}
             />
-            <button
-              onClick={saveTags}
-              disabled={busy}
-              className="w-cta-pill outline"
-              style={{ cursor: busy ? 'default' : 'pointer', padding: '6px 14px' }}
-            >
-              Save tags
-            </button>
-          </section>
-
-          <section style={{ marginBottom: 20 }}>
-            <label htmlFor="lead-notes" style={FIELD_LABEL}>
-              Notes
-            </label>
-            <textarea
-              id="lead-notes"
-              rows={5}
-              className="admin-search-input"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              style={{ width: '100%', resize: 'vertical', marginBottom: 8 }}
+          )}
+          {tab === 'activity' && (
+            <TabActivity leadId={lead.id} staff={staff} refreshKey={activityNonce} />
+          )}
+          {tab === 'notes' && (
+            <TabNotes
+              leadId={lead.id}
+              staff={staff}
+              currentUserId={currentUserId}
+              refreshKey={activityNonce}
+              onActivityChange={bumpActivity}
             />
-            <button
-              onClick={saveNotes}
-              disabled={busy}
-              className="w-cta-pill outline"
-              style={{ cursor: busy ? 'default' : 'pointer', padding: '6px 14px' }}
-            >
-              Save notes
-            </button>
-          </section>
-
-          {submission && (
-            <section style={{ marginBottom: 20 }}>
-              <label style={FIELD_LABEL}>Raw submission</label>
-              <pre
-                style={{
-                  background: 'rgba(0,0,0,0.3)',
-                  border: '1px solid var(--c-border,rgba(255,255,255,0.07))',
-                  borderRadius: 6,
-                  padding: 12,
-                  font: '400 11px/1.5 ui-monospace, monospace',
-                  color: 'var(--c-text-2)',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  maxHeight: 220,
-                  overflowY: 'auto',
-                  margin: 0,
-                }}
-              >
-                {JSON.stringify(submission, null, 2)}
-              </pre>
-            </section>
           )}
-
-          {error && (
-            <p role="alert" style={{ color: '#fca5a5', font: '400 12px/1.4 var(--font-text,sans-serif)', marginTop: 12 }}>
-              {error}
-            </p>
+          {tab === 'tasks' && (
+            <TabTasks
+              leadId={lead.id}
+              staff={staff}
+              refreshKey={activityNonce}
+              onActivityChange={bumpActivity}
+            />
           )}
+          {tab === 'raw' && <TabRaw lead={lead} />}
         </div>
 
         <footer
@@ -310,8 +251,8 @@ export default function LeadDrawer({ open, lead, stage, stages, onClose, onUpdat
           }}
         >
           <button
-            onClick={archive}
-            disabled={busy}
+            onClick={archiveLead}
+            disabled={busy || lead.archived}
             style={{
               font: '500 12px/1 var(--font-text,sans-serif)',
               padding: '8px 14px',
@@ -320,9 +261,10 @@ export default function LeadDrawer({ open, lead, stage, stages, onClose, onUpdat
               background: 'transparent',
               color: '#fca5a5',
               cursor: busy ? 'default' : 'pointer',
+              opacity: lead.archived ? 0.5 : 1,
             }}
           >
-            Archive lead
+            {lead.archived ? 'Already archived' : 'Archive lead'}
           </button>
           <button
             onClick={onClose}
@@ -341,21 +283,5 @@ export default function LeadDrawer({ open, lead, stage, stages, onClose, onUpdat
         </footer>
       </aside>
     </>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        gap: 12,
-        font: '400 13px/1.4 var(--font-text,sans-serif)',
-      }}
-    >
-      <span style={{ color: 'var(--c-text-3)' }}>{label}</span>
-      <span style={{ color: 'var(--c-text-2)', textAlign: 'right' }}>{value || '—'}</span>
-    </div>
   );
 }

@@ -15,13 +15,22 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import type { Lead, Stage } from '@/lib/crm/types';
+import type { Lead, Stage, StaffUser } from '@/lib/crm/types';
 import PipelineSwitcher from './PipelineSwitcher';
 import BoardColumn from './BoardColumn';
 import LeadCard from './LeadCard';
 import LeadDrawer from './LeadDrawer';
+import BoardFilters from './BoardFilters';
 
 type PipelineOption = { id: string; name: string; is_default: boolean };
+
+type Filters = {
+  q: string;
+  assigned: string;
+  tag: string;
+  source: string;
+  archived: boolean;
+};
 
 type Props = {
   pipelines: PipelineOption[];
@@ -29,6 +38,10 @@ type Props = {
   activePipelineName: string;
   stages: Stage[];
   leads: Lead[];
+  totalUnfilteredCount: number;
+  staff: StaffUser[];
+  currentUserId: string;
+  filters: Filters;
 };
 
 export default function BoardClient({
@@ -37,6 +50,10 @@ export default function BoardClient({
   activePipelineName,
   stages,
   leads: initialLeads,
+  totalUnfilteredCount,
+  staff,
+  currentUserId,
+  filters,
 }: Props) {
   const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
@@ -48,8 +65,6 @@ export default function BoardClient({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Group leads by stage id. Stages with no leads still render via the
-  // stages array — this map only holds the ordered cards.
   const byStage = useMemo(() => {
     const map = new Map<string, Lead[]>();
     for (const s of stages) map.set(s.id, []);
@@ -80,8 +95,6 @@ export default function BoardClient({
     setActiveDragId(String(e.active.id));
   }
 
-  // While dragging across columns, update local state immediately so the
-  // card visually moves before drop. Persistence happens on drag end.
   function onDragOver(e: DragOverEvent) {
     const { active, over } = e;
     if (!over) return;
@@ -96,8 +109,6 @@ export default function BoardClient({
       const moving = prev.find((l) => l.id === activeId);
       if (!moving) return prev;
 
-      // Place at the position of the hovered card, or end of column if hovered
-      // on the empty column area.
       const next = prev.map((l) => (l.id === activeId ? { ...l, stage_id: to } : l));
 
       const inDest = next
@@ -131,25 +142,18 @@ export default function BoardClient({
     const activeId = String(active.id);
     const overId = String(over.id);
 
-    const fromStageBefore = initialLeads.find((l) => l.id === activeId)?.stage_id;
     const toStage = findContainer(overId);
     if (!toStage) return;
 
-    // Reorder within destination column based on current local state.
     setLeads((prev) => {
       const dest = prev
         .filter((l) => l.stage_id === toStage)
         .sort((a, b) => a.order_index - b.order_index)
         .map((l) => l.id);
 
-      // If active is hovering directly over another card, place it there.
       const overLead = prev.find((l) => l.id === overId);
-      const orderedIds = dest.includes(activeId)
-        ? dest
-        : [...dest, activeId];
+      const orderedIds = dest.includes(activeId) ? dest : [...dest, activeId];
 
-      // If we're hovering on a specific card in the same column and the
-      // local state hasn't placed `active` adjacent to it yet, swap.
       if (overLead && overLead.id !== activeId && overLead.stage_id === toStage) {
         const a = orderedIds.indexOf(activeId);
         const b = orderedIds.indexOf(overId);
@@ -159,19 +163,14 @@ export default function BoardClient({
         }
       }
 
-      // Persist server-side. Failure rolls back via router.refresh().
       void persistMove(activeId, toStage, orderedIds);
 
-      // Renumber locally to match what the server will write.
       return prev.map((l) =>
         l.stage_id === toStage
           ? { ...l, order_index: orderedIds.indexOf(l.id) }
           : l,
       );
     });
-
-    // Avoid an unused-var warning when the source equals destination.
-    void fromStageBefore;
   }
 
   async function persistMove(leadId: string, stageId: string, orderedIds: string[]) {
@@ -187,6 +186,9 @@ export default function BoardClient({
     }
   }
 
+  const filteredCount = leads.length;
+  const filterActive = filteredCount !== totalUnfilteredCount;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 80px)' }}>
       <div
@@ -194,7 +196,7 @@ export default function BoardClient({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 20,
+          marginBottom: 16,
           flexWrap: 'wrap',
           gap: 12,
         }}
@@ -210,13 +212,23 @@ export default function BoardClient({
               margin: '4px 0 0',
             }}
           >
-            {activePipelineName} · {stages.length} stages · {leads.length} leads
+            {activePipelineName} · {stages.length} stages ·{' '}
+            {filterActive
+              ? `${filteredCount} of ${totalUnfilteredCount} leads`
+              : `${filteredCount} leads`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <PipelineSwitcher pipelines={pipelines} activeId={activePipelineId} />
         </div>
       </div>
+
+      <BoardFilters
+        staff={staff}
+        leads={initialLeads}
+        pipelineId={activePipelineId}
+        filters={filters}
+      />
 
       {stages.length === 0 ? (
         <div
@@ -254,13 +266,19 @@ export default function BoardClient({
                 key={stage.id}
                 stage={stage}
                 leads={byStage.get(stage.id) ?? []}
+                staff={staff}
                 onOpenLead={setOpenLeadId}
               />
             ))}
           </div>
           <DragOverlay>
             {activeLead ? (
-              <LeadCard lead={activeLead} stageColor={stageColorFor(stages, activeLead.stage_id)} dragging />
+              <LeadCard
+                lead={activeLead}
+                stageColor={stageColorFor(stages, activeLead.stage_id)}
+                assignee={staff.find((s) => s.id === activeLead.assigned_to) ?? null}
+                dragging
+              />
             ) : null}
           </DragOverlay>
         </DndContext>
@@ -271,6 +289,9 @@ export default function BoardClient({
         lead={openLead}
         stage={openLeadStage}
         stages={stages}
+        staff={staff}
+        pipelineName={activePipelineName}
+        currentUserId={currentUserId}
         onClose={() => setOpenLeadId(null)}
         onUpdated={() => router.refresh()}
       />

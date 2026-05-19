@@ -2,16 +2,18 @@
 
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { Lead, Stage } from '@/lib/crm/types';
+import type { Lead, Stage, StaffUser } from '@/lib/crm/types';
 import SortableLeadCard from './SortableLeadCard';
 
 export default function BoardColumn({
   stage,
   leads,
+  staff,
   onOpenLead,
 }: {
   stage: Stage;
   leads: Lead[];
+  staff: StaffUser[];
   onOpenLead: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
@@ -121,7 +123,13 @@ export default function BoardColumn({
             </div>
           ) : (
             leads.map((l) => (
-              <SortableLeadCard key={l.id} lead={l} stageColor={stage.color} onOpen={onOpenLead} />
+              <SortableLeadCard
+                key={l.id}
+                lead={l}
+                stageColor={stage.color}
+                assignee={staff.find((s) => s.id === l.assigned_to) ?? null}
+                onOpen={onOpenLead}
+              />
             ))
           )}
         </SortableContext>

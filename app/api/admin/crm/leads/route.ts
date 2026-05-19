@@ -1,5 +1,5 @@
 import 'server-only';
-import { checkIsStaff } from '@/lib/auth/require-staff';
+import { currentStaffUserId } from '@/lib/auth/require-staff';
 import { createLead, resolveDefaultDestination } from '@/lib/crm/leads';
 
 // POST — manually create a lead. Staff/admin only.
@@ -9,7 +9,8 @@ import { createLead, resolveDefaultDestination } from '@/lib/crm/leads';
 // If pipeline_id/stage_id are omitted, the default pipeline's first active
 // stage is used.
 export async function POST(req: Request) {
-  if (!(await checkIsStaff())) {
+  const actorId = await currentStaffUserId();
+  if (!actorId) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -52,6 +53,7 @@ export async function POST(req: Request) {
     source: typeof body.source === 'string' ? body.source.trim() || 'manual' : 'manual',
     notes: typeof body.notes === 'string' ? body.notes : null,
     tags,
+    actor_id: actorId,
   });
 
   if (!lead) {
