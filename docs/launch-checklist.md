@@ -80,7 +80,7 @@ Follow these steps in order before going live.
 3. Copy the API key and add to Vercel:
    - `RESEND_API_KEY`
 4. Set the contact form destination:
-   - `CONTACT_EMAIL` (e.g. `info@mybizmailbox.biz`)
+   - `CONTACT_TO_EMAIL` (defaults to `isabelle@bomacnation.com` if unset)
 5. In Supabase **Authentication → Email Templates**, configure the invite email to match your brand.
 
 ---
@@ -141,5 +141,5 @@ Run through this end-to-end in production (use Stripe test mode first):
 - [ ] End-to-end test flow completed
 - [ ] Stripe switched from test mode to live mode
 - [ ] Resend domain verified (or SMTP configured)
-- [ ] Contact form sends correctly to `CONTACT_EMAIL`
+- [ ] Contact form sends correctly to `CONTACT_TO_EMAIL`
 - [ ] `lib/config/business.ts` contains correct address, phone, email, hours

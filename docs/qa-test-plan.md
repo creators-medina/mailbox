@@ -13,7 +13,7 @@ Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
 | Click **See pricing** | Scrolls to pricing section |
 | Click **Contact** nav link | Scrolls to contact form |
 | Click **Sign in** nav link | Navigates to `/login` |
-| Submit contact form with valid data | Success message shown, email received at `CONTACT_EMAIL` |
+| Submit contact form with valid data | Success message shown, email received at `CONTACT_TO_EMAIL` (defaults to `isabelle@bomacnation.com`) |
 | Submit contact form with missing fields | Validation error shown, no email sent |
 | All footer links | No broken 404s |
 

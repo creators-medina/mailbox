@@ -4,8 +4,12 @@ import { useState, FormEvent } from 'react';
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
 
+const FALLBACK_ERROR =
+  'Something went wrong sending your message. Please try again or call (469) 893-4120.';
+
 export default function ContactForm() {
   const [status, setStatus] = useState<Status>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
 
   function set(field: keyof typeof form) {
@@ -16,16 +20,23 @@ export default function ContactForm() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setStatus('sending');
+    setErrorMessage('');
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error('Request failed');
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) {
+        setErrorMessage(data?.error || FALLBACK_ERROR);
+        setStatus('error');
+        return;
+      }
       setStatus('sent');
       setForm({ name: '', email: '', phone: '', message: '' });
     } catch {
+      setErrorMessage(FALLBACK_ERROR);
       setStatus('error');
     }
   }
@@ -80,8 +91,11 @@ export default function ContactForm() {
           onChange={set('message')} required style={{ resize: 'vertical' }} />
       </div>
       {status === 'error' && (
-        <p style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: '#d00', marginBottom: 12 }}>
-          Something went wrong. Please try again or call (469) 893-4120.
+        <p
+          role="alert"
+          style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: '#d00', marginBottom: 12 }}
+        >
+          {errorMessage || FALLBACK_ERROR}
         </p>
       )}
       <button

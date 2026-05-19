@@ -114,7 +114,7 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 | Variable | Description |
 |---|---|
 | `RESEND_API_KEY` | API key from resend.com |
-| `CONTACT_EMAIL` | Receives contact form submissions |
+| `CONTACT_TO_EMAIL` | Receives contact form submissions (defaults to `isabelle@bomacnation.com`) |
 | `NEXT_PUBLIC_GA_ID` | Google Analytics 4 Measurement ID (e.g. `G-XXXXXXXXXX`) |
 
 ---
