@@ -14,16 +14,50 @@ const PRIORITY_COLOR: Record<TaskPriority, string> = {
   urgent: '#EF4444',
 };
 
+type TaskDraft = {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  due_at: string; // datetime-local string
+  assigned_to: string;
+};
+
+function toLocalInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fromLocalInput(local: string): string | null {
+  if (!local) return null;
+  const d = new Date(local);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+function taskToDraft(t: Task): TaskDraft {
+  return {
+    title: t.title,
+    description: t.description ?? '',
+    priority: t.priority,
+    due_at: toLocalInput(t.due_at),
+    assigned_to: t.assigned_to ?? '',
+  };
+}
+
 export default function TabTasks({
   leadId,
   staff,
   refreshKey,
   onActivityChange,
+  onFlash,
 }: {
   leadId: string;
   staff: StaffUser[];
   refreshKey: number;
   onActivityChange: () => void;
+  onFlash: (tone: 'ok' | 'err', text: string) => void;
 }) {
   const [items, setItems] = useState<Task[] | null>(null);
   const [title, setTitle] = useState('');
@@ -31,13 +65,16 @@ export default function TabTasks({
   const [dueAt, setDueAt] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<TaskDraft | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
 
   async function load() {
     setItems(null);
+    setLoadErr(null);
     const res = await fetch(`/api/admin/crm/tasks?lead_id=${encodeURIComponent(leadId)}`);
     if (!res.ok) {
-      setError('Failed to load tasks');
+      setLoadErr('Failed to load tasks');
       return;
     }
     const data = (await res.json()) as { tasks: Task[] };
@@ -46,9 +83,8 @@ export default function TabTasks({
 
   useEffect(() => {
     let cancelled = false;
-    setError(null);
     load().catch(() => {
-      if (!cancelled) setError('Failed to load tasks');
+      if (!cancelled) setLoadErr('Failed to load tasks');
     });
     return () => {
       cancelled = true;
@@ -60,7 +96,6 @@ export default function TabTasks({
     const t = title.trim();
     if (!t || busy) return;
     setBusy(true);
-    setError(null);
     const res = await fetch('/api/admin/crm/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -68,27 +103,27 @@ export default function TabTasks({
         lead_id: leadId,
         title: t,
         priority,
-        due_at: dueAt ? new Date(dueAt).toISOString() : null,
+        due_at: fromLocalInput(dueAt),
         assigned_to: assignedTo || null,
       }),
     });
     setBusy(false);
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(data?.error || 'Could not create.');
+      onFlash('err', data?.error || 'Could not create task.');
       return;
     }
     setTitle('');
     setDueAt('');
     setPriority('medium');
     setAssignedTo('');
+    onFlash('ok', 'Task created.');
     await load();
     onActivityChange();
   }
 
-  async function patch(id: string, body: Record<string, unknown>) {
+  async function patch(id: string, body: Record<string, unknown>, okMsg?: string) {
     setBusy(true);
-    setError(null);
     const res = await fetch(`/api/admin/crm/tasks/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -97,11 +132,13 @@ export default function TabTasks({
     setBusy(false);
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(data?.error || 'Action failed.');
-      return;
+      onFlash('err', data?.error || 'Action failed.');
+      return false;
     }
+    if (okMsg) onFlash('ok', okMsg);
     await load();
     if ('completed' in body && body.completed === true) onActivityChange();
+    return true;
   }
 
   async function remove(id: string) {
@@ -110,9 +147,10 @@ export default function TabTasks({
     const res = await fetch(`/api/admin/crm/tasks/${id}`, { method: 'DELETE' });
     setBusy(false);
     if (!res.ok) {
-      setError('Could not delete.');
+      onFlash('err', 'Could not delete.');
       return;
     }
+    onFlash('ok', 'Task deleted.');
     await load();
   }
 
@@ -124,11 +162,34 @@ export default function TabTasks({
     if (idx === -1 || swap < 0 || swap >= open.length) return;
     const a = open[idx];
     const b = open[swap];
-    // Two PATCHes — order_index has no unique constraint so swapping is safe.
     void Promise.all([
       patch(a.id, { order_index: b.order_index }),
       patch(b.id, { order_index: a.order_index }),
     ]);
+  }
+
+  function startEdit(t: Task) {
+    setEditingId(t.id);
+    setDraft(taskToDraft(t));
+  }
+
+  async function saveEdit() {
+    if (!editingId || !draft) return;
+    const ok = await patch(
+      editingId,
+      {
+        title: draft.title.trim(),
+        description: draft.description.trim() || null,
+        priority: draft.priority,
+        due_at: fromLocalInput(draft.due_at),
+        assigned_to: draft.assigned_to || null,
+      },
+      'Task updated.',
+    );
+    if (ok) {
+      setEditingId(null);
+      setDraft(null);
+    }
   }
 
   return (
@@ -193,9 +254,9 @@ export default function TabTasks({
         </div>
       </div>
 
-      {error && (
+      {loadErr && (
         <p role="alert" style={{ color: '#fca5a5', font: '400 12px/1.4 var(--font-text,sans-serif)', marginBottom: 12 }}>
-          {error}
+          {loadErr}
         </p>
       )}
 
@@ -205,11 +266,97 @@ export default function TabTasks({
         <Empty body="No tasks yet. Add one above." />
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {items.map((t, i) => {
+          {items.map((t) => {
             const open = items.filter((x) => !x.completed_at);
             const idxInOpen = open.findIndex((x) => x.id === t.id);
+            const lastOpenIdx = open.length - 1;
             const assignee = staff.find((u) => u.id === t.assigned_to);
             const overdue = t.due_at && !t.completed_at && new Date(t.due_at) < new Date();
+            const isEditing = editingId === t.id && draft;
+
+            if (isEditing && draft) {
+              return (
+                <li
+                  key={t.id}
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid var(--c-border,rgba(255,255,255,0.12))',
+                    borderLeft: `3px solid ${PRIORITY_COLOR[draft.priority]}`,
+                    borderRadius: 8,
+                    padding: 12,
+                  }}
+                >
+                  <input
+                    className="admin-search-input"
+                    value={draft.title}
+                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                    placeholder="Title"
+                    style={{ width: '100%', marginBottom: 8 }}
+                  />
+                  <textarea
+                    rows={2}
+                    className="admin-search-input"
+                    value={draft.description}
+                    onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                    placeholder="Description (optional)"
+                    style={{ width: '100%', marginBottom: 8, resize: 'vertical' }}
+                  />
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                    <select
+                      className="admin-select"
+                      value={draft.priority}
+                      onChange={(e) => setDraft({ ...draft, priority: e.target.value as TaskPriority })}
+                      aria-label="Priority"
+                    >
+                      {PRIORITIES.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="datetime-local"
+                      className="admin-search-input"
+                      value={draft.due_at}
+                      onChange={(e) => setDraft({ ...draft, due_at: e.target.value })}
+                      aria-label="Due"
+                    />
+                    <select
+                      className="admin-select"
+                      value={draft.assigned_to}
+                      onChange={(e) => setDraft({ ...draft, assigned_to: e.target.value })}
+                      aria-label="Assignee"
+                    >
+                      <option value="">unassigned</option>
+                      {staff.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.full_name || u.email || u.id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={saveEdit}
+                      disabled={busy || !draft.title.trim()}
+                      className="w-cta-pill filled"
+                      style={{ border: 'none', padding: '6px 14px', cursor: 'pointer' }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingId(null);
+                        setDraft(null);
+                      }}
+                      className="w-cta-pill outline"
+                      style={{ padding: '6px 14px', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </li>
+              );
+            }
+
             return (
               <li
                 key={t.id}
@@ -228,7 +375,7 @@ export default function TabTasks({
                 <input
                   type="checkbox"
                   checked={!!t.completed_at}
-                  onChange={(e) => patch(t.id, { completed: e.target.checked })}
+                  onChange={(e) => patch(t.id, { completed: e.target.checked }, e.target.checked ? 'Task completed.' : 'Task reopened.')}
                   aria-label="Complete task"
                   style={{ marginTop: 3, cursor: 'pointer' }}
                 />
@@ -243,6 +390,19 @@ export default function TabTasks({
                   >
                     {t.title}
                   </div>
+                  {t.description && (
+                    <div
+                      style={{
+                        font: '400 12px/1.4 var(--font-text,sans-serif)',
+                        color: 'var(--c-text-2)',
+                        marginTop: 2,
+                        wordBreak: 'break-word',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {t.description}
+                    </div>
+                  )}
                   <div
                     style={{
                       display: 'flex',
@@ -265,11 +425,7 @@ export default function TabTasks({
                       {t.priority}
                     </span>
                     {t.due_at && (
-                      <span
-                        style={{
-                          color: overdue ? '#fca5a5' : 'var(--c-text-3)',
-                        }}
-                      >
+                      <span style={{ color: overdue ? '#fca5a5' : 'var(--c-text-3)' }}>
                         {overdue ? 'overdue ' : 'due '}
                         {new Date(t.due_at).toLocaleString([], {
                           month: 'short',
@@ -285,9 +441,7 @@ export default function TabTasks({
                         {assignee.full_name || assignee.email}
                       </span>
                     )}
-                    {t.completed_at ? (
-                      <span>completed {relativeTime(t.completed_at)}</span>
-                    ) : null}
+                    {t.completed_at ? <span>completed {relativeTime(t.completed_at)}</span> : null}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
@@ -298,20 +452,35 @@ export default function TabTasks({
                         disabled={idxInOpen <= 0}
                         style={iconBtn}
                         title="Move up"
+                        aria-label="Move up"
                       >
                         ↑
                       </button>
                       <button
                         onClick={() => move(t.id, 'down')}
-                        disabled={idxInOpen === -1 || idxInOpen === items.filter((x) => !x.completed_at).length - 1}
+                        disabled={idxInOpen === -1 || idxInOpen === lastOpenIdx}
                         style={iconBtn}
                         title="Move down"
+                        aria-label="Move down"
                       >
                         ↓
                       </button>
                     </>
                   )}
-                  <button onClick={() => remove(t.id)} style={{ ...iconBtn, color: '#fca5a5' }} title="Delete">
+                  <button
+                    onClick={() => startEdit(t)}
+                    style={iconBtn}
+                    title="Edit"
+                    aria-label="Edit"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    onClick={() => remove(t.id)}
+                    style={{ ...iconBtn, color: '#fca5a5' }}
+                    title="Delete"
+                    aria-label="Delete"
+                  >
                     ×
                   </button>
                 </div>

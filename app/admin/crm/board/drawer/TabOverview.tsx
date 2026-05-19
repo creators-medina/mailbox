@@ -15,6 +15,24 @@ const FIELD_LABEL: React.CSSProperties = {
 
 const SECTION: React.CSSProperties = { marginBottom: 22 };
 
+type ContactDraft = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  source: string;
+};
+
+function leadToContact(lead: Lead): ContactDraft {
+  return {
+    first_name: lead.first_name ?? '',
+    last_name: lead.last_name ?? '',
+    email: lead.email ?? '',
+    phone: lead.phone ?? '',
+    source: lead.source ?? '',
+  };
+}
+
 export default function TabOverview({
   lead,
   stage,
@@ -24,6 +42,7 @@ export default function TabOverview({
   setBusy,
   onUpdated,
   pipelineName,
+  onFlash,
 }: {
   lead: Lead;
   stage: Stage | null;
@@ -33,18 +52,32 @@ export default function TabOverview({
   setBusy: (b: boolean) => void;
   onUpdated: () => void;
   pipelineName: string;
+  onFlash: (tone: 'ok' | 'err', text: string) => void;
 }) {
+  const [contact, setContact] = useState<ContactDraft>(leadToContact(lead));
+  const [notesDraft, setNotesDraft] = useState(lead.notes ?? '');
   const [tagsInput, setTagsInput] = useState(lead.tags.join(', '));
-  const [error, setError] = useState<string | null>(null);
 
+  // Reset drafts whenever a different lead is opened or the parent receives
+  // an updated lead row from the server.
   useEffect(() => {
+    setContact(leadToContact(lead));
+    setNotesDraft(lead.notes ?? '');
     setTagsInput(lead.tags.join(', '));
-  }, [lead.id, lead.tags]);
+  }, [lead.id, lead.updated_at]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function patch(body: Record<string, unknown>) {
-    if (busy) return;
+  const contactDirty =
+    contact.first_name !== (lead.first_name ?? '') ||
+    contact.last_name !== (lead.last_name ?? '') ||
+    contact.email !== (lead.email ?? '') ||
+    contact.phone !== (lead.phone ?? '') ||
+    contact.source !== (lead.source ?? '');
+
+  const notesDirty = (notesDraft || '') !== (lead.notes ?? '');
+
+  async function patch(body: Record<string, unknown>, ok: string) {
+    if (busy) return false;
     setBusy(true);
-    setError(null);
     const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -53,16 +86,17 @@ export default function TabOverview({
     setBusy(false);
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(data?.error || 'Action failed.');
-      return;
+      onFlash('err', data?.error || 'Action failed.');
+      return false;
     }
+    onFlash('ok', ok);
     onUpdated();
+    return true;
   }
 
   async function move(stageId: string) {
     if (busy || stageId === lead.stage_id) return;
     setBusy(true);
-    setError(null);
     const res = await fetch(`/api/admin/crm/leads/${lead.id}/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -71,15 +105,33 @@ export default function TabOverview({
     setBusy(false);
     if (!res.ok) {
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(data?.error || 'Could not move.');
+      onFlash('err', data?.error || 'Could not move.');
       return;
     }
+    onFlash('ok', 'Stage updated.');
     onUpdated();
+  }
+
+  function saveContact() {
+    return patch(
+      {
+        first_name: contact.first_name.trim() || null,
+        last_name: contact.last_name.trim() || null,
+        email: contact.email.trim() || null,
+        phone: contact.phone.trim() || null,
+        source: contact.source.trim() || 'manual',
+      },
+      'Contact saved.',
+    );
+  }
+
+  function saveNotes() {
+    return patch({ notes: notesDraft.trim() || null }, 'Notes saved.');
   }
 
   function saveTags() {
     const tags = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
-    return patch({ tags });
+    return patch({ tags }, 'Tags saved.');
   }
 
   const assignedUser = staff.find((u) => u.id === lead.assigned_to) ?? null;
@@ -88,10 +140,17 @@ export default function TabOverview({
     <div>
       <section style={SECTION}>
         <label style={FIELD_LABEL}>Pipeline / stage</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ font: '500 13px/1 var(--font-text,sans-serif)', color: 'var(--c-text-2)' }}>
-            {pipelineName}
-          </span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 8,
+            font: '500 13px/1 var(--font-text,sans-serif)',
+            color: 'var(--c-text-2)',
+          }}
+        >
+          {pipelineName}
         </div>
         <select
           className="admin-select"
@@ -99,6 +158,7 @@ export default function TabOverview({
           onChange={(e) => move(e.target.value)}
           disabled={busy}
           style={{ width: '100%' }}
+          aria-label="Stage"
         >
           {stages.map((s) => (
             <option key={s.id} value={s.id}>
@@ -135,9 +195,10 @@ export default function TabOverview({
           <select
             className="admin-select"
             value={lead.assigned_to ?? ''}
-            onChange={(e) => patch({ assigned_to: e.target.value || null })}
+            onChange={(e) => patch({ assigned_to: e.target.value || null }, 'Assignment saved.')}
             disabled={busy}
             style={{ flex: 1 }}
+            aria-label="Assignee"
           >
             <option value="">— unassigned —</option>
             {staff.map((u) => (
@@ -151,12 +212,76 @@ export default function TabOverview({
 
       <section style={SECTION}>
         <label style={FIELD_LABEL}>Contact</label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <Row label="Email" value={lead.email} />
-          <Row label="Phone" value={lead.phone} />
-          <Row label="Source" value={lead.source} />
-          <Row label="Status" value={lead.status} />
-          <Row label="Created" value={new Date(lead.created_at).toLocaleString()} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              className="admin-search-input"
+              value={contact.first_name}
+              onChange={(e) => setContact({ ...contact, first_name: e.target.value })}
+              placeholder="First name"
+              aria-label="First name"
+              style={{ flex: 1 }}
+            />
+            <input
+              className="admin-search-input"
+              value={contact.last_name}
+              onChange={(e) => setContact({ ...contact, last_name: e.target.value })}
+              placeholder="Last name"
+              aria-label="Last name"
+              style={{ flex: 1 }}
+            />
+          </div>
+          <input
+            type="email"
+            className="admin-search-input"
+            value={contact.email}
+            onChange={(e) => setContact({ ...contact, email: e.target.value })}
+            placeholder="Email"
+            aria-label="Email"
+          />
+          <input
+            type="tel"
+            className="admin-search-input"
+            value={contact.phone}
+            onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+            placeholder="Phone"
+            aria-label="Phone"
+          />
+          <input
+            className="admin-search-input"
+            value={contact.source}
+            onChange={(e) => setContact({ ...contact, source: e.target.value })}
+            placeholder="Source (e.g. contact_form, referral)"
+            aria-label="Source"
+          />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+            <button
+              onClick={saveContact}
+              disabled={busy || !contactDirty}
+              className="w-cta-pill outline"
+              style={{ cursor: busy || !contactDirty ? 'default' : 'pointer', padding: '6px 14px', opacity: contactDirty ? 1 : 0.5 }}
+            >
+              {busy ? 'Saving…' : 'Save contact'}
+            </button>
+            {contactDirty && (
+              <button
+                onClick={() => setContact(leadToContact(lead))}
+                disabled={busy}
+                style={inlineBtn}
+              >
+                Reset
+              </button>
+            )}
+            <span
+              style={{
+                marginLeft: 'auto',
+                font: '400 11px/1.4 var(--font-text,sans-serif)',
+                color: 'var(--c-text-3)',
+              }}
+            >
+              Status: {lead.status} · created {new Date(lead.created_at).toLocaleDateString()}
+            </span>
+          </div>
         </div>
       </section>
 
@@ -200,27 +325,56 @@ export default function TabOverview({
         )}
       </section>
 
-      {error && (
-        <p role="alert" style={{ color: '#fca5a5', font: '400 12px/1.4 var(--font-text,sans-serif)' }}>
-          {error}
+      <section style={SECTION}>
+        <label htmlFor="lead-notes-summary" style={FIELD_LABEL}>Notes summary</label>
+        <p
+          style={{
+            font: '400 11px/1.4 var(--font-text,sans-serif)',
+            color: 'var(--c-text-3)',
+            margin: '0 0 6px',
+          }}
+        >
+          One-paragraph summary that follows the lead everywhere. Use the
+          Notes tab for threaded discussion.
         </p>
-      )}
+        <textarea
+          id="lead-notes-summary"
+          rows={3}
+          className="admin-search-input"
+          value={notesDraft}
+          onChange={(e) => setNotesDraft(e.target.value)}
+          style={{ width: '100%', resize: 'vertical', marginBottom: 8 }}
+        />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={saveNotes}
+            disabled={busy || !notesDirty}
+            className="w-cta-pill outline"
+            style={{ cursor: busy || !notesDirty ? 'default' : 'pointer', padding: '6px 14px', opacity: notesDirty ? 1 : 0.5 }}
+          >
+            {busy ? 'Saving…' : 'Save summary'}
+          </button>
+          {notesDirty && (
+            <button
+              onClick={() => setNotesDraft(lead.notes ?? '')}
+              disabled={busy}
+              style={inlineBtn}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        gap: 12,
-        font: '400 13px/1.4 var(--font-text,sans-serif)',
-      }}
-    >
-      <span style={{ color: 'var(--c-text-3)' }}>{label}</span>
-      <span style={{ color: 'var(--c-text-2)', textAlign: 'right' }}>{value || '—'}</span>
-    </div>
-  );
-}
+const inlineBtn: React.CSSProperties = {
+  font: '500 11px/1 var(--font-text,sans-serif)',
+  padding: '6px 10px',
+  borderRadius: 6,
+  border: '1px solid var(--c-border,rgba(255,255,255,0.12))',
+  background: 'transparent',
+  color: 'var(--c-text-2,rgba(255,255,255,0.7))',
+  cursor: 'pointer',
+};

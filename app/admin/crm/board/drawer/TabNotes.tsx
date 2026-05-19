@@ -11,12 +11,14 @@ export default function TabNotes({
   currentUserId,
   refreshKey,
   onActivityChange,
+  onFlash,
 }: {
   leadId: string;
   staff: StaffUser[];
   currentUserId: string | null;
   refreshKey: number;
   onActivityChange: () => void;
+  onFlash: (tone: 'ok' | 'err', text: string) => void;
 }) {
   const [items, setItems] = useState<Comment[] | null>(null);
   const [draft, setDraft] = useState('');
@@ -61,6 +63,7 @@ export default function TabNotes({
     const data = (await res.json()) as { comment: Comment };
     setItems((prev) => [data.comment, ...(prev ?? [])]);
     setDraft('');
+    onFlash('ok', 'Note posted.');
     onActivityChange();
   }
 
@@ -83,6 +86,7 @@ export default function TabNotes({
     setItems((prev) => (prev ?? []).map((c) => (c.id === data.comment.id ? data.comment : c)));
     setEditingId(null);
     setEditingText('');
+    onFlash('ok', 'Note updated.');
   }
 
   async function removeComment(id: string) {
@@ -97,6 +101,7 @@ export default function TabNotes({
       return;
     }
     setItems((prev) => (prev ?? []).filter((c) => c.id !== id));
+    onFlash('ok', 'Note deleted.');
   }
 
   return (
