@@ -25,3 +25,23 @@ export type Stage = {
 };
 
 export type CloseType = 'won' | 'lost' | null;
+
+export type Lead = {
+  id: string;
+  pipeline_id: string;
+  stage_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  source: string;
+  status: string;
+  tags: string[];
+  notes: string | null;
+  raw_submission: unknown;
+  assigned_to: string | null;
+  order_index: number;
+  archived: boolean;
+  created_at: string;
+  updated_at: string;
+};

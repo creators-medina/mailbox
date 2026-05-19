@@ -1,10 +1,18 @@
 import { Resend } from 'resend';
+import { createLead, resolveDefaultDestination } from '@/lib/crm/leads';
 
 const DEFAULT_TO = 'isabelle@bomacnation.com';
 const FROM_ADDRESS = 'My Biz Address <contact@mybizmailbox.biz>';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function splitName(full: string): { first: string | null; last: string | null } {
+  const parts = full.trim().split(/\s+/);
+  if (parts.length === 0 || !parts[0]) return { first: null, last: null };
+  if (parts.length === 1) return { first: parts[0], last: null };
+  return { first: parts[0], last: parts.slice(1).join(' ') };
 }
 
 export async function POST(req: Request) {
@@ -63,6 +71,30 @@ export async function POST(req: Request) {
   ]
     .filter((line) => line !== null)
     .join('\n');
+
+  // Fire-and-forget lead creation. CRM ingestion is best-effort so it can't
+  // break the customer-facing form: log on failure and continue to email.
+  try {
+    const dest = await resolveDefaultDestination();
+    if (dest) {
+      const { first, last } = splitName(name);
+      await createLead({
+        pipeline_id: dest.pipeline_id,
+        stage_id: dest.stage_id,
+        first_name: first,
+        last_name: last,
+        email,
+        phone: phone || null,
+        source: 'contact_form',
+        notes: message,
+        raw_submission: { name, email, phone, message, submitted_at: new Date().toISOString() },
+      });
+    } else {
+      console.warn('[contact] No active pipeline/stage configured — skipping lead creation.');
+    }
+  } catch (err) {
+    console.error('[contact] Lead ingestion failed (continuing to email):', err);
+  }
 
   try {
     const { error } = await resend.emails.send({

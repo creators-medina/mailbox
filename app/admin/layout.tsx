@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { label: 'Mail Queue',  href: '/admin/mail' },
   { label: 'Requests',    href: '/admin/requests' },
   { label: 'Upload Mail', href: '/admin/mail/upload' },
+  { label: 'CRM Board',     href: '/admin/crm/board' },
   { label: 'CRM Pipelines', href: '/admin/crm/pipelines' },
 ];
 
