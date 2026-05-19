@@ -319,7 +319,14 @@ export default function LeadDrawer({
             <TabActivity leadId={lead.id} staff={staff} refreshKey={activityNonce} />
           )}
           {tab === 'messages' && (
-            <TabMessages leadId={lead.id} staff={staff} refreshKey={activityNonce} />
+            <TabMessages
+              leadId={lead.id}
+              leadEmail={lead.email}
+              staff={staff}
+              refreshKey={activityNonce}
+              onActivityChange={bumpActivity}
+              onFlash={showFlash}
+            />
           )}
           {tab === 'notes' && (
             <TabNotes

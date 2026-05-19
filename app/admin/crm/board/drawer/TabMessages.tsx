@@ -12,6 +12,8 @@ import type {
 import { relativeTime } from '@/lib/crm/format';
 import Avatar from '../Avatar';
 
+const DEFAULT_SUBJECT = 'Re: Your My Biz Address inquiry';
+
 const CHANNEL_LABEL: Record<Channel, string> = {
   email: 'Email',
   sms: 'SMS',
@@ -54,20 +56,27 @@ type Bundle = {
 
 export default function TabMessages({
   leadId,
+  leadEmail,
   staff,
   refreshKey,
+  onActivityChange,
+  onFlash,
 }: {
   leadId: string;
+  leadEmail: string | null;
   staff: StaffUser[];
   refreshKey: number;
+  onActivityChange: () => void;
+  onFlash: (tone: 'ok' | 'err', text: string) => void;
 }) {
   const [data, setData] = useState<Bundle | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [localNonce, setLocalNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setData(null);
-    setError(null);
+    setLoadErr(null);
     fetch(`/api/admin/crm/leads/${leadId}/messages`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Failed to load messages');
@@ -75,12 +84,12 @@ export default function TabMessages({
         if (!cancelled) setData(j);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load');
+        if (!cancelled) setLoadErr(e instanceof Error ? e.message : 'Failed to load');
       });
     return () => {
       cancelled = true;
     };
-  }, [leadId, refreshKey]);
+  }, [leadId, refreshKey, localNonce]);
 
   // Group messages by conversation so the thread is grouped visually.
   const grouped = useMemo(() => {
@@ -97,22 +106,27 @@ export default function TabMessages({
     }));
   }, [data]);
 
-  if (error) {
+  const existingEmailSubject = useMemo(() => {
+    if (!data) return null;
+    const emailConv = data.conversations
+      .filter((c) => c.channel === 'email' && c.status === 'open' && c.subject)
+      .sort((a, b) => (b.last_message_at ?? '').localeCompare(a.last_message_at ?? ''))[0];
+    return emailConv?.subject ?? null;
+  }, [data]);
+
+  if (loadErr) {
     return (
       <p style={{ color: '#fca5a5', font: '400 12px/1.4 var(--font-text,sans-serif)' }}>
-        {error}
+        {loadErr}
       </p>
     );
   }
-  if (data === null) {
-    return <Skeleton />;
-  }
-
-  const empty = data.messages.length === 0;
 
   return (
     <div>
-      {empty ? (
+      {data === null ? (
+        <Skeleton />
+      ) : data.messages.length === 0 ? (
         <Empty />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -127,7 +141,17 @@ export default function TabMessages({
         </div>
       )}
 
-      <Composer />
+      <EmailComposer
+        leadId={leadId}
+        leadEmail={leadEmail}
+        defaultSubject={existingEmailSubject ?? DEFAULT_SUBJECT}
+        onSent={() => {
+          setLocalNonce((n) => n + 1);
+          onActivityChange();
+          onFlash('ok', 'Email sent.');
+        }}
+        onFail={(msg) => onFlash('err', msg)}
+      />
     </div>
   );
 }
@@ -213,9 +237,7 @@ function ConversationBlock({
             No messages in this thread yet.
           </li>
         ) : (
-          messages.map((m) => (
-            <MessageRow key={m.id} message={m} staff={staff} />
-          ))
+          messages.map((m) => <MessageRow key={m.id} message={m} staff={staff} />)
         )}
       </ol>
     </section>
@@ -242,11 +264,7 @@ function MessageRow({ message, staff }: { message: Message; staff: StaffUser[] }
         name={sender?.full_name}
         email={inbound ? message.from_address : sender?.email}
         size={26}
-        title={
-          inbound
-            ? message.from_address || 'Inbound'
-            : sender?.full_name || sender?.email || 'Staff'
-        }
+        title={inbound ? message.from_address || 'Inbound' : sender?.full_name || sender?.email || 'Staff'}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
@@ -258,15 +276,8 @@ function MessageRow({ message, staff }: { message: Message; staff: StaffUser[] }
             flexWrap: 'wrap',
           }}
         >
-          <span
-            style={{
-              font: '600 12px/1.2 var(--font-display,sans-serif)',
-              color: '#fff',
-            }}
-          >
-            {inbound
-              ? message.from_address || 'Inbound'
-              : sender?.full_name || sender?.email || 'Staff'}
+          <span style={{ font: '600 12px/1.2 var(--font-display,sans-serif)', color: '#fff' }}>
+            {inbound ? message.from_address || 'Inbound' : sender?.full_name || sender?.email || 'Staff'}
           </span>
           <span
             style={{
@@ -345,50 +356,155 @@ function MessageRow({ message, staff }: { message: Message; staff: StaffUser[] }
   );
 }
 
-function Composer() {
+function EmailComposer({
+  leadId,
+  leadEmail,
+  defaultSubject,
+  onSent,
+  onFail,
+}: {
+  leadId: string;
+  leadEmail: string | null;
+  defaultSubject: string;
+  onSent: () => void;
+  onFail: (msg: string) => void;
+}) {
+  const [subject, setSubject] = useState(defaultSubject);
+  const [bodyText, setBodyText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [localErr, setLocalErr] = useState<string | null>(null);
+
+  // Refresh the default subject if a different conversation arrives.
+  useEffect(() => {
+    setSubject(defaultSubject);
+  }, [defaultSubject]);
+
+  const canSend = !!leadEmail && subject.trim().length > 0 && bodyText.trim().length > 0 && !busy;
+
+  async function send() {
+    if (!canSend) return;
+    setBusy(true);
+    setLocalErr(null);
+    const res = await fetch(`/api/admin/crm/leads/${leadId}/messages/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject: subject.trim(), body: bodyText.trim() }),
+    });
+    setBusy(false);
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    if (!res.ok) {
+      const msg = data?.error || 'Could not send the email.';
+      setLocalErr(msg);
+      onFail(msg);
+      return;
+    }
+    setBodyText('');
+    onSent();
+  }
+
   return (
     <div
       style={{
         marginTop: 20,
         padding: 14,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px dashed var(--c-border,rgba(255,255,255,0.12))',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid var(--c-border,rgba(255,255,255,0.07))',
         borderRadius: 8,
-        textAlign: 'center',
       }}
     >
-      <p
+      <div
         style={{
-          margin: 0,
-          font: '500 12px/1.4 var(--font-text,sans-serif)',
-          color: 'var(--c-text-2)',
+          font: '600 12px/1.2 var(--font-display,sans-serif)',
+          color: '#fff',
+          marginBottom: 8,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
         }}
       >
-        Email and SMS sending will be added in CRM-5B.
-      </p>
-      <p
-        style={{
-          margin: '4px 0 10px',
-          font: '400 11px/1.4 var(--font-text,sans-serif)',
-          color: 'var(--c-text-3)',
-        }}
-      >
-        The data layer below is provider-agnostic — sender adapters will
-        write to the same conversations and messages tables.
-      </p>
-      <button
-        type="button"
-        disabled
-        className="w-cta-pill filled"
-        style={{
-          border: 'none',
-          padding: '8px 16px',
-          opacity: 0.4,
-          cursor: 'not-allowed',
-        }}
-      >
-        Compose (coming soon)
-      </button>
+        <span aria-hidden>✉</span>
+        New email
+        {leadEmail ? (
+          <span
+            style={{
+              font: '400 11px/1 var(--font-text,sans-serif)',
+              color: 'var(--c-text-3)',
+              marginLeft: 'auto',
+            }}
+          >
+            To: {leadEmail}
+          </span>
+        ) : null}
+      </div>
+
+      {!leadEmail && (
+        <p
+          style={{
+            font: '400 11px/1.4 var(--font-text,sans-serif)',
+            color: '#fca5a5',
+            margin: '0 0 8px',
+          }}
+        >
+          This lead has no email on file — edit the Overview tab to add one before sending.
+        </p>
+      )}
+
+      <input
+        className="admin-search-input"
+        value={subject}
+        onChange={(e) => setSubject(e.target.value)}
+        placeholder="Subject"
+        aria-label="Subject"
+        disabled={!leadEmail || busy}
+        style={{ width: '100%', marginBottom: 8 }}
+      />
+      <textarea
+        rows={5}
+        className="admin-search-input"
+        value={bodyText}
+        onChange={(e) => setBodyText(e.target.value)}
+        placeholder="Write your message…"
+        aria-label="Message body"
+        disabled={!leadEmail || busy}
+        style={{ width: '100%', resize: 'vertical', marginBottom: 10 }}
+      />
+
+      {localErr && (
+        <p
+          role="alert"
+          style={{
+            font: '400 11px/1.4 var(--font-text,sans-serif)',
+            color: '#fca5a5',
+            margin: '0 0 8px',
+          }}
+        >
+          {localErr}
+        </p>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <span
+          style={{
+            font: '400 11px/1.4 var(--font-text,sans-serif)',
+            color: 'var(--c-text-3)',
+          }}
+        >
+          Sent via Resend · plain text + auto HTML
+        </span>
+        <button
+          onClick={send}
+          disabled={!canSend}
+          className="w-cta-pill filled"
+          style={{
+            border: 'none',
+            padding: '8px 16px',
+            cursor: canSend ? 'pointer' : 'not-allowed',
+            opacity: canSend ? 1 : 0.5,
+          }}
+        >
+          {busy ? 'Sending…' : 'Send email'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -443,7 +559,7 @@ function Empty() {
         No messages yet
       </p>
       <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', margin: 0 }}>
-        Email, SMS, and call logs will appear here once a channel is wired up.
+        Use the composer below to send your first email.
       </p>
     </div>
   );

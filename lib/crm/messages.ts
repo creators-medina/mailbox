@@ -137,29 +137,36 @@ export async function createMessage(input: CreateMessageInput): Promise<Message 
   // Keep the conversation header in sync so list views can sort by it.
   await updateConversationLastMessage(message.conversation_id, message.created_at);
 
-  // Activity logging — single source of truth, never duplicated.
-  const activityType = pickActivityType(message);
-  if (activityType) {
-    const title = pickActivityTitle(message);
-    await logActivity({
-      lead_id: message.lead_id,
-      type: activityType,
-      title,
-      description:
-        message.subject ||
-        (message.body ? message.body.slice(0, 200) : null) ||
-        null,
-      metadata: {
-        message_id: message.id,
-        conversation_id: message.conversation_id,
-        channel: message.channel,
-        direction: message.direction,
-        provider: message.provider,
-        provider_message_id: message.provider_message_id,
-        delivery_status: message.delivery_status,
-      },
-      created_by: input.actor_id ?? message.sent_by ?? null,
-    });
+  // Activity logging. Outbound messages start as draft/queued — defer the
+  // success activity until updateMessageDeliveryStatus() flips to 'sent'.
+  const pendingOutbound =
+    message.direction === 'outbound' &&
+    (message.delivery_status === 'draft' || message.delivery_status === 'queued');
+
+  if (!pendingOutbound) {
+    const activityType = pickActivityType(message);
+    if (activityType) {
+      const title = pickActivityTitle(message);
+      await logActivity({
+        lead_id: message.lead_id,
+        type: activityType,
+        title,
+        description:
+          message.subject ||
+          (message.body ? message.body.slice(0, 200) : null) ||
+          null,
+        metadata: {
+          message_id: message.id,
+          conversation_id: message.conversation_id,
+          channel: message.channel,
+          direction: message.direction,
+          provider: message.provider,
+          provider_message_id: message.provider_message_id,
+          delivery_status: message.delivery_status,
+        },
+        created_by: input.actor_id ?? message.sent_by ?? null,
+      });
+    }
   }
 
   return message;
@@ -200,37 +207,57 @@ function pickActivityTitle(m: Message): string {
   return 'Internal note added';
 }
 
-// Update delivery status (e.g. from a Resend webhook) and log a failure
-// activity if it transitions to failed/bounced.
+// Update delivery status (e.g. from a Resend webhook or after an outbound
+// provider call). Also emits the appropriate activity row on the relevant
+// transitions: -> sent fires email_sent / sms_sent; -> failed/bounced
+// fires message_failed.
 export async function updateMessageDeliveryStatus(
   messageId: string,
   status: DeliveryStatus,
-  errorMessage?: string | null,
+  opts: {
+    error_message?: string | null;
+    provider?: string | null;
+    provider_message_id?: string | null;
+    sent_at?: string | null;
+    actor_id?: string | null;
+  } = {},
 ): Promise<void> {
   const admin = createAdminClientAny();
   const { data: prior } = await admin
     .from('crm_messages')
-    .select('lead_id, channel, delivery_status')
+    .select('lead_id, channel, direction, delivery_status, subject, body, sent_by')
     .eq('id', messageId)
     .maybeSingle();
 
-  const { error } = await admin
-    .from('crm_messages')
-    .update({ delivery_status: status, error_message: errorMessage ?? null })
-    .eq('id', messageId);
+  const update: Record<string, unknown> = { delivery_status: status };
+  if (opts.error_message !== undefined) update.error_message = opts.error_message;
+  if (opts.provider !== undefined) update.provider = opts.provider;
+  if (opts.provider_message_id !== undefined) update.provider_message_id = opts.provider_message_id;
+  if (opts.sent_at !== undefined) update.sent_at = opts.sent_at;
+
+  const { error } = await admin.from('crm_messages').update(update).eq('id', messageId);
   if (error) {
     console.error('[crm.updateMessageDeliveryStatus]', error);
     return;
   }
 
   const priorRow = prior as
-    | { lead_id: string; channel: Channel; delivery_status: DeliveryStatus }
+    | {
+        lead_id: string;
+        channel: Channel;
+        direction: Direction;
+        delivery_status: DeliveryStatus;
+        subject: string | null;
+        body: string | null;
+        sent_by: string | null;
+      }
     | null;
-  if (
-    priorRow &&
-    (status === 'failed' || status === 'bounced') &&
-    priorRow.delivery_status !== status
-  ) {
+  if (!priorRow || priorRow.delivery_status === status) return;
+
+  const actorId = opts.actor_id ?? priorRow.sent_by ?? null;
+  const description = priorRow.subject || (priorRow.body ? priorRow.body.slice(0, 200) : null);
+
+  if (status === 'failed' || status === 'bounced') {
     await logActivity({
       lead_id: priorRow.lead_id,
       type: 'message_failed',
@@ -238,9 +265,44 @@ export async function updateMessageDeliveryStatus(
         status === 'bounced'
           ? `${priorRow.channel === 'sms' ? 'SMS' : 'Email'} bounced`
           : `${priorRow.channel === 'sms' ? 'SMS' : 'Email'} failed to send`,
-      description: errorMessage ?? null,
+      description: opts.error_message ?? description,
       metadata: { message_id: messageId, delivery_status: status },
-      created_by: null,
+      created_by: actorId,
+    });
+    return;
+  }
+
+  // Fire the success activity exactly once — on the first transition away
+  // from a pending state into 'sent'.
+  if (status === 'sent' && priorRow.direction === 'outbound') {
+    const type =
+      priorRow.channel === 'email'
+        ? 'email_sent'
+        : priorRow.channel === 'sms'
+        ? 'sms_sent'
+        : priorRow.channel === 'phone'
+        ? 'call_logged'
+        : 'internal_message_added';
+    const title =
+      priorRow.channel === 'email'
+        ? 'Email sent'
+        : priorRow.channel === 'sms'
+        ? 'SMS sent'
+        : priorRow.channel === 'phone'
+        ? 'Call logged'
+        : 'Internal note added';
+    await logActivity({
+      lead_id: priorRow.lead_id,
+      type,
+      title,
+      description,
+      metadata: {
+        message_id: messageId,
+        channel: priorRow.channel,
+        provider: opts.provider ?? null,
+        provider_message_id: opts.provider_message_id ?? null,
+      },
+      created_by: actorId,
     });
   }
 }
