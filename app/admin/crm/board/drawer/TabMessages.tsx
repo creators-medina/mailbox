@@ -409,12 +409,24 @@ function EmailComposer({
 
   // Apply a template: resolve {{variables}} against this lead, then drop the
   // result into subject + body. Staff can still edit before sending.
+  //
+  // The dropdown is a one-shot "Insert a template…" action, not a persistent
+  // selection. We reset templateId back to '' after inserting so that
+  // re-selecting the SAME template fires onChange again (a controlled <select>
+  // only fires onChange when its value changes). Without this reset the
+  // dropdown gets stuck on the last template and re-picking it does nothing —
+  // which made specific templates appear broken depending on click order.
   function applyTemplate(id: string) {
-    setTemplateId(id);
     setLocalErr(null);
-    if (!id) return;
+    if (!id) {
+      setTemplateId('');
+      return;
+    }
     const tpl = templates.find((t) => t.id === id);
-    if (!tpl) return;
+    if (!tpl) {
+      setTemplateId('');
+      return;
+    }
 
     const renderedSubject = renderTemplate(tpl.subject, leadVars);
     const renderedBody = renderTemplate(tpl.body, leadVars);
@@ -429,6 +441,10 @@ function EmailComposer({
         `Template "${tpl.name}" has no usable body text. Edit it in CRM Templates before sending.`,
       );
     }
+
+    // Snap the dropdown back to the placeholder so the same template can be
+    // re-inserted on the next selection.
+    setTemplateId('');
   }
 
   // Unfilled {{tokens}} (e.g. a template's {{signup_link}}) that the renderer
