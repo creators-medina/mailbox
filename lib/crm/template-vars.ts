@@ -78,9 +78,9 @@ const ALIASES: Record<string, TemplateVarKey> = {
 };
 
 // Replace {{ key }} placeholders with values. Tolerant of camelCase, spaces,
-// hyphens, and known aliases. Unknown keys are left untouched so a genuine
-// typo is visible to staff in the composer preview (stripUnresolvedVars()
-// removes any survivors at send time).
+// hyphens, and known aliases. Unknown keys are left untouched (visible) so
+// staff can spot them — findUnresolvedVars() reports them and the composer
+// blocks sending until they're resolved. We never silently delete content.
 export function renderTemplate(
   text: string | null | undefined,
   vars: Record<string, string>,
@@ -93,15 +93,20 @@ export function renderTemplate(
   });
 }
 
-// Final safety net used at send time: remove any leftover {{...}} tokens that
-// never resolved, and tidy the whitespace they leave behind, so a recipient
-// never sees a raw placeholder.
-export function stripUnresolvedVars(text: string): string {
-  return text
-    .replace(/\{\{\s*[a-zA-Z0-9 _-]+?\s*\}\}/g, '')
-    .replace(/[ \t]{2,}/g, ' ')      // collapse double spaces left behind
-    .replace(/ +\n/g, '\n')           // trailing spaces before newlines
-    .replace(/\n{3,}/g, '\n\n')       // collapse 3+ blank lines
-    .trim();
+// Report any {{token}} placeholders still present after rendering. Because
+// renderTemplate always substitutes known vars + aliases (even when the
+// value is empty), anything left here is an UNKNOWN token the staff needs
+// to replace with real text — e.g. {{signup_link}}, {{calendar_link}}.
+// Returns the unique token names (without braces).
+export function findUnresolvedVars(renderedText: string | null | undefined): string[] {
+  if (!renderedText) return [];
+  const found = new Set<string>();
+  const re = /\{\{\s*([a-zA-Z0-9 _-]+?)\s*\}\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(renderedText)) !== null) {
+    found.add(m[1].trim());
+  }
+  return Array.from(found);
 }
+
 

@@ -12,7 +12,7 @@ import type {
   StaffUser,
 } from '@/lib/crm/types';
 import { relativeTime } from '@/lib/crm/format';
-import { buildLeadVars, renderTemplate } from '@/lib/crm/template-vars';
+import { buildLeadVars, renderTemplate, findUnresolvedVars } from '@/lib/crm/template-vars';
 import Avatar from '../Avatar';
 
 const DEFAULT_SUBJECT = 'Re: Your My Biz Address inquiry';
@@ -431,7 +431,20 @@ function EmailComposer({
     }
   }
 
-  const canSend = !!leadEmail && subject.trim().length > 0 && bodyText.trim().length > 0 && !busy;
+  // Unfilled {{tokens}} (e.g. a template's {{signup_link}}) that the renderer
+  // couldn't resolve. Recomputed live, so editing the body to replace them
+  // re-enables Send. We never strip these silently — staff must resolve them.
+  const unresolvedVars = useMemo(
+    () => findUnresolvedVars(`${subject}\n${bodyText}`),
+    [subject, bodyText],
+  );
+
+  const canSend =
+    !!leadEmail &&
+    subject.trim().length > 0 &&
+    bodyText.trim().length > 0 &&
+    unresolvedVars.length === 0 &&
+    !busy;
 
   async function send() {
     if (!canSend) return;
@@ -538,6 +551,21 @@ function EmailComposer({
         disabled={!leadEmail || busy}
         style={{ width: '100%', resize: 'vertical', marginBottom: 10 }}
       />
+
+      {unresolvedVars.length > 0 && (
+        <p
+          role="alert"
+          style={{
+            font: '400 11px/1.45 var(--font-text,sans-serif)',
+            color: '#fbbf24',
+            margin: '0 0 8px',
+          }}
+        >
+          This email still has unfilled placeholders:{' '}
+          <strong>{unresolvedVars.map((v) => `{{${v}}}`).join(', ')}</strong>.
+          Replace them with real text (or a link) before sending.
+        </p>
+      )}
 
       {localErr && (
         <p

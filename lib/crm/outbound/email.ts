@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { ensureConversationForLead } from '@/lib/crm/conversations';
 import { createMessage, updateMessageDeliveryStatus } from '@/lib/crm/messages';
-import { stripUnresolvedVars } from '@/lib/crm/template-vars';
+import { findUnresolvedVars } from '@/lib/crm/template-vars';
 import type { Message } from '@/lib/crm/types';
 
 const DEFAULT_FROM = 'My Biz Address <contact@mybizmailbox.biz>';
@@ -45,18 +45,40 @@ export async function sendEmailToLead(input: SendEmailInput): Promise<SendEmailR
   }
 
   const from = process.env.CRM_FROM_EMAIL || DEFAULT_FROM;
-  // Strip any unresolved {{placeholders}} so a recipient never sees raw
-  // template tokens, then validate there's still real content to send.
-  const subject = (stripUnresolvedVars(input.subject?.trim() || '') || DEFAULT_SUBJECT).slice(0, 200);
-  const text = stripUnresolvedVars(input.text.trim());
+  const subject = (input.subject?.trim() || DEFAULT_SUBJECT).slice(0, 200);
+  const text = input.text.trim();
+
   if (!text) {
     return {
       ok: false,
-      error: 'The message body is empty after filling the template. Add some text before sending.',
+      error: 'The message body is empty. Add some text before sending.',
       message: null,
     };
   }
-  const html = input.html?.trim() ? stripUnresolvedVars(input.html.trim()) : textToHtml(text);
+
+  // Defense in depth: never send raw {{tokens}}, but never delete content
+  // either. Reject with a clear, actionable error naming the unresolved
+  // placeholders so staff can fill them in. (The composer also blocks this.)
+  const unresolved = findUnresolvedVars(`${subject}\n${text}`);
+  if (unresolved.length > 0) {
+    return {
+      ok: false,
+      error: `This email still has unfilled placeholders: ${unresolved
+        .map((v) => `{{${v}}}`)
+        .join(', ')}. Replace them with real text before sending.`,
+      message: null,
+    };
+  }
+
+  // PII-safe diagnostic: lengths + token names only, never body content.
+  console.log('[crm.email] send', {
+    leadId: input.leadId,
+    subjectLen: subject.length,
+    bodyLen: text.length,
+    unresolved,
+  });
+
+  const html = input.html?.trim() || textToHtml(text);
 
   // 1) Reuse the open email conversation for this lead, or create one. The
   //    first email's subject becomes the thread label.
