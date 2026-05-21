@@ -6,10 +6,13 @@ import type {
   Conversation,
   DeliveryStatus,
   Direction,
+  Lead,
   Message,
+  MessageTemplate,
   StaffUser,
 } from '@/lib/crm/types';
 import { relativeTime } from '@/lib/crm/format';
+import { buildLeadVars, renderTemplate } from '@/lib/crm/template-vars';
 import Avatar from '../Avatar';
 
 const DEFAULT_SUBJECT = 'Re: Your My Biz Address inquiry';
@@ -55,23 +58,41 @@ type Bundle = {
 };
 
 export default function TabMessages({
-  leadId,
-  leadEmail,
+  lead,
   staff,
   refreshKey,
   onActivityChange,
   onFlash,
 }: {
-  leadId: string;
-  leadEmail: string | null;
+  lead: Lead;
   staff: StaffUser[];
   refreshKey: number;
   onActivityChange: () => void;
   onFlash: (tone: 'ok' | 'err', text: string) => void;
 }) {
+  const leadId = lead.id;
+  const leadEmail = lead.email;
   const [data, setData] = useState<Bundle | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [localNonce, setLocalNonce] = useState(0);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+
+  // Active email templates for the picker.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/admin/crm/templates?channel=email&active=1')
+      .then(async (res) => {
+        if (!res.ok) return;
+        const j = (await res.json()) as { templates: MessageTemplate[] };
+        if (!cancelled) setTemplates(j.templates);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const leadVars = useMemo(() => buildLeadVars(lead), [lead]);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,6 +166,8 @@ export default function TabMessages({
         leadId={leadId}
         leadEmail={leadEmail}
         defaultSubject={existingEmailSubject ?? DEFAULT_SUBJECT}
+        templates={templates}
+        leadVars={leadVars}
         onSent={() => {
           setLocalNonce((n) => n + 1);
           onActivityChange();
@@ -360,12 +383,16 @@ function EmailComposer({
   leadId,
   leadEmail,
   defaultSubject,
+  templates,
+  leadVars,
   onSent,
   onFail,
 }: {
   leadId: string;
   leadEmail: string | null;
   defaultSubject: string;
+  templates: MessageTemplate[];
+  leadVars: Record<string, string>;
   onSent: () => void;
   onFail: (msg: string) => void;
 }) {
@@ -373,11 +400,23 @@ function EmailComposer({
   const [bodyText, setBodyText] = useState('');
   const [busy, setBusy] = useState(false);
   const [localErr, setLocalErr] = useState<string | null>(null);
+  const [templateId, setTemplateId] = useState('');
 
   // Refresh the default subject if a different conversation arrives.
   useEffect(() => {
     setSubject(defaultSubject);
   }, [defaultSubject]);
+
+  // Apply a template: resolve {{variables}} against this lead, then drop the
+  // result into subject + body. Staff can still edit before sending.
+  function applyTemplate(id: string) {
+    setTemplateId(id);
+    if (!id) return;
+    const tpl = templates.find((t) => t.id === id);
+    if (!tpl) return;
+    if (tpl.subject) setSubject(renderTemplate(tpl.subject, leadVars));
+    setBodyText(renderTemplate(tpl.body, leadVars));
+  }
 
   const canSend = !!leadEmail && subject.trim().length > 0 && bodyText.trim().length > 0 && !busy;
 
@@ -447,6 +486,24 @@ function EmailComposer({
         >
           This lead has no email on file — edit the Overview tab to add one before sending.
         </p>
+      )}
+
+      {templates.length > 0 && (
+        <select
+          className="admin-select"
+          value={templateId}
+          onChange={(e) => applyTemplate(e.target.value)}
+          disabled={!leadEmail || busy}
+          aria-label="Insert template"
+          style={{ width: '100%', marginBottom: 8 }}
+        >
+          <option value="">Insert a template…</option>
+          {templates.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
       )}
 
       <input
