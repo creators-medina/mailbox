@@ -56,8 +56,16 @@ export function Footer() {
     {
       h: 'Legal',
       items: [
-        { label: 'Privacy Policy',   href: '#' },
-        { label: 'Terms of Service', href: '#' },
+        { label: 'Privacy Policy',   href: '/privacy' },
+        { label: 'Terms of Service', href: '/terms' },
+        { label: 'Contact',          href: '/#contact' },
+      ],
+    },
+    {
+      h: 'Account',
+      items: [
+        { label: 'Sign in',          href: '/login' },
+        { label: 'Get your address', href: '/signup' },
       ],
     },
   ];
@@ -108,9 +116,9 @@ export function Footer() {
         <div className="w-footer-legal">
           <span>© 2026 My Biz Address. All rights reserved.</span>
           <span>
-            <a href="#">Privacy Policy</a>
+            <a href="/privacy">Privacy Policy</a>
             {' · '}
-            <a href="#">Terms of Service</a>
+            <a href="/terms">Terms of Service</a>
           </span>
         </div>
       </div>
