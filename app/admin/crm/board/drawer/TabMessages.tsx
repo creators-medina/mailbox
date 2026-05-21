@@ -411,11 +411,24 @@ function EmailComposer({
   // result into subject + body. Staff can still edit before sending.
   function applyTemplate(id: string) {
     setTemplateId(id);
+    setLocalErr(null);
     if (!id) return;
     const tpl = templates.find((t) => t.id === id);
     if (!tpl) return;
-    if (tpl.subject) setSubject(renderTemplate(tpl.subject, leadVars));
-    setBodyText(renderTemplate(tpl.body, leadVars));
+
+    const renderedSubject = renderTemplate(tpl.subject, leadVars);
+    const renderedBody = renderTemplate(tpl.body, leadVars);
+
+    if (tpl.subject) setSubject(renderedSubject);
+    setBodyText(renderedBody);
+
+    // Defensive: a template with an empty body (e.g. created via raw SQL) or
+    // one whose entire body was unresolved variables would produce nothing.
+    if (renderedBody.trim().length === 0) {
+      setLocalErr(
+        `Template "${tpl.name}" has no usable body text. Edit it in CRM Templates before sending.`,
+      );
+    }
   }
 
   const canSend = !!leadEmail && subject.trim().length > 0 && bodyText.trim().length > 0 && !busy;

@@ -3,6 +3,7 @@ import { Resend } from 'resend';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { ensureConversationForLead } from '@/lib/crm/conversations';
 import { createMessage, updateMessageDeliveryStatus } from '@/lib/crm/messages';
+import { stripUnresolvedVars } from '@/lib/crm/template-vars';
 import type { Message } from '@/lib/crm/types';
 
 const DEFAULT_FROM = 'My Biz Address <contact@mybizmailbox.biz>';
@@ -44,9 +45,18 @@ export async function sendEmailToLead(input: SendEmailInput): Promise<SendEmailR
   }
 
   const from = process.env.CRM_FROM_EMAIL || DEFAULT_FROM;
-  const subject = (input.subject?.trim() || DEFAULT_SUBJECT).slice(0, 200);
-  const text = input.text.trim();
-  const html = input.html?.trim() || textToHtml(text);
+  // Strip any unresolved {{placeholders}} so a recipient never sees raw
+  // template tokens, then validate there's still real content to send.
+  const subject = (stripUnresolvedVars(input.subject?.trim() || '') || DEFAULT_SUBJECT).slice(0, 200);
+  const text = stripUnresolvedVars(input.text.trim());
+  if (!text) {
+    return {
+      ok: false,
+      error: 'The message body is empty after filling the template. Add some text before sending.',
+      message: null,
+    };
+  }
+  const html = input.html?.trim() ? stripUnresolvedVars(input.html.trim()) : textToHtml(text);
 
   // 1) Reuse the open email conversation for this lead, or create one. The
   //    first email's subject becomes the thread label.
