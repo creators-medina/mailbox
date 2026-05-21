@@ -320,8 +320,7 @@ export default function LeadDrawer({
           )}
           {tab === 'messages' && (
             <TabMessages
-              leadId={lead.id}
-              leadEmail={lead.email}
+              lead={lead}
               staff={staff}
               refreshKey={activityNonce}
               onActivityChange={bumpActivity}

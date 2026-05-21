@@ -160,6 +160,18 @@ export type Message = {
   updated_at: string;
 };
 
+export type MessageTemplate = {
+  id: string;
+  name: string;
+  channel: 'email' | 'sms' | 'internal';
+  subject: string | null;
+  body: string;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type MessageAttachment = {
   id: string;
   message_id: string;
