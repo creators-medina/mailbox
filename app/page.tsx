@@ -3,6 +3,7 @@ import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
 import PricingSection from '@/components/PricingSection';
 import ContactForm from '@/components/ContactForm';
+import { HeroScene } from '@/components/HeroScene';
 import { BUSINESS } from '@/lib/config/business';
 
 export const metadata: Metadata = {
@@ -35,135 +36,6 @@ const jsonLd = {
   }],
 };
 
-/* ── Dashboard mockup ────────────────────────────────────────────────────────────────── */
-const mailItems = [
-  {
-    sender: 'Wells Fargo Business',
-    desc: 'Account statement · Letter',
-    date: 'Today',
-    badge: 'New',
-    cls: 'mock-badge-new',
-    actions: ['Open & scan', 'Forward'],
-  },
-  {
-    sender: 'TX Secretary of State',
-    desc: 'Annual report notice · Letter',
-    date: 'Dec 18',
-    badge: 'Held',
-    cls: 'mock-badge-held',
-    actions: [],
-  },
-  {
-    sender: 'USPS Certified Mail',
-    desc: 'Package · 0.8 lbs',
-    date: 'Dec 17',
-    badge: 'Ready',
-    cls: 'mock-badge-ready',
-    actions: ['Hold for pickup'],
-  },
-  {
-    sender: 'City of Rockwall',
-    desc: 'Business license renewal',
-    date: 'Dec 15',
-    badge: 'Scanned',
-    cls: 'mock-badge-scanned',
-    actions: [],
-  },
-];
-
-function EnvelopeIcon() {
-  return (
-    <svg viewBox="0 0 16 12" width="13" height="10" fill="none"
-         stroke="var(--c-gold-2,#C99A5A)" strokeWidth="1.4"
-         strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="1" width="14" height="10" rx="1.5"/>
-      <path d="M1 3l7 5 7-5"/>
-    </svg>
-  );
-}
-
-function DashboardMockup() {
-  return (
-    <div className="mock-shell">
-      <div className="mock-chrome">
-        <span className="mock-dot mock-dot-1"/>
-        <span className="mock-dot mock-dot-2"/>
-        <span className="mock-dot mock-dot-3"/>
-        <span style={{ marginLeft: 10, font: '400 10px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-          My Biz Address · Mailbox dashboard
-        </span>
-      </div>
-
-      <div className="mock-header">
-        <div>
-          <div className="mock-header-title">My Biz Address</div>
-          <div className="mock-header-sub">Mail dashboard</div>
-        </div>
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%',
-          background: 'rgba(181,138,82,0.18)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          font: '700 11px/1 var(--font-text,sans-serif)',
-          color: 'var(--c-gold-2,#C99A5A)',
-        }}>
-          MB
-        </div>
-      </div>
-
-      <div className="mock-address-block">
-        <div>
-          <div className="mock-address-text" style={{ fontWeight: 600, marginBottom: 2 }}>Suite 247</div>
-          <div className="mock-address-text">802 N Goliad St · Rockwall, TX 75087</div>
-        </div>
-        <div className="mock-active-badge">
-          <span className="mock-active-dot"/>
-          Active
-        </div>
-      </div>
-
-      <div className="mock-section-header">
-        <span className="mock-section-title">Recent mail</span>
-        <span className="mock-section-count">4 items</span>
-      </div>
-
-      {mailItems.map(item => (
-        <div key={item.sender} className="mock-mail-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <div className="mock-envelope"><EnvelopeIcon /></div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="mock-mail-sender">{item.sender}</div>
-              <div className="mock-mail-desc">{item.desc}</div>
-            </div>
-            <div className="mock-mail-right">
-              <div className="mock-mail-date">{item.date}</div>
-              <span className={`mock-badge ${item.cls}`}>{item.badge}</span>
-            </div>
-          </div>
-          {item.actions.length > 0 && (
-            <div className="mock-actions">
-              {item.actions.map(a => (
-                <span key={a} className="mock-action-chip">{a}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-
-      <div style={{
-        padding: '12px 20px',
-        borderTop: '1px solid var(--c-border,rgba(255,255,255,0.08))',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <span style={{ font: '400 11px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-          4 of 12 items shown
-        </span>
-        <span style={{ font: '600 11px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', cursor: 'pointer' }}>
-          View all →
-        </span>
-      </div>
-    </div>
-  );
-}
 
 function PropIcon({ children }: { children: React.ReactNode }) {
   return <div className="prop-icon">{children}</div>;
@@ -237,11 +109,12 @@ export default function Home() {
           <div>
             <div className="w-hero-eyebrow">Rockwall, TX · Mail Receiving Service</div>
             <h1 className="w-hero-title" style={{ fontSize: 54 }}>
-              A professional Rockwall business address.
+              A real business address for your business.
             </h1>
             <p className="w-hero-sub" style={{ margin: '0 0 32px', maxWidth: '100%' }}>
-              Get a real Rockwall business address, receive mail securely,
-              and manage it online from anywhere.
+              Use a professional Rockwall business address, receive mail
+              securely, and manage everything online without renting office
+              space.
             </p>
             <div className="w-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 20 }}>
               <a className="w-cta-pill filled" href="/signup">Get your address</a>
@@ -276,7 +149,7 @@ export default function Home() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <DashboardMockup />
+            <HeroScene />
           </div>
         </div>
 
