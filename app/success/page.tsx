@@ -33,11 +33,12 @@ export default function SuccessPage() {
             maxWidth: 460, margin: '0 auto 36px', textAlign: 'left',
           }}>
             {[
-              'Check your email — we\'ll send your suite number and address details.',
-              'You\'ll receive a separate email to create your account login.',
-              'Once you log in, your mail dashboard will be ready.',
+              'Check your email — we\'ll send a link to set your password and sign in.',
+              'Complete USPS Form 1583 (with a valid photo ID). This postal step is required before we can legally receive your mail.',
+              'Our Rockwall team confirms your suite number and address details.',
+              'Sign in anytime to view mail and request scans, forwarding, or pickup.',
             ].map((step, i) => (
-              <div key={i} style={{ display: 'flex', gap: 14, padding: '10px 0', borderBottom: i < 2 ? '1px solid var(--c-border,rgba(255,255,255,0.07))' : 'none' }}>
+              <div key={i} style={{ display: 'flex', gap: 14, padding: '10px 0', borderBottom: i < 3 ? '1px solid var(--c-border,rgba(255,255,255,0.07))' : 'none' }}>
                 <span style={{
                   width: 22, height: 22, borderRadius: '50%',
                   background: 'rgba(181,138,82,0.15)',

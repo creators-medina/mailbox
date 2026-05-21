@@ -90,7 +90,7 @@ function DashboardMockup() {
         <span className="mock-dot mock-dot-2"/>
         <span className="mock-dot mock-dot-3"/>
         <span style={{ marginLeft: 10, font: '400 10px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-          mybizaddress.com/account
+          My Biz Address · Mailbox dashboard
         </span>
       </div>
 
@@ -295,9 +295,9 @@ export default function Home() {
         <div className="w-section-inner">
           <div className="stats-bar">
             {[
-              { num: '200+',         label: 'Businesses served' },
+              { num: 'Real address', label: 'Not a P.O. box' },
               { num: 'All carriers', label: 'USPS, UPS, FedEx, Amazon' },
-              { num: 'Same day',     label: 'Address activation' },
+              { num: 'Locally run',  label: 'Rockwall, TX team' },
               { num: 'Mon–Sat',      label: '9 am – 6 pm · Rockwall' },
             ].map(s => (
               <div key={s.label} className="stats-bar-item">
@@ -605,8 +605,9 @@ export default function Home() {
             Your Rockwall business address is waiting.
           </h2>
           <p className="w-hero-sub">
-            Join over 200 local businesses. Setup takes less than five minutes
-            and your address is active the same day.
+            Sign up online in minutes and choose your plan. After checkout
+            we&rsquo;ll assign your suite and walk you through USPS Form 1583 —
+            the one postal step required before we can receive your mail.
           </p>
           <div className="w-cta-row">
             <a className="w-cta-pill filled" href="/signup">

@@ -137,6 +137,52 @@ export default function SignupPage() {
             ))}
           </div>
 
+          {/* What happens after checkout */}
+          <div
+            style={{
+              background: 'var(--c-surface,#162032)',
+              border: '1px solid var(--c-border-2,rgba(255,255,255,0.13))',
+              borderRadius: 14,
+              padding: '18px 22px',
+              marginBottom: 36,
+              maxWidth: 560,
+            }}
+          >
+            <p style={{ font: '600 13px/1.2 var(--font-display,sans-serif)', color: '#fff', margin: '0 0 12px' }}>
+              What happens after checkout
+            </p>
+            {[
+              'Secure payment via Stripe activates your plan and reserves your suite number.',
+              'You’ll get an email to set your password and sign in to your dashboard.',
+              'You’ll complete USPS Form 1583 (with ID) — the postal step required before we can receive your mail.',
+              'Our Rockwall team confirms your setup and your address is ready to use.',
+            ].map((step, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  padding: '7px 0',
+                  borderBottom: i < 3 ? '1px solid var(--c-border,rgba(255,255,255,0.07))' : 'none',
+                }}
+              >
+                <span
+                  style={{
+                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                    background: 'rgba(181,138,82,0.15)', border: '1px solid rgba(181,138,82,0.25)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    font: '700 10px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)',
+                  }}
+                >
+                  {i + 1}
+                </span>
+                <span style={{ font: '400 13px/1.55 var(--font-text,sans-serif)', color: 'var(--c-text-2)' }}>
+                  {step}
+                </span>
+              </div>
+            ))}
+          </div>
+
           <form onSubmit={handleSubmit}>
             <div className="signup-grid">
 

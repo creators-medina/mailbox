@@ -238,6 +238,21 @@ export default async function AccountPage() {
               </div>
 
               <div className="dash-card">
+                <span className="dash-card-title">Mail authorization</span>
+                <p style={{ font: '400 13px/1.6 var(--font-text,sans-serif)', color: 'var(--c-text-2)', margin: '4px 0 10px' }}>
+                  Federal rules require a signed <strong>USPS Form 1583</strong> and a valid photo ID
+                  before we can receive mail on your behalf. Our team will guide you through it —
+                  watch your email, or reach out and we&rsquo;ll help you finish.
+                </p>
+                <span
+                  className="mock-badge mock-badge-held"
+                  style={{ display: 'inline-block' }}
+                >
+                  Form 1583 — pending
+                </span>
+              </div>
+
+              <div className="dash-card">
                 <span className="dash-card-title">Account</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <a href="/#contact" style={{ font: '500 14px/1.3 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none' }}>
