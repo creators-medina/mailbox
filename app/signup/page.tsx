@@ -45,10 +45,12 @@ const ADDON_INFO = [
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: '', businessName: '', email: '', phone: '' });
+  // All add-ons are pre-selected on load. Static literals keep the server
+  // and client initial render identical, so there's no hydration mismatch.
   const [addons, setAddons] = useState<Addons>({
-    mailScanning: false,
-    businessPhone: false,
-    googleBusinessSetup: false,
+    mailScanning: true,
+    businessPhone: true,
+    googleBusinessSetup: true,
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
