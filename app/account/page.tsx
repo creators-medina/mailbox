@@ -54,6 +54,18 @@ export default async function AccountPage() {
   const profile  = profileRes.data  as ProfileRow  | null;
   const customer = customerRes.data as CustomerRow | null;
 
+  // Admins and staff don't have a customer portal — send them to the admin shell.
+  if (profile?.role === 'admin' || profile?.role === 'staff') {
+    redirect('/admin');
+  }
+
+  // Orphan / unpaid users: a logged-in account with no customer record never
+  // completed checkout. Show a clear path to start a plan instead of an
+  // empty "setting up" dashboard.
+  if (!customer) {
+    return <NoPlan />;
+  }
+
   let subscription: SubscriptionRow | null = null;
   let mailItems: MailItemRow[] = [];
   let mailRequests: MailRequestRow[] = [];
@@ -262,6 +274,47 @@ export default async function AccountPage() {
             </div>
           )}
 
+        </div>
+      </section>
+      <Footer />
+    </>
+  );
+}
+
+function NoPlan() {
+  return (
+    <>
+      <Nav />
+      <section
+        className="w-section dark"
+        style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: 96, paddingBottom: 80 }}
+      >
+        <div className="w-section-inner" style={{ maxWidth: 560, textAlign: 'center' }}>
+          <div className="w-hero-eyebrow" style={{ marginBottom: 10 }}>Account</div>
+          <h1 style={{ font: '700 30px/1.2 var(--font-display,sans-serif)', color: '#fff', margin: '0 0 14px' }}>
+            Your account isn&rsquo;t connected to a mailbox plan yet.
+          </h1>
+          <p
+            style={{
+              font: '400 16px/1.65 var(--font-text,sans-serif)',
+              color: 'var(--c-text-2)',
+              margin: '0 auto 32px',
+              maxWidth: 460,
+            }}
+          >
+            You&rsquo;re signed in, but we don&rsquo;t have an active business
+            address plan on file for this email. Choose a plan to get your
+            Rockwall address and start receiving mail.
+          </p>
+          <div className="w-cta-row" style={{ justifyContent: 'center', marginBottom: 20 }}>
+            <a className="w-cta-pill filled" href="/signup">Get your address</a>
+            <a className="w-cta-pill outline" href="/#pricing">View plans ›</a>
+          </div>
+          <p style={{ font: '400 13px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 18px' }}>
+            Already paid and seeing this? Make sure you used the same email at
+            checkout, or <a href="/#contact" style={{ color: 'var(--c-gold-2,#C99A5A)' }}>contact us</a> and we&rsquo;ll sort it out.
+          </p>
+          <SignOutButton />
         </div>
       </section>
       <Footer />

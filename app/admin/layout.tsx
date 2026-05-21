@@ -1,6 +1,6 @@
 import 'server-only';
 import type { Metadata } from 'next';
-import { requireAdmin } from '@/lib/auth/require-admin';
+import { requireStaff } from '@/lib/auth/require-staff';
 
 export const metadata: Metadata = {
   title: 'Admin — My Biz Address',
@@ -18,7 +18,7 @@ const NAV_LINKS = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
+  await requireStaff();
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--c-bg,#071B2D)' }}>

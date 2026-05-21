@@ -5,7 +5,7 @@ import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
 import { createClient } from '@/lib/supabase/client';
 
-type Mode = 'login' | 'signup' | 'reset';
+type Mode = 'login' | 'reset';
 
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('login');
@@ -23,19 +23,21 @@ export default function LoginPage() {
 
     try {
       if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        window.location.href = '/account';
-      } else if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/account` },
-        });
-        if (error) throw error;
-        setStatus('success');
-        setMessage('Check your email to confirm your account.');
-        return;
+
+        // Route by role: admins/staff → admin shell, customers → portal.
+        const userId = data.user?.id;
+        let role: string | undefined;
+        if (userId) {
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle();
+          role = (prof as { role?: string } | null)?.role;
+        }
+        window.location.href = role === 'admin' || role === 'staff' ? '/admin' : '/account';
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/account`,
@@ -51,10 +53,7 @@ export default function LoginPage() {
     }
   }
 
-  const heading =
-    mode === 'login' ? 'Sign in to your account' :
-    mode === 'signup' ? 'Create your account' :
-    'Reset your password';
+  const heading = mode === 'login' ? 'Sign in to your account' : 'Reset your password';
 
   return (
     <>
@@ -96,10 +95,10 @@ export default function LoginPage() {
                   <label className="ds-dark-label" htmlFor="l-pass">Password</label>
                   <input
                     id="l-pass" className="ds-dark-input" type="password"
-                    placeholder={mode === 'signup' ? 'Create a password' : 'Your password'}
+                    placeholder="Your password"
                     value={password} onChange={e => setPassword(e.target.value)}
                     required minLength={8}
-                    autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                    autoComplete="current-password"
                   />
                 </div>
               )}
@@ -121,7 +120,6 @@ export default function LoginPage() {
               >
                 {status === 'loading' ? 'Please wait…' :
                  mode === 'login' ? 'Sign in' :
-                 mode === 'signup' ? 'Create account' :
                  'Send reset link'}
               </button>
 
@@ -134,21 +132,11 @@ export default function LoginPage() {
                     </button>
                     <span style={{ font: '400 13px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
                       Don&rsquo;t have an account?{' '}
-                      <button type="button" className="auth-text-link"
-                        onClick={() => { setMode('signup'); setMessage(''); setStatus('idle'); }}>
-                        Sign up
-                      </button>
+                      <a href="/signup" className="auth-text-link" style={{ textDecoration: 'none' }}>
+                        Get your address
+                      </a>
                     </span>
                   </>
-                )}
-                {mode === 'signup' && (
-                  <span style={{ font: '400 13px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-                    Already have an account?{' '}
-                    <button type="button" className="auth-text-link"
-                      onClick={() => { setMode('login'); setMessage(''); setStatus('idle'); }}>
-                      Sign in
-                    </button>
-                  </span>
                 )}
                 {mode === 'reset' && (
                   <button type="button" className="auth-text-link"
