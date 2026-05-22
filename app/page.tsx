@@ -93,103 +93,117 @@ export default function Home() {
 
       <Nav />
 
-      {/* ── 1. Hero ─────────────────────────────────────────────────────────── */}
-      <section
-        className="w-section dark tall"
-        style={{ paddingTop: 'clamp(96px, 12vh, 144px)', paddingBottom: 'clamp(72px, 9vh, 116px)' }}
-      >
-        <div
-          className="w-section-inner hero-grid"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1.12fr',
-            gap: 72,
-            alignItems: 'center',
-            textAlign: 'left',
-          }}
-        >
-          <div>
-            <div className="w-hero-eyebrow">Rockwall, TX business address service</div>
-            <h1
-              className="w-hero-title"
-              style={{
-                fontSize: 'clamp(34px, 5vw, 58px)',
-                lineHeight: 1.08,
-                letterSpacing: '-0.6px',
-                margin: '0 0 22px',
-                maxWidth: 540,
-              }}
-            >
-              A real business address<br className="hero-br" /> for your business.
-            </h1>
-            <p
-              className="w-hero-sub"
-              style={{ margin: '0 0 34px', maxWidth: 430 }}
-            >
-              Use a professional Rockwall business address, receive mail
-              securely, and manage everything online — no office lease required.
-            </p>
-            <div className="w-cta-row hero-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 24 }}>
-              <a className="w-cta-pill filled" href="/signup">Get your address</a>
-              <a className="w-cta-pill outline" href="/#pricing">View plans ›</a>
+      {/* ── 1. Hero (full-bleed split) ───────────────────────────────────────── */}
+      <section className="hero-split-section">
+        <div className="hero-split">
+          {/* Left: copy */}
+          <div className="hero-split-left">
+            <div style={{ maxWidth: 560, width: '100%' }}>
+              <div className="w-hero-eyebrow">Rockwall, TX · Mail Receiving Service</div>
+              <h1
+                className="w-hero-title"
+                style={{
+                  fontSize: 'clamp(34px, 4.6vw, 56px)',
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.6px',
+                  margin: '0 0 22px',
+                }}
+              >
+                A professional Rockwall business address.
+              </h1>
+              <p className="w-hero-sub" style={{ margin: '0 0 34px', maxWidth: 460 }}>
+                Get a real Rockwall business address, receive mail securely,
+                and manage it online from anywhere.
+              </p>
+              <div className="w-cta-row hero-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 24 }}>
+                <a className="w-cta-pill filled" href="/signup">Get your address</a>
+                <a className="w-cta-pill outline" href="/#pricing">View plans ›</a>
+              </div>
+              <div className="hero-proof" style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginTop: 4 }}>
+                {[
+                  'Real Rockwall address',
+                  'Secure mail handling',
+                  'Local pickup available',
+                ].map(t => (
+                  <span key={t} style={{
+                    font: '500 12.5px/1 var(--font-text,sans-serif)',
+                    color: 'var(--c-text-2,rgba(255,255,255,0.7))',
+                    display: 'flex', alignItems: 'center', gap: 7,
+                  }}>
+                    <span aria-hidden style={{ color: 'var(--c-gold-2,#C99A5A)', font: '700 13px/1 var(--font-text,sans-serif)', flexShrink: 0 }}>✓</span>
+                    {t}
+                  </span>
+                ))}
+              </div>
+              <p style={{
+                font: '400 12px/1 var(--font-text,sans-serif)',
+                color: 'var(--c-text-3)', marginTop: 18,
+              }}>
+                Starting at $29.99/mo · No contracts · Cancel anytime
+              </p>
             </div>
-            <div className="hero-proof" style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginTop: 4 }}>
-              {[
-                'Real commercial address',
-                'Secure mail handling',
-                'Cancel anytime',
-              ].map(t => (
-                <span key={t} style={{
-                  font: '500 12.5px/1 var(--font-text,sans-serif)',
-                  color: 'var(--c-text-2,rgba(255,255,255,0.7))',
-                  display: 'flex', alignItems: 'center', gap: 7,
-                }}>
-                  <span aria-hidden style={{ color: 'var(--c-gold-2,#C99A5A)', font: '700 13px/1 var(--font-text,sans-serif)', flexShrink: 0 }}>✓</span>
-                  {t}
-                </span>
-              ))}
-            </div>
-            <p style={{
-              font: '400 12px/1 var(--font-text,sans-serif)',
-              color: 'var(--c-text-3)', marginTop: 18,
-            }}>
-              Plans start at $29.99/mo · No long-term contracts
-            </p>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          {/* Right: full-height cinematic photo panel */}
+          <div className="hero-split-right">
             <HeroImage />
           </div>
         </div>
 
         <style>{`
+          .hero-split-section {
+            position: relative;
+            width: 100%;
+            background: var(--c-bg, #071B2D);
+            color: var(--c-text, #F8FAFC);
+            overflow: hidden;
+          }
+          .hero-split {
+            display: grid;
+            grid-template-columns: 48% 52%;
+            min-height: calc(100vh - 64px);
+          }
+          .hero-split-left {
+            display: flex;
+            align-items: center;
+            text-align: left;
+            padding: 64px 56px 64px max(28px, calc((100vw - 1100px) / 2 + 28px));
+            box-sizing: border-box;
+          }
+          .hero-split-right {
+            position: relative;
+            min-height: calc(100vh - 64px);
+            overflow: hidden;
+          }
+
           .hero-cta-row .w-cta-pill {
             padding: 15px 28px;
             transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
           }
-          .hero-cta-row .w-cta-pill.filled {
-            box-shadow: 0 14px 30px -12px rgba(181,138,82,0.55);
-          }
-          .hero-cta-row .w-cta-pill.filled:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 38px -12px rgba(181,138,82,0.66);
-          }
+          .hero-cta-row .w-cta-pill.filled { box-shadow: 0 14px 30px -12px rgba(181,138,82,0.55); }
+          .hero-cta-row .w-cta-pill.filled:hover { transform: translateY(-2px); box-shadow: 0 20px 38px -12px rgba(181,138,82,0.66); }
           .hero-cta-row .w-cta-pill.outline {
             background: rgba(255,255,255,0.045);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
             border-color: rgba(255,255,255,0.18);
           }
-          .hero-cta-row .w-cta-pill.outline:hover {
-            transform: translateY(-2px);
-            background: rgba(255,255,255,0.09);
-          }
-          @media (max-width: 880px) {
-            .hero-grid { grid-template-columns: 1fr !important; gap: 44px !important; }
-            .hero-grid > :first-child { text-align: center; }
-            .hero-grid .w-cta-row { justify-content: center !important; }
+          .hero-cta-row .w-cta-pill.outline:hover { transform: translateY(-2px); background: rgba(255,255,255,0.09); }
+
+          @media (max-width: 900px) {
+            .hero-split { grid-template-columns: 1fr; min-height: 0; }
+            .hero-split-left {
+              padding: 72px 24px 40px;
+              justify-content: center;
+              text-align: center;
+            }
+            .hero-split-left > div { margin: 0 auto; }
+            .hero-split-left .w-cta-row { justify-content: center !important; }
             .hero-proof { justify-content: center; }
-            .hero-br { display: none; }
+            .hero-split-right {
+              min-height: 0;
+              aspect-ratio: 16 / 10;
+              width: 100%;
+            }
           }
           @media (prefers-reduced-motion: reduce) {
             .hero-cta-row .w-cta-pill:hover { transform: none; }
