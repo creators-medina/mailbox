@@ -93,87 +93,116 @@ export default function Home() {
 
       <Nav />
 
-      {/* ── 1. Hero (full-bleed split) ───────────────────────────────────────── */}
+      {/* ── 1. Hero (atmospheric split composition) ──────────────────────────── */}
       <section className="hero-split-section">
-        <div className="hero-split">
-          {/* Left: copy */}
-          <div className="hero-split-left">
-            <div style={{ maxWidth: 560, width: '100%' }}>
-              <div className="w-hero-eyebrow">Rockwall, TX · Mail Receiving Service</div>
-              <h1
-                className="w-hero-title"
-                style={{
-                  fontSize: 'clamp(34px, 4.6vw, 56px)',
-                  lineHeight: 1.1,
-                  letterSpacing: '-0.6px',
-                  margin: '0 0 22px',
-                }}
-              >
-                A professional Rockwall business address.
-              </h1>
-              <p className="w-hero-sub" style={{ margin: '0 0 34px', maxWidth: 460 }}>
-                Get a real Rockwall business address, receive mail securely,
-                and manage it online from anywhere.
-              </p>
-              <div className="w-cta-row hero-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 24 }}>
-                <a className="w-cta-pill filled" href="/signup">Get your address</a>
-                <a className="w-cta-pill outline" href="/#pricing">View plans ›</a>
-              </div>
-              <div className="hero-proof" style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginTop: 4 }}>
-                {[
-                  'Real Rockwall address',
-                  'Secure mail handling',
-                  'Local pickup available',
-                ].map(t => (
-                  <span key={t} style={{
-                    font: '500 12.5px/1 var(--font-text,sans-serif)',
-                    color: 'var(--c-text-2,rgba(255,255,255,0.7))',
-                    display: 'flex', alignItems: 'center', gap: 7,
-                  }}>
-                    <span aria-hidden style={{ color: 'var(--c-gold-2,#C99A5A)', font: '700 13px/1 var(--font-text,sans-serif)', flexShrink: 0 }}>✓</span>
-                    {t}
-                  </span>
-                ))}
-              </div>
-              <p style={{
-                font: '400 12px/1 var(--font-text,sans-serif)',
-                color: 'var(--c-text-3)', marginTop: 18,
-              }}>
-                Starting at $29.99/mo · No contracts · Cancel anytime
-              </p>
+        {/* Copy (top layer) */}
+        <div className="hero-content">
+          <div className="hero-left">
+            <div className="w-hero-eyebrow">Rockwall, TX · Mail Receiving Service</div>
+            <h1
+              className="w-hero-title hero-headline"
+              style={{
+                fontSize: 'clamp(33px, 3.7vw, 50px)',
+                lineHeight: 1.12,
+                letterSpacing: '-0.5px',
+                margin: '0 0 16px',
+              }}
+            >
+              A professional Rockwall business address.
+            </h1>
+            <p className="w-hero-sub" style={{ margin: '0 0 28px', maxWidth: 440 }}>
+              Get a real Rockwall business address, receive mail securely,
+              and manage it online from anywhere.
+            </p>
+            <div className="w-cta-row hero-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 22 }}>
+              <a className="w-cta-pill filled" href="/signup">Get your address</a>
+              <a className="w-cta-pill outline" href="/#pricing">View plans ›</a>
             </div>
+            <div className="hero-proof">
+              {[
+                'Real Rockwall address',
+                'Secure mail handling',
+                'Local pickup available',
+              ].map(t => (
+                <span key={t} className="hero-proof-item">
+                  <span aria-hidden className="hero-proof-check">✓</span>
+                  {t}
+                </span>
+              ))}
+            </div>
+            <p style={{
+              font: '400 12px/1 var(--font-text,sans-serif)',
+              color: 'var(--c-text-3)', marginTop: 16,
+            }}>
+              Starting at $29.99/mo · No contracts · Cancel anytime
+            </p>
           </div>
+        </div>
 
-          {/* Right: full-height cinematic photo panel */}
-          <div className="hero-split-right">
-            <HeroImage />
-          </div>
+        {/* Left atmosphere (behind copy) */}
+        <div className="hero-atmos-left" aria-hidden />
+
+        {/* Cinematic photo panel (bleeds under the copy on desktop) */}
+        <div className="hero-photo">
+          <HeroImage />
         </div>
 
         <style>{`
           .hero-split-section {
             position: relative;
             width: 100%;
+            min-height: calc(100vh - 64px);
             background: var(--c-bg, #071B2D);
             color: var(--c-text, #F8FAFC);
             overflow: hidden;
           }
-          .hero-split {
-            display: grid;
-            grid-template-columns: 48% 52%;
+          .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 1100px;
+            margin: 0 auto;
             min-height: calc(100vh - 64px);
-          }
-          .hero-split-left {
             display: flex;
             align-items: center;
-            text-align: left;
-            padding: 64px 56px 64px max(28px, calc((100vw - 1100px) / 2 + 28px));
+            padding: 56px 56px 56px max(28px, calc((100vw - 1100px) / 2 + 28px));
             box-sizing: border-box;
+            text-align: left;
           }
-          .hero-split-right {
-            position: relative;
-            min-height: calc(100vh - 64px);
-            overflow: hidden;
+          .hero-left { max-width: 580px; width: 100%; }
+          .hero-headline { text-wrap: balance; }
+
+          .hero-atmos-left {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 54%;
+            z-index: 1;
+            pointer-events: none;
+            background:
+              radial-gradient(46% 50% at 18% 32%, rgba(20,40,64,0.9), transparent 72%),
+              radial-gradient(38% 40% at 12% 80%, rgba(201,154,90,0.10), transparent 70%);
+          }
+
+          .hero-photo {
+            position: absolute;
+            top: 0; right: 0; bottom: 0;
+            width: 60%;
+            z-index: 0;
+          }
+
+          .hero-proof {
+            display: flex; gap: 20px; flex-wrap: wrap; align-items: center; margin-top: 2px;
+          }
+          .hero-proof-item {
+            display: flex; align-items: center; gap: 9px;
+            font: 500 13.5px/1 var(--font-text,sans-serif);
+            color: var(--c-text-2,rgba(255,255,255,0.74));
+          }
+          .hero-proof-check {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 18px; height: 18px; border-radius: 999px; flex-shrink: 0;
+            background: rgba(201,154,90,0.16);
+            color: var(--c-gold-2,#C99A5A);
+            font: 700 11px/1 var(--font-text,sans-serif);
           }
 
           .hero-cta-row .w-cta-pill {
@@ -190,19 +219,18 @@ export default function Home() {
           .hero-cta-row .w-cta-pill.outline:hover { transform: translateY(-2px); background: rgba(255,255,255,0.09); }
 
           @media (max-width: 900px) {
-            .hero-split { grid-template-columns: 1fr; min-height: 0; }
-            .hero-split-left {
-              padding: 72px 24px 40px;
-              justify-content: center;
-              text-align: center;
+            .hero-split-section { display: flex; flex-direction: column; min-height: 0; }
+            .hero-content {
+              position: static; min-height: 0; max-width: 100%;
+              padding: 72px 24px 40px; justify-content: center; text-align: center;
             }
-            .hero-split-left > div { margin: 0 auto; }
-            .hero-split-left .w-cta-row { justify-content: center !important; }
+            .hero-left { margin: 0 auto; }
+            .hero-headline { max-width: 100%; }
+            .hero-content .w-cta-row { justify-content: center !important; }
             .hero-proof { justify-content: center; }
-            .hero-split-right {
-              min-height: 0;
-              aspect-ratio: 16 / 10;
-              width: 100%;
+            .hero-atmos-left { display: none; }
+            .hero-photo {
+              position: static; width: 100%; aspect-ratio: 16 / 10;
             }
           }
           @media (prefers-reduced-motion: reduce) {
