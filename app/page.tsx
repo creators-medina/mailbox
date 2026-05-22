@@ -155,19 +155,22 @@ export default function Home() {
           }
           .hero-bg { position: absolute; inset: 0; z-index: 0; }
 
+          /* Copy is anchored to a wider container so it sits noticeably
+             further left (~90px on a 1440 screen) — asymmetric, editorial,
+             letting the full-bleed photo dominate the right. */
           .hero-content {
             position: relative;
             z-index: 2;
-            max-width: 1100px;
+            max-width: 1280px;
             margin: 0 auto;
             min-height: calc(100vh - 64px);
             display: flex;
             align-items: center;
-            padding: 56px max(28px, calc((100vw - 1100px) / 2 + 28px));
+            padding: 56px max(28px, calc((100vw - 1280px) / 2 + 28px));
             box-sizing: border-box;
             text-align: left;
           }
-          .hero-left { max-width: 600px; width: 100%; }
+          .hero-left { max-width: 560px; width: 100%; }
 
           .hero-proof { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
           .hero-proof-item {
