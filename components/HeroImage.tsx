@@ -1,7 +1,7 @@
 import Image from 'next/image';
 
-// Cinematic photo panel for the atmospheric split hero. Fills .hero-photo
-// (which bleeds ~10–15% under the copy on desktop). The JPG lives at
+// Full-bleed cinematic background for the hero. Fills .hero-bg (absolute
+// inset on desktop, a static banner on mobile). The JPG lives at
 // /public/images/hero-desk-scene.jpg.
 const GRAIN =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
@@ -14,45 +14,42 @@ export function HeroImage() {
         alt="My Biz Address envelopes addressed to a Rockwall business on a desk, beside a coffee mug and a laptop showing the online mail dashboard."
         fill
         priority
-        sizes="(max-width: 900px) 100vw, 60vw"
+        sizes="100vw"
         style={{
           objectFit: 'cover',
-          objectPosition: '50% 48%',
-          // Lift shadows / warm it slightly without over-brightening.
-          filter: 'brightness(1.1) contrast(0.96) saturate(1.05)',
+          objectPosition: '62% 55%',
+          filter: 'brightness(1.06) contrast(0.97) saturate(1.04)',
         }}
       />
 
-      {/* Gentle navy darken so it stays cinematic and blends with the page */}
+      {/* Strong left navy blend so the copy reads on the background with no
+          card — fades smoothly into the photo on the right (no hard edge).
+          On mobile this becomes a top fade for the banner. */}
+      <div className="hero-bg-blend" aria-hidden />
+
+      {/* Soft top fade (blends into the nav) + bottom grounding vignette */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
           inset: 0,
           background:
-            'linear-gradient(0deg, rgba(7,27,45,0.34), transparent 40%), ' +
-            'linear-gradient(160deg, rgba(7,27,45,0.16), transparent 42%)',
+            'linear-gradient(180deg, rgba(7,17,29,0.45), transparent 13%), ' +
+            'linear-gradient(0deg, rgba(7,17,29,0.52), transparent 40%)',
         }}
       />
 
-      {/* Warm edge light along the bottom-right */}
+      {/* Soft navy vignette around the edges */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
           inset: 0,
-          background:
-            'radial-gradient(50% 46% at 82% 84%, rgba(201,154,90,0.16), transparent 60%)',
-          mixBlendMode: 'screen',
+          boxShadow: 'inset 0 0 150px rgba(5,12,22,0.55)',
         }}
       />
 
-      {/* Wide, soft edge fade into the page background. On desktop this ramps
-          across the photo's left side so it bleeds under the copy while
-          keeping text readable; on mobile it fades from the top. */}
-      <div className="hero-img-fade" aria-hidden />
-
-      {/* Faint film grain (premium finishing detail) */}
+      {/* Faint film grain (very subtle) */}
       <div
         aria-hidden
         style={{
@@ -60,42 +57,32 @@ export function HeroImage() {
           inset: 0,
           backgroundImage: `url("${GRAIN}")`,
           backgroundSize: '140px 140px',
-          opacity: 0.05,
+          opacity: 0.04,
           mixBlendMode: 'overlay',
           pointerEvents: 'none',
         }}
       />
 
-      {/* Faint vignette */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          inset: 0,
-          boxShadow: 'inset 0 0 120px rgba(5,12,22,0.5)',
-        }}
-      />
-
       <style>{`
-        .hero-img-fade {
+        .hero-bg-blend {
           position: absolute;
           inset: 0;
           background: linear-gradient(
             to right,
             var(--c-bg, #071B2D) 0%,
-            var(--c-bg, #071B2D) 11%,
-            rgba(7,27,45,0.82) 26%,
-            rgba(7,27,45,0.32) 42%,
-            rgba(7,27,45,0) 58%
+            rgba(7,27,45,0.97) 16%,
+            rgba(7,27,45,0.72) 36%,
+            rgba(7,27,45,0.30) 56%,
+            rgba(7,27,45,0) 80%
           );
         }
         @media (max-width: 900px) {
-          .hero-img-fade {
+          .hero-bg-blend {
             background: linear-gradient(
               to bottom,
               var(--c-bg, #071B2D) 0%,
-              rgba(7,27,45,0.45) 7%,
-              rgba(7,27,45,0) 24%
+              rgba(7,27,45,0.45) 8%,
+              rgba(7,27,45,0) 26%
             );
           }
         }

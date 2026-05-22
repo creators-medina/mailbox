@@ -93,24 +93,24 @@ export default function Home() {
 
       <Nav />
 
-      {/* ── 1. Hero (atmospheric split composition) ──────────────────────────── */}
-      <section className="hero-split-section">
-        {/* Copy (top layer) */}
+      {/* ── 1. Hero (full-background composition) ────────────────────────────── */}
+      <section className="hero-bg-section">
+        {/* Copy — sits directly on the dark navy blend, no card */}
         <div className="hero-content">
           <div className="hero-left">
             <div className="w-hero-eyebrow">Rockwall, TX · Mail Receiving Service</div>
             <h1
               className="w-hero-title hero-headline"
               style={{
-                fontSize: 'clamp(33px, 3.7vw, 50px)',
+                fontSize: 'clamp(34px, 3.7vw, 50px)',
                 lineHeight: 1.12,
                 letterSpacing: '-0.5px',
-                margin: '0 0 16px',
+                margin: '0 0 18px',
               }}
             >
-              A professional Rockwall business address.
+              A professional Rockwall<br className="hero-br" /> business address.
             </h1>
-            <p className="w-hero-sub" style={{ margin: '0 0 28px', maxWidth: 440 }}>
+            <p className="w-hero-sub" style={{ margin: '0 0 28px', maxWidth: 460 }}>
               Get a real Rockwall business address, receive mail securely,
               and manage it online from anywhere.
             </p>
@@ -139,16 +139,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Left atmosphere (behind copy) */}
-        <div className="hero-atmos-left" aria-hidden />
-
-        {/* Cinematic photo panel (bleeds under the copy on desktop) */}
-        <div className="hero-photo">
+        {/* Full-bleed cinematic photo background */}
+        <div className="hero-bg">
           <HeroImage />
         </div>
 
         <style>{`
-          .hero-split-section {
+          .hero-bg-section {
             position: relative;
             width: 100%;
             min-height: calc(100vh - 64px);
@@ -156,6 +153,8 @@ export default function Home() {
             color: var(--c-text, #F8FAFC);
             overflow: hidden;
           }
+          .hero-bg { position: absolute; inset: 0; z-index: 0; }
+
           .hero-content {
             position: relative;
             z-index: 2;
@@ -164,38 +163,17 @@ export default function Home() {
             min-height: calc(100vh - 64px);
             display: flex;
             align-items: center;
-            padding: 56px 56px 56px max(28px, calc((100vw - 1100px) / 2 + 28px));
+            padding: 56px max(28px, calc((100vw - 1100px) / 2 + 28px));
             box-sizing: border-box;
             text-align: left;
           }
-          .hero-left { max-width: 580px; width: 100%; }
-          .hero-headline { text-wrap: balance; }
+          .hero-left { max-width: 640px; width: 100%; }
 
-          .hero-atmos-left {
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 54%;
-            z-index: 1;
-            pointer-events: none;
-            background:
-              radial-gradient(46% 50% at 18% 32%, rgba(20,40,64,0.9), transparent 72%),
-              radial-gradient(38% 40% at 12% 80%, rgba(201,154,90,0.10), transparent 70%);
-          }
-
-          .hero-photo {
-            position: absolute;
-            top: 0; right: 0; bottom: 0;
-            width: 60%;
-            z-index: 0;
-          }
-
-          .hero-proof {
-            display: flex; gap: 20px; flex-wrap: wrap; align-items: center; margin-top: 2px;
-          }
+          .hero-proof { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
           .hero-proof-item {
             display: flex; align-items: center; gap: 9px;
-            font: 500 13.5px/1 var(--font-text,sans-serif);
-            color: var(--c-text-2,rgba(255,255,255,0.74));
+            font: 500 13px/1 var(--font-text,sans-serif);
+            color: var(--c-text-2,rgba(255,255,255,0.78));
           }
           .hero-proof-check {
             display: inline-flex; align-items: center; justify-content: center;
@@ -205,33 +183,32 @@ export default function Home() {
             font: 700 11px/1 var(--font-text,sans-serif);
           }
 
+          /* Muted, premium buttons — cream primary with a soft neutral shadow,
+             glassy dark secondary. No bright gold glow. */
           .hero-cta-row .w-cta-pill {
-            padding: 15px 28px;
+            padding: 14px 28px;
             transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
           }
-          .hero-cta-row .w-cta-pill.filled { box-shadow: 0 14px 30px -12px rgba(181,138,82,0.55); }
-          .hero-cta-row .w-cta-pill.filled:hover { transform: translateY(-2px); box-shadow: 0 20px 38px -12px rgba(181,138,82,0.66); }
+          .hero-cta-row .w-cta-pill.filled { box-shadow: 0 10px 26px -12px rgba(0,0,0,0.55); }
+          .hero-cta-row .w-cta-pill.filled:hover { transform: translateY(-2px); box-shadow: 0 16px 32px -12px rgba(0,0,0,0.6); }
           .hero-cta-row .w-cta-pill.outline {
-            background: rgba(255,255,255,0.045);
-            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-            border-color: rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            border-color: rgba(255,255,255,0.20);
           }
-          .hero-cta-row .w-cta-pill.outline:hover { transform: translateY(-2px); background: rgba(255,255,255,0.09); }
+          .hero-cta-row .w-cta-pill.outline:hover { transform: translateY(-2px); background: rgba(255,255,255,0.11); }
 
           @media (max-width: 900px) {
-            .hero-split-section { display: flex; flex-direction: column; min-height: 0; }
+            .hero-bg-section { display: flex; flex-direction: column; min-height: 0; }
             .hero-content {
               position: static; min-height: 0; max-width: 100%;
-              padding: 72px 24px 40px; justify-content: center; text-align: center;
+              padding: 64px 24px 38px; justify-content: center; text-align: center;
             }
-            .hero-left { margin: 0 auto; }
-            .hero-headline { max-width: 100%; }
+            .hero-left { margin: 0 auto; max-width: 540px; }
+            .hero-br { display: none; }
             .hero-content .w-cta-row { justify-content: center !important; }
             .hero-proof { justify-content: center; }
-            .hero-atmos-left { display: none; }
-            .hero-photo {
-              position: static; width: 100%; aspect-ratio: 16 / 10;
-            }
+            .hero-bg { position: static; width: 100%; aspect-ratio: 16 / 10; }
           }
           @media (prefers-reduced-motion: reduce) {
             .hero-cta-row .w-cta-pill:hover { transform: none; }
