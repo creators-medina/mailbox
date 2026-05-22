@@ -98,23 +98,23 @@ export default function Home() {
         {/* Copy — sits directly on the dark navy blend, no card */}
         <div className="hero-content">
           <div className="hero-left">
-            <div className="w-hero-eyebrow">Rockwall, TX · Mail Receiving Service</div>
+            <div className="w-hero-eyebrow" style={{ margin: '0 0 18px' }}>Rockwall, TX · Mail Receiving Service</div>
             <h1
               className="w-hero-title hero-headline"
               style={{
                 fontSize: 'clamp(34px, 3.7vw, 50px)',
                 lineHeight: 1.12,
                 letterSpacing: '-0.5px',
-                margin: '0 0 18px',
+                margin: '0 0 24px',
               }}
             >
               A professional Rockwall<br className="hero-br" /> business address.
             </h1>
-            <p className="w-hero-sub" style={{ margin: '0 0 28px', maxWidth: 460 }}>
+            <p className="w-hero-sub" style={{ margin: '0 0 32px', maxWidth: 460 }}>
               Get a real Rockwall business address, receive mail securely,
               and manage it online from anywhere.
             </p>
-            <div className="w-cta-row hero-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 22 }}>
+            <div className="w-cta-row hero-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 26 }}>
               <a className="w-cta-pill filled" href="/signup">Get your address</a>
               <a className="w-cta-pill outline" href="/#pricing">View plans ›</a>
             </div>
@@ -132,7 +132,7 @@ export default function Home() {
             </div>
             <p style={{
               font: '400 12px/1 var(--font-text,sans-serif)',
-              color: 'var(--c-text-3)', marginTop: 16,
+              color: 'var(--c-text-3)', marginTop: 22,
             }}>
               Starting at $29.99/mo · No contracts · Cancel anytime
             </p>
@@ -167,7 +167,7 @@ export default function Home() {
             box-sizing: border-box;
             text-align: left;
           }
-          .hero-left { max-width: 640px; width: 100%; }
+          .hero-left { max-width: 600px; width: 100%; }
 
           .hero-proof { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
           .hero-proof-item {

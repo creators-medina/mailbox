@@ -70,10 +70,10 @@ export function HeroImage() {
           background: linear-gradient(
             to right,
             var(--c-bg, #071B2D) 0%,
-            rgba(7,27,45,0.97) 16%,
-            rgba(7,27,45,0.72) 36%,
-            rgba(7,27,45,0.30) 56%,
-            rgba(7,27,45,0) 80%
+            rgba(7,27,45,0.94) 16%,
+            rgba(7,27,45,0.64) 34%,
+            rgba(7,27,45,0.26) 52%,
+            rgba(7,27,45,0) 66%
           );
         }
         @media (max-width: 900px) {
