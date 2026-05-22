@@ -94,56 +94,66 @@ export default function Home() {
       <Nav />
 
       {/* ── 1. Hero ─────────────────────────────────────────────────────────── */}
-      <section className="w-section dark tall">
+      <section
+        className="w-section dark tall"
+        style={{ paddingTop: 'clamp(96px, 12vh, 144px)', paddingBottom: 'clamp(72px, 9vh, 116px)' }}
+      >
         <div
           className="w-section-inner hero-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 64,
+            gridTemplateColumns: '1fr 1.12fr',
+            gap: 72,
             alignItems: 'center',
             textAlign: 'left',
           }}
         >
           <div>
-            <div className="w-hero-eyebrow">Rockwall, TX · Mail Receiving Service</div>
-            <h1 className="w-hero-title" style={{ fontSize: 54 }}>
-              A real business address for your business.
+            <div className="w-hero-eyebrow">Rockwall, TX business address service</div>
+            <h1
+              className="w-hero-title"
+              style={{
+                fontSize: 'clamp(34px, 5vw, 58px)',
+                lineHeight: 1.08,
+                letterSpacing: '-0.6px',
+                margin: '0 0 22px',
+                maxWidth: 540,
+              }}
+            >
+              A real business address<br className="hero-br" /> for your business.
             </h1>
-            <p className="w-hero-sub" style={{ margin: '0 0 32px', maxWidth: '100%' }}>
+            <p
+              className="w-hero-sub"
+              style={{ margin: '0 0 34px', maxWidth: 430 }}
+            >
               Use a professional Rockwall business address, receive mail
-              securely, and manage everything online without renting office
-              space.
+              securely, and manage everything online — no office lease required.
             </p>
-            <div className="w-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 20 }}>
+            <div className="w-cta-row hero-cta-row" style={{ justifyContent: 'flex-start', marginBottom: 24 }}>
               <a className="w-cta-pill filled" href="/signup">Get your address</a>
               <a className="w-cta-pill outline" href="/#pricing">View plans ›</a>
             </div>
-            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 4 }}>
+            <div className="hero-proof" style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginTop: 4 }}>
               {[
-                'Real Rockwall address',
+                'Real commercial address',
                 'Secure mail handling',
-                'Local pickup available',
+                'Cancel anytime',
               ].map(t => (
                 <span key={t} style={{
-                  font: '500 12px/1 var(--font-text,sans-serif)',
-                  color: 'var(--c-text-3)',
-                  display: 'flex', alignItems: 'center', gap: 6,
+                  font: '500 12.5px/1 var(--font-text,sans-serif)',
+                  color: 'var(--c-text-2,rgba(255,255,255,0.7))',
+                  display: 'flex', alignItems: 'center', gap: 7,
                 }}>
-                  <span style={{
-                    width: 4, height: 4, borderRadius: '50%',
-                    background: 'var(--c-gold,#B58A52)',
-                    display: 'inline-block', flexShrink: 0,
-                  }}/>
+                  <span aria-hidden style={{ color: 'var(--c-gold-2,#C99A5A)', font: '700 13px/1 var(--font-text,sans-serif)', flexShrink: 0 }}>✓</span>
                   {t}
                 </span>
               ))}
             </div>
             <p style={{
               font: '400 12px/1 var(--font-text,sans-serif)',
-              color: 'var(--c-text-3)', marginTop: 16,
+              color: 'var(--c-text-3)', marginTop: 18,
             }}>
-              Starting at $29.99/mo · No contracts · Cancel anytime
+              Plans start at $29.99/mo · No long-term contracts
             </p>
           </div>
 
@@ -153,11 +163,36 @@ export default function Home() {
         </div>
 
         <style>{`
+          .hero-cta-row .w-cta-pill {
+            padding: 15px 28px;
+            transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+          }
+          .hero-cta-row .w-cta-pill.filled {
+            box-shadow: 0 14px 30px -12px rgba(181,138,82,0.55);
+          }
+          .hero-cta-row .w-cta-pill.filled:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 38px -12px rgba(181,138,82,0.66);
+          }
+          .hero-cta-row .w-cta-pill.outline {
+            background: rgba(255,255,255,0.045);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-color: rgba(255,255,255,0.18);
+          }
+          .hero-cta-row .w-cta-pill.outline:hover {
+            transform: translateY(-2px);
+            background: rgba(255,255,255,0.09);
+          }
           @media (max-width: 880px) {
-            .hero-grid { grid-template-columns: 1fr !important; }
+            .hero-grid { grid-template-columns: 1fr !important; gap: 44px !important; }
             .hero-grid > :first-child { text-align: center; }
             .hero-grid .w-cta-row { justify-content: center !important; }
-            .hero-grid > :first-child > div:last-of-type { justify-content: center; }
+            .hero-proof { justify-content: center; }
+            .hero-br { display: none; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .hero-cta-row .w-cta-pill:hover { transform: none; }
           }
         `}</style>
       </section>
