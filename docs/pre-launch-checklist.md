@@ -71,11 +71,20 @@ Apply in order in the SQL editor (all idempotent):
 ## 7. USPS Form 1583 (compliance — required to legally receive mail)
 
 - [ ] Confirm your CMRA registration with USPS for the Rockwall location.
+- [ ] Apply migration `013_compliance_form_1583.sql` (creates
+      `public.customer_compliance`). Migrations are **not** auto-applied — run it
+      manually in Supabase.
 - [ ] Decide the interim process for collecting signed Form 1583 + two IDs
-      (in-person notarization or remote online notarization) until the in-app
-      flow ships.
-- [ ] Do not accept/release customer mail until a verified 1583 is on file.
-- [ ] See `docs/form-1583-implementation.md` for the full in-app build-out plan.
+      (in-person notarization or remote online notarization) — document upload is
+      not yet in-app.
+- [ ] Staff workflow (Phase 5a, shipped): on `/admin/customers/[id]` set the
+      Form 1583 and Photo ID statuses; both `verified` stamps `verified_at` and
+      the customer dashboard reflects it.
+- [ ] Mail intake (`/admin/mail/upload`) flags each customer ✓/⚠ — **do not
+      process mail until the customer shows ✓ verified.** Intake is not yet hard
+      blocked in code.
+- [ ] See `docs/form-1583-implementation.md` for the remaining build-out
+      (document storage, e-sign, hard blocking, notifications, audit trail).
 
 ## 8. Smoke test (after domain + Stripe live)
 
@@ -83,7 +92,7 @@ Apply in order in the SQL editor (all idempotent):
 - [ ] `/signup` → choose plan + add-ons → Stripe checkout → pay → redirected to `/success`.
 - [ ] Webhook fires → customer + subscription rows created in Supabase; suite number assigned.
 - [ ] Invite email arrives → set password → `/login` → customer lands on `/account`; admin/staff land on `/admin`.
-- [ ] `/account` shows suite, address, subscription add-ons, Form 1583 "pending" card, billing-portal button.
+- [ ] `/account` shows suite, address, subscription add-ons, the Mail authorization card reflecting real compliance status, billing-portal button.
 - [ ] Public contact form → email delivered → lead appears on CRM board.
 - [ ] CRM: open a lead → send a template email → arrives; notes/tasks/activity all work.
 - [ ] Orphan account (no customer row) → sees "not connected to a mailbox plan" page.

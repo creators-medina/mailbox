@@ -84,7 +84,7 @@ export default async function AccountPage() {
   let mailItems: MailItemRow[] = [];
   let mailRequests: MailRequestRow[] = [];
 
-  const [sr, mr, rr, openRr] = await Promise.all([
+  const [sr, mr, rr, openRr, compRes] = await Promise.all([
     admin.from('subscriptions').select('*').eq('customer_id', c.id)
       .order('created_at', { ascending: false }).limit(1),
     admin.from('mail_items').select('*').eq('customer_id', c.id)
@@ -93,10 +93,17 @@ export default async function AccountPage() {
       .order('created_at', { ascending: false }).limit(5),
     admin.from('mail_requests').select('mail_item_id').eq('customer_id', c.id)
       .in('status', ['pending', 'in_progress']),
+    admin.from('customer_compliance').select('form_1583_status, photo_id_status').eq('customer_id', c.id)
+      .maybeSingle(),
   ]);
   subscription = ((sr.data ?? [])[0] ?? null) as SubscriptionRow | null;
   mailItems    = (mr.data ?? []) as MailItemRow[];
   mailRequests = (rr.data ?? []) as MailRequestRow[];
+
+  // Compliance — absent row means both items are still pending.
+  const compliance = compRes.data as { form_1583_status: string; photo_id_status: string } | null;
+  const form1583Status = compliance?.form_1583_status ?? 'pending';
+  const photoIdStatus  = compliance?.photo_id_status ?? 'pending';
 
   // Mail items that already have an open request — used to suppress duplicate
   // request buttons in the inbox.
@@ -139,14 +146,18 @@ export default async function AccountPage() {
       note: c.suite_number ? undefined : 'We’re assigning your suite number now.',
     },
     {
-      label: 'USPS Form 1583 signed',
-      status: 'pending',
-      note: 'Required before we can legally receive mail on your behalf.',
+      label: 'USPS Form 1583 verified',
+      status: form1583Status === 'verified' ? 'done' : 'pending',
+      note: form1583Status === 'verified'
+        ? undefined
+        : 'Required before we can legally receive mail on your behalf.',
     },
     {
       label: 'Photo ID verified',
-      status: 'pending',
-      note: 'A valid government photo ID is required to authorize mail handling.',
+      status: photoIdStatus === 'verified' ? 'done' : 'pending',
+      note: photoIdStatus === 'verified'
+        ? undefined
+        : 'A valid government photo ID is required to authorize mail handling.',
     },
   ];
   if (subscription?.mail_scanning_enabled) {
@@ -197,7 +208,7 @@ export default async function AccountPage() {
                 subscription={subscription}
                 hasStripeCustomer={Boolean(c.stripe_customer_id)}
               />
-              <MailAuthorizationCard />
+              <MailAuthorizationCard form1583Status={form1583Status} photoIdStatus={photoIdStatus} />
               <QuickActionsCard />
             </div>
           </div>

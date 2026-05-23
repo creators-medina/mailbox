@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import AdminNoteForm from './AdminNoteForm';
 import SuiteEditor from './SuiteEditor';
+import ComplianceEditor from './ComplianceEditor';
 import MailStatusButton from '@/app/admin/mail/MailStatusButton';
 
 type MailItem = {
@@ -68,7 +69,7 @@ export default async function CustomerDetailPage({
     } | null;
   };
 
-  const [subRes, mailRes, requestRes, notesRes] = await Promise.all([
+  const [subRes, mailRes, requestRes, notesRes, complianceRes] = await Promise.all([
     admin.from('subscriptions')
       .select('status, mail_scanning_enabled, business_phone_enabled, google_business_setup_purchased, current_period_end')
       .eq('customer_id', params.customerId)
@@ -87,6 +88,10 @@ export default async function CustomerDetailPage({
       .select('id, note, created_at')
       .eq('customer_id', params.customerId)
       .order('created_at', { ascending: false }),
+    admin.from('customer_compliance')
+      .select('form_1583_status, photo_id_status, verified_at, verified_by, notes')
+      .eq('customer_id', params.customerId)
+      .maybeSingle(),
   ]);
 
   const sub = subRes.data as {
@@ -99,6 +104,25 @@ export default async function CustomerDetailPage({
   const mailItems  = (mailRes.data ?? [])    as MailItem[];
   const requests   = (requestRes.data ?? []) as MailRequest[];
   const adminNotes = (notesRes.data ?? [])   as AdminNote[];
+  const compliance = complianceRes.data as {
+    form_1583_status: string;
+    photo_id_status: string;
+    verified_at: string | null;
+    verified_by: string | null;
+    notes: string | null;
+  } | null;
+
+  // Resolve verified_by → a human label (best-effort).
+  let verifiedByLabel: string | null = null;
+  if (compliance?.verified_by) {
+    const { data: vb } = await admin
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', compliance.verified_by)
+      .maybeSingle();
+    const v = vb as { full_name: string | null; email: string | null } | null;
+    verifiedByLabel = v?.full_name || v?.email || 'staff';
+  }
 
   const p = customer.profiles;
 
@@ -162,6 +186,22 @@ export default async function CustomerDetailPage({
             </p>
           )}
         </div>
+      </div>
+
+      {/* ── Compliance ────────────────────────────────────────────────────────── */}
+      <div className="dash-card" style={{ marginBottom: 20 }}>
+        <span className="dash-card-title">Mail authorization (Form 1583)</span>
+        <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 18px' }}>
+          Verify the signed USPS Form 1583 and a valid photo ID before processing this customer&rsquo;s mail.
+        </p>
+        <ComplianceEditor
+          customerId={customer.id}
+          initialForm1583={compliance?.form_1583_status ?? 'pending'}
+          initialPhotoId={compliance?.photo_id_status ?? 'pending'}
+          initialNotes={compliance?.notes ?? ''}
+          verifiedAt={compliance?.verified_at ?? null}
+          verifiedByLabel={verifiedByLabel}
+        />
       </div>
 
       {/* ── Mail items ────────────────────────────────────────────────────────── */}

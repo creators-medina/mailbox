@@ -6,6 +6,7 @@ type CustomerOption = {
   id: string;
   suite_number: string | null;
   display: string;
+  complianceVerified: boolean;
 };
 
 export default function UploadForm({
@@ -19,6 +20,9 @@ export default function UploadForm({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [selectedId, setSelectedId] = useState(defaultCustomerId ?? '');
+
+  const selected = customers.find(c => c.id === selectedId);
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,6 +40,7 @@ export default function UploadForm({
       if (res.ok) {
         setSuccess('Mail item uploaded successfully.');
         form.reset();
+        setSelectedId('');
         router.refresh();
       } else {
         const data = await res.json() as { error?: string };
@@ -50,14 +55,31 @@ export default function UploadForm({
       {/* Customer select */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <label className="admin-label">Customer *</label>
-        <select name="customer_id" required defaultValue={defaultCustomerId ?? ''} className="admin-select">
+        <select
+          name="customer_id"
+          required
+          value={selectedId}
+          onChange={e => setSelectedId(e.target.value)}
+          className="admin-select"
+        >
           <option value="">— Select customer —</option>
           {customers.map(c => (
             <option key={c.id} value={c.id}>
               {c.suite_number ? `${c.suite_number} — ` : ''}{c.display}
+              {c.complianceVerified ? ' ✓' : ' ⚠'}
             </option>
           ))}
         </select>
+        {selected && (
+          <span style={{
+            font: '500 12px/1.4 var(--font-text,sans-serif)',
+            color: selected.complianceVerified ? '#4ade80' : '#f87171',
+          }}>
+            {selected.complianceVerified
+              ? '✓ Form 1583 & ID verified — cleared for mail handling.'
+              : '⚠ Not verified — confirm Form 1583 & ID before processing mail.'}
+          </span>
+        )}
       </div>
 
       {/* Sender */}
