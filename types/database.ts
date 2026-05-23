@@ -120,6 +120,8 @@ export interface Database {
           tracking_number: string | null;
           status: string;
           received_at: string;
+          received_email_sent_at: string | null;
+          scan_ready_email_sent_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -161,6 +163,7 @@ export interface Database {
           notes: string | null;
           admin_notes: string | null;
           completed_at: string | null;
+          last_status_email_sent_at: string | null;
           created_at: string;
           updated_at: string;
         };

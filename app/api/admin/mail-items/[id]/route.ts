@@ -1,6 +1,7 @@
 import 'server-only';
 import { checkIsStaff } from '@/lib/auth/require-staff';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { notifyScanReady } from '@/lib/email/notify-mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (error) {
     console.error('[admin/mail-items PATCH] update failed:', error.message);
     return Response.json({ error: 'Could not update the mail item.' }, { status: 500 });
+  }
+
+  // Non-fatal: notify the customer when the item becomes scanned.
+  if (update.status === 'scanned') {
+    await notifyScanReady(admin, params.id);
   }
 
   return Response.json({ ok: true });
