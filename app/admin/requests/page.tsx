@@ -7,13 +7,12 @@ type RequestRow = {
   request_type: string;
   status: string;
   notes: string | null;
-  admin_notes: string | null;
   created_at: string;
-  mail_items: { sender: string | null; title: string | null } | null;
-  customers: {
-    suite_number: string | null;
-    profiles: { business_name: string | null; email: string | null } | null;
-  } | null;
+  mailSender: string | null;
+  mailTitle: string | null;
+  suiteNumber: string | null;
+  businessName: string | null;
+  customerEmail: string | null;
 };
 
 export const dynamic = 'force-dynamic';
@@ -26,22 +25,81 @@ export default async function AdminRequestsPage({
   const statusFilter = searchParams.status ?? 'pending';
   const admin = createAdminClientAny();
 
+  // Fetch mail_requests FLAT — no nested PostgREST embeds. Embedding
+  // customers→profiles can fail (e.g. ambiguous relationships from extra
+  // columns), which previously returned an error and silently showed nothing.
   let query = admin
     .from('mail_requests')
-    .select(`
-      id, request_type, status, notes, admin_notes, created_at,
-      mail_items(sender, title),
-      customers(suite_number, profiles(business_name, email))
-    `)
+    .select('id, request_type, status, notes, created_at, customer_id, mail_item_id')
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(200);
 
   if (statusFilter !== 'all') {
     query = query.eq('status', statusFilter) as typeof query;
   }
 
-  const { data } = await query;
-  const requests = (data ?? []) as unknown as RequestRow[];
+  const { data: reqData, error: reqErr } = await query;
+  if (reqErr) {
+    console.error('[admin/requests] mail_requests query failed:', reqErr.message);
+  }
+
+  const baseRows = (reqData ?? []) as Array<{
+    id: string;
+    request_type: string;
+    status: string;
+    notes: string | null;
+    created_at: string;
+    customer_id: string | null;
+    mail_item_id: string | null;
+  }>;
+
+  const customerIds = Array.from(new Set(baseRows.map(r => r.customer_id).filter(Boolean))) as string[];
+  const mailItemIds = Array.from(new Set(baseRows.map(r => r.mail_item_id).filter(Boolean))) as string[];
+
+  // Resolve related rows in bulk and join in JS.
+  const [custRes, miRes] = await Promise.all([
+    customerIds.length
+      ? admin.from('customers').select('id, suite_number, email, profile_id').in('id', customerIds)
+      : Promise.resolve({ data: [] }),
+    mailItemIds.length
+      ? admin.from('mail_items').select('id, sender, title').in('id', mailItemIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const customers = (custRes.data ?? []) as Array<{
+    id: string; suite_number: string | null; email: string | null; profile_id: string | null;
+  }>;
+  const mailItems = (miRes.data ?? []) as Array<{ id: string; sender: string | null; title: string | null }>;
+
+  const profileIds = Array.from(new Set(customers.map(c => c.profile_id).filter(Boolean))) as string[];
+  const profRes = profileIds.length
+    ? await admin.from('profiles').select('id, business_name, full_name, email').in('id', profileIds)
+    : { data: [] };
+  const profiles = (profRes.data ?? []) as Array<{
+    id: string; business_name: string | null; full_name: string | null; email: string | null;
+  }>;
+
+  const custById = new Map(customers.map(c => [c.id, c]));
+  const miById   = new Map(mailItems.map(m => [m.id, m]));
+  const profById = new Map(profiles.map(p => [p.id, p]));
+
+  const requests: RequestRow[] = baseRows.map(r => {
+    const c = r.customer_id ? custById.get(r.customer_id) : undefined;
+    const p = c?.profile_id ? profById.get(c.profile_id) : undefined;
+    const mi = r.mail_item_id ? miById.get(r.mail_item_id) : undefined;
+    return {
+      id: r.id,
+      request_type: r.request_type,
+      status: r.status,
+      notes: r.notes,
+      created_at: r.created_at,
+      mailSender: mi?.sender ?? null,
+      mailTitle: mi?.title ?? null,
+      suiteNumber: c?.suite_number ?? null,
+      businessName: p?.business_name || p?.full_name || null,
+      customerEmail: c?.email || p?.email || null,
+    };
+  });
 
   const STATUS_FILTERS = [
     { label: 'Pending',     value: 'pending' },
@@ -84,6 +142,7 @@ export default async function AdminRequestsPage({
               <tr>
                 <th>Date</th>
                 <th>Suite</th>
+                <th>Customer</th>
                 <th>Type</th>
                 <th>Mail item</th>
                 <th>Customer notes</th>
@@ -97,11 +156,17 @@ export default async function AdminRequestsPage({
                     {new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </td>
                   <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#C99A5A)' }}>
-                    {r.customers?.suite_number ?? '—'}
+                    {r.suiteNumber ?? '—'}
+                  </td>
+                  <td style={{ fontSize: 12 }}>
+                    <div style={{ color: 'rgba(255,255,255,0.85)' }}>{r.businessName ?? '—'}</div>
+                    {r.customerEmail && (
+                      <div style={{ color: 'var(--c-text-3)' }}>{r.customerEmail}</div>
+                    )}
                   </td>
                   <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{r.request_type}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>
-                    {r.mail_items?.sender || r.mail_items?.title || '—'}
+                    {r.mailSender || r.mailTitle || '—'}
                   </td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12, maxWidth: 180 }}>{r.notes ?? '—'}</td>
                   <td>
