@@ -8,6 +8,8 @@ type CustomerOption = {
   display: string;
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function MailUploadPage({
   searchParams,
 }: {

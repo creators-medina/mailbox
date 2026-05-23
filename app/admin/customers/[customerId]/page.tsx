@@ -27,6 +27,8 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function CustomerDetailPage({
   params,
 }: {

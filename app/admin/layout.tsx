@@ -18,6 +18,8 @@ const NAV_LINKS = [
   { label: 'CRM Templates', href: '/admin/crm/templates' },
 ];
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireStaff();
 

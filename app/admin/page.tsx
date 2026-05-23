@@ -1,6 +1,8 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminOverviewPage() {
   const admin = createAdminClientAny();
 

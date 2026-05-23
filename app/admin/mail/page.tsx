@@ -11,6 +11,8 @@ type MailItem = {
   customers: { suite_number: string | null; profiles: { email: string | null; business_name: string | null } | null } | null;
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminMailQueuePage({
   searchParams,
 }: {
