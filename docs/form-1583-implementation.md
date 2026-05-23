@@ -1,16 +1,38 @@
 # USPS Form 1583 — Implementation Plan
 
-**Status today:** customer-facing *explanation* only. The signup flow, the
-`/success` page, and the `/account` "Mail authorization" card all tell the
-customer a signed Form 1583 + photo ID are required before mail can be
-received. There is **no upload / e-sign / verification workflow yet**, and no
-data is collected. Until that ships, collect 1583s through an interim manual
-process (in-person or remote online notarization) and do not accept mail
-without a verified form on file.
+## Phase 5a (shipped) — manual staff-managed status tracking
 
-This doc specifies the full build-out so it can be implemented as one clean
-phase later. It was intentionally **not** built tonight because it touches
-legal/compliance and ID storage and deserves a focused, reviewed pass.
+A real compliance record now exists and is tracked end to end, but the process
+is **manual**: staff collect Form 1583 + photo ID out of band (in person or via
+remote online notarization) and record the verification status in the admin UI.
+No documents are uploaded or stored in-app yet, and mail intake is **not hard
+blocked** — it shows a strong warning and the customer's verification status.
+
+What 5a added:
+
+- **Table `public.customer_compliance`** (migration `013_compliance_form_1583.sql`):
+  one row per customer with `form_1583_status` and `photo_id_status`
+  (`pending | requested | received | verified | rejected`), `verified_at`,
+  `verified_by`, `notes`, timestamps, `unique(customer_id)`, indexes,
+  `set_updated_at` trigger, and RLS (customer reads own; admin/staff manage all).
+- **API `PATCH /api/admin/customers/[id]/compliance`** — admin/staff only,
+  validates statuses, upserts the row, and stamps `verified_at`/`verified_by`
+  when **both** statuses are `verified`.
+- **Admin customer detail** (`/admin/customers/[id]`) — a "Mail authorization
+  (Form 1583)" card with two status selects, internal notes, save, and a
+  verified-on / verified-by readout.
+- **Customer dashboard** (`/account`) — the "Mail authorization" card and the
+  getting-started checklist read the real statuses. Copy says *"Mail can be
+  received after your authorization is verified."* and only shows "verified"
+  when both statuses are `verified`.
+- **Mail intake** (`/admin/mail/upload`) — the customer dropdown flags verified
+  (✓) vs not (⚠), shows the selected customer's status inline, and a strong
+  warning to confirm before processing. Intake is not blocked in code.
+
+Still manual / still TODO (see full build-out below): document + ID upload and
+private storage, e-sign / notarization integration, hard-blocking mail intake
+until verified, customer-facing upload flow, status-change notifications, and
+an audit trail.
 
 ---
 

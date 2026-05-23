@@ -222,6 +222,38 @@ export interface Database {
         };
         Update: Record<string, never>;
       };
+      customer_compliance: {
+        Row: {
+          id: string;
+          customer_id: string;
+          form_1583_status: string;
+          photo_id_status: string;
+          verified_at: string | null;
+          verified_by: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          form_1583_status?: string;
+          photo_id_status?: string;
+          verified_at?: string | null;
+          verified_by?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          form_1583_status?: string;
+          photo_id_status?: string;
+          verified_at?: string | null;
+          verified_by?: string | null;
+          notes?: string | null;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
