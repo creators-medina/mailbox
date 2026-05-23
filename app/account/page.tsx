@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { getSignedUrl } from '@/lib/storage/signed-url';
+import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import type { Database } from '@/types/database';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
@@ -111,6 +113,25 @@ export default async function AccountPage() {
     ((openRr.data ?? []) as Array<{ mail_item_id: string }>).map(r => r.mail_item_id)
   ));
 
+  // Resolve short-lived signed URLs for envelope/scan files server-side. The
+  // service-role client stays on the server; the browser only ever sees the
+  // signed URLs, never raw storage paths or the service-role key.
+  const mailItemsView = await Promise.all(mailItems.map(async (m) => {
+    const [envelopeUrl, scanUrl] = await Promise.all([
+      m.envelope_image_url ? getSignedUrl(MAIL_ENVELOPE_BUCKET, m.envelope_image_url, 600) : Promise.resolve(null),
+      m.scanned_document_url ? getSignedUrl(MAIL_SCAN_BUCKET, m.scanned_document_url, 600) : Promise.resolve(null),
+    ]);
+    return {
+      id: m.id,
+      sender: m.sender,
+      title: m.title,
+      status: m.status,
+      received_at: m.received_at,
+      envelopeUrl,
+      scanUrl,
+    };
+  }));
+
   console.log('[account] subscription', {
     subscriptionFound: !!subscription,
     customerStatus: c.status,
@@ -201,7 +222,7 @@ export default async function AccountPage() {
 
           <div className="dash-grid" style={{ marginBottom: 20 }}>
 
-            <MailInboxCard mailItems={mailItems} pendingItemIds={pendingItemIds} />
+            <MailInboxCard mailItems={mailItemsView} pendingItemIds={pendingItemIds} />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <SubscriptionCard

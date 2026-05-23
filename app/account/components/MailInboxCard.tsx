@@ -6,7 +6,9 @@ export type MailItem = {
   title: string | null;
   status: string;
   received_at: string;
-  scanned_document_url: string | null;
+  // Short-lived signed URLs resolved server-side; null when no file exists.
+  envelopeUrl: string | null;
+  scanUrl: string | null;
 };
 
 const MAIL_STATUS_CLASS: Record<string, string> = {
@@ -63,10 +65,20 @@ export default function MailInboxCard({
                     {fmt(item.received_at)}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  {item.scanned_document_url && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                  {item.envelopeUrl && (
                     <a
-                      href={item.scanned_document_url}
+                      href={item.envelopeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ font: '600 11px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none' }}
+                    >
+                      View envelope ›
+                    </a>
+                  )}
+                  {item.scanUrl && (
+                    <a
+                      href={item.scanUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ font: '600 11px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none' }}
