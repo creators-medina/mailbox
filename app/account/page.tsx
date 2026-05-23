@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClientAny } from '@/lib/supabase/admin';
 import type { Database } from '@/types/database';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
@@ -8,6 +9,8 @@ import { BUSINESS } from '@/lib/config/business';
 import SignOutButton from './SignOutButton';
 import MailItemActions from './MailItemActions';
 import BillingButton from './BillingButton';
+import ForwardingRequestForm from './ForwardingRequestForm';
+import type { EligibleItem } from './ForwardingRequestForm';
 
 type ProfileRow      = Database['public']['Tables']['profiles']['Row'];
 type CustomerRow     = Database['public']['Tables']['customers']['Row'];
@@ -15,13 +18,41 @@ type SubscriptionRow = Database['public']['Tables']['subscriptions']['Row'];
 type MailItemRow     = Database['public']['Tables']['mail_items']['Row'];
 type MailRequestRow  = Database['public']['Tables']['mail_requests']['Row'];
 
+type MailItemWithUrls = MailItemRow & {
+  envelopeSignedUrl: string | null;
+  scanSignedUrl:     string | null;
+};
+
 export const metadata: Metadata = {
   title: 'My Account — My Biz Address',
   robots: { index: false, follow: false },
 };
 
+// Forwarding-specific display maps (customer-facing)
+const FORWARD_STATUS_LABELS: Record<string, string> = {
+  pending:     'Requested',
+  in_progress: 'Queued',
+  shipped:     'Shipped',
+  completed:   'Delivered',
+  cancelled:   'Canceled',
+};
+const FORWARD_STATUS_CLASS: Record<string, string> = {
+  pending:     'mock-badge-new',
+  in_progress: 'mock-badge-scanned',
+  shipped:     'mock-badge-shipped',
+  completed:   'mock-badge-ready',
+  cancelled:   'mock-badge-held',
+};
+
+// Extract the destination name from the structured notes block
+function parseDestName(notes: string | null): string {
+  if (!notes) return '—';
+  const line = notes.split('\n').find(l => l.trimStart().startsWith('Name:'));
+  return line ? line.replace(/^.*Name:\s+/, '').trim() : '—';
+}
+
 const MAIL_STATUS_CLASS: Record<string, string> = {
-  received: 'mock-badge-new',
+  received:  'mock-badge-new',
   notified:  'mock-badge-new',
   scanned:   'mock-badge-scanned',
   held:      'mock-badge-held',
@@ -37,6 +68,23 @@ const REQUEST_STATUS_CLASS: Record<string, string> = {
   cancelled:   'mock-badge-held',
 };
 
+const TERMINAL_STATUSES = new Set(['shredded', 'forwarded', 'picked_up']);
+
+async function batchSignUrls(
+  admin: ReturnType<typeof createAdminClientAny>,
+  bucket: string,
+  paths: (string | null)[],
+): Promise<Map<string, string>> {
+  const valid = paths.filter(Boolean) as string[];
+  if (valid.length === 0) return new Map();
+  const { data } = await admin.storage.from(bucket).createSignedUrls(valid, 3600);
+  const map = new Map<string, string>();
+  for (const entry of (data ?? []) as { path: string; signedUrl: string }[]) {
+    if (entry.signedUrl) map.set(entry.path, entry.signedUrl);
+  }
+  return map;
+}
+
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
@@ -46,13 +94,14 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [profileRes, customerRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase.from('customers').select('*').eq('profile_id', user.id).maybeSingle(),
-  ]);
+  const admin = createAdminClientAny();
 
-  const profile  = profileRes.data  as ProfileRow  | null;
-  const customer = customerRes.data as CustomerRow | null;
+  const { data: profileData } = await admin.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  const profile = profileData as ProfileRow | null;
+  if (profile?.role === 'admin') redirect('/admin');
+
+  const { data: customerData } = await admin.from('customers').select('*').eq('profile_id', user.id).maybeSingle();
+  const customer = customerData as CustomerRow | null;
 
   // Admins and staff don't have a customer portal — send them to the admin shell.
   if (profile?.role === 'admin' || profile?.role === 'staff') {
@@ -67,34 +116,71 @@ export default async function AccountPage() {
   }
 
   let subscription: SubscriptionRow | null = null;
-  let mailItems: MailItemRow[] = [];
+  let mailItems: MailItemWithUrls[] = [];
   let mailRequests: MailRequestRow[] = [];
 
-  const customerId = customer?.id ?? null;
-  if (customerId) {
+  if (customer?.id) {
     const [sr, mr, rr] = await Promise.all([
-      supabase.from('subscriptions').select('*').eq('customer_id', customerId).maybeSingle(),
-      supabase.from('mail_items').select('*').eq('customer_id', customerId)
-        .order('received_at', { ascending: false }).limit(10),
-      supabase.from('mail_requests').select('*').eq('customer_id', customerId)
-        .order('created_at', { ascending: false }).limit(5),
+      admin.from('subscriptions').select('*').eq('customer_id', customer.id).maybeSingle(),
+      admin.from('mail_items').select('*').eq('customer_id', customer.id)
+        .order('received_at', { ascending: false }).limit(25),
+      admin.from('mail_requests').select('*').eq('customer_id', customer.id)
+        .order('created_at', { ascending: false }).limit(25),
     ]);
-    subscription  = sr.data  as SubscriptionRow | null;
-    mailItems     = (mr.data ?? []) as MailItemRow[];
-    mailRequests  = (rr.data ?? []) as MailRequestRow[];
+    subscription        = sr.data  as SubscriptionRow | null;
+    const rawItems      = (mr.data ?? []) as MailItemRow[];
+    mailRequests        = (rr.data ?? []) as MailRequestRow[];
+
+    const [envelopeMap, scanMap] = await Promise.all([
+      batchSignUrls(admin, 'mail-envelopes', rawItems.map(i => i.envelope_image_url)),
+      batchSignUrls(admin, 'mail-scans',     rawItems.map(i => i.scanned_document_url)),
+    ]);
+
+    mailItems = rawItems.map(item => ({
+      ...item,
+      envelopeSignedUrl: item.envelope_image_url
+        ? (envelopeMap.get(item.envelope_image_url) ?? null) : null,
+      scanSignedUrl: item.scanned_document_url
+        ? (scanMap.get(item.scanned_document_url) ?? null) : null,
+    }));
   }
+
+  // Track the newest active (non-terminal) request per mail item
+  const requestsByItemId = new Map<string, MailRequestRow>();
+  for (const r of mailRequests) {
+    if (r.status !== 'cancelled' && r.status !== 'completed') {
+      if (!requestsByItemId.has(r.mail_item_id)) {
+        requestsByItemId.set(r.mail_item_id, r);
+      }
+    }
+  }
+
+  // Separate forwarding requests from other request types for display
+  const forwardingRequests = mailRequests.filter(r => r.request_type === 'forward');
+  const otherRequests      = mailRequests.filter(r => r.request_type !== 'forward');
+
+  // Items eligible for a new forwarding request:
+  //   • not in a terminal mail status (already forwarded / shredded / picked up)
+  //   • no open forwarding request (pending, in_progress, or shipped)
+  const openForwardItemIds = new Set(
+    forwardingRequests
+      .filter(r => r.status === 'pending' || r.status === 'in_progress' || r.status === 'shipped')
+      .map(r => r.mail_item_id),
+  );
+  const forwardingEligible: EligibleItem[] = mailItems
+    .filter(item => !TERMINAL_STATUSES.has(item.status) && !openForwardItemIds.has(item.id))
+    .map(item => ({ id: item.id, sender: item.sender, received_at: item.received_at }));
 
   const displayName = profile?.business_name || profile?.full_name || user.email || 'there';
   const statusKey   = customer?.status ?? 'pending';
-  const statusClass = statusKey === 'active'    ? 'status-pill-active'
-    : statusKey === 'cancelled' ? 'status-pill-cancelled'
-    : 'status-pill-pending';
-  const dotClass    = statusKey === 'active'    ? 'status-dot-active'
-    : statusKey === 'cancelled' ? 'status-dot-cancelled'
-    : 'status-dot-pending';
-  const statusLabel = statusKey === 'active'    ? 'Active'
-    : statusKey === 'cancelled' ? 'Cancelled'
-    : 'Setting up';
+  const statusClass = statusKey === 'active'
+    ? 'status-pill-active'
+    : statusKey === 'cancelled' ? 'status-pill-cancelled' : 'status-pill-pending';
+  const dotClass    = statusKey === 'active'
+    ? 'status-dot-active'
+    : statusKey === 'cancelled' ? 'status-dot-cancelled' : 'status-dot-pending';
+  const statusLabel = statusKey === 'active' ? 'Active'
+    : statusKey === 'cancelled' ? 'Cancelled' : 'Setting up';
 
   return (
     <>
@@ -102,6 +188,7 @@ export default async function AccountPage() {
       <section className="w-section dark" style={{ minHeight: '100vh', paddingTop: 96, paddingBottom: 80 }}>
         <div className="w-section-inner" style={{ maxWidth: 900, textAlign: 'left' }}>
 
+          {/* Header */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div className="w-hero-eyebrow" style={{ marginBottom: 6 }}>Dashboard</div>
@@ -112,7 +199,12 @@ export default async function AccountPage() {
             <SignOutButton />
           </div>
 
-          <div className="dash-card" style={{ marginBottom: 20, borderColor: customer?.status === 'active' ? 'rgba(74,222,128,0.18)' : 'var(--c-border-2,rgba(255,255,255,0.13))' }}>
+          {/* Address card */}
+          <div className="dash-card" style={{
+            marginBottom: 20,
+            borderColor: customer?.status === 'active'
+              ? 'rgba(74,222,128,0.18)' : 'var(--c-border-2,rgba(255,255,255,0.13))',
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: customer ? 20 : 0 }}>
               <span className="dash-card-title" style={{ margin: 0 }}>Your business address</span>
               <span className={`status-pill ${statusClass}`}>
@@ -131,6 +223,14 @@ export default async function AccountPage() {
                 <span style={{ font: '500 16px/1.5 var(--font-text,sans-serif)', color: '#fff' }}>
                   {customer.business_address_line ?? BUSINESS.addressFull}
                 </span>
+                {customer.forwarding_address && (
+                  <>
+                    <span style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>Forwarding</span>
+                    <span style={{ font: '400 14px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-2)' }}>
+                      {customer.forwarding_address}
+                    </span>
+                  </>
+                )}
               </div>
             ) : (
               <p style={{ font: '400 14px/1.6 var(--font-text,sans-serif)', color: 'var(--c-text-2)', margin: '10px 0 0' }}>
@@ -139,43 +239,108 @@ export default async function AccountPage() {
             )}
           </div>
 
+          {/* Main grid: mail inbox + sidebar */}
           <div className="dash-grid" style={{ marginBottom: 20 }}>
 
+            {/* Mail inbox */}
             <div className="dash-card">
               <span className="dash-card-title">Mail inbox</span>
               {mailItems.length > 0 ? (
                 <div>
-                  {mailItems.map(item => (
-                    <div key={item.id} className="dash-mail-item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%' }}>
-                        <div style={{
-                          width: 34, height: 34, borderRadius: 8, flexShrink: 0, marginTop: 1,
-                          background: 'var(--c-surface-2,#1E2D42)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          <svg viewBox="0 0 16 12" width="13" height="10" fill="none"
-                               stroke="var(--c-gold-2,#C99A5A)" strokeWidth="1.4"
-                               strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="1" y="1" width="14" height="10" rx="1.5"/>
-                            <path d="M1 3l7 5 7-5"/>
-                          </svg>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 3 }}>
-                            {item.sender ?? 'Unknown sender'}
+                  {mailItems.map(item => {
+                    const isTerminal    = TERMINAL_STATUSES.has(item.status);
+                    const activeRequest = requestsByItemId.get(item.id);
+                    return (
+                      <div key={item.id} className="dash-mail-item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%' }}>
+                          <div style={{
+                            width: 34, height: 34, borderRadius: 8, flexShrink: 0, marginTop: 1,
+                            background: 'var(--c-surface-2,#1E2D42)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <svg viewBox="0 0 16 12" width="13" height="10" fill="none"
+                                 stroke="var(--c-gold-2,#C99A5A)" strokeWidth="1.4"
+                                 strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="1" y="1" width="14" height="10" rx="1.5"/>
+                              <path d="M1 3l7 5 7-5"/>
+                            </svg>
                           </div>
-                          <div style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-                            {fmt(item.received_at)}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 3 }}>
+                              {item.sender ?? 'Unknown sender'}
+                            </div>
+                            <div style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+                              {fmt(item.received_at)}
+                            </div>
                           </div>
+                          <span className={`mock-badge ${MAIL_STATUS_CLASS[item.status] ?? 'mock-badge-held'}`}
+                                style={{ flexShrink: 0 }}>
+                            {item.status.replace('_', ' ')}
+                          </span>
                         </div>
-                        <span className={`mock-badge ${MAIL_STATUS_CLASS[item.status] ?? 'mock-badge-held'}`}
-                              style={{ flexShrink: 0 }}>
-                          {item.status.replace('_', ' ')}
-                        </span>
+
+                        {/* Envelope preview and scan download links */}
+                        {(item.envelopeSignedUrl || item.scanSignedUrl) && (
+                          <div style={{ display: 'flex', gap: 12, marginTop: 8, marginLeft: 46 }}>
+                            {item.envelopeSignedUrl && (
+                              <a
+                                href={item.envelopeSignedUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  font: '500 11px/1 var(--font-text,sans-serif)',
+                                  color: 'var(--c-text-2)', textDecoration: 'none',
+                                }}
+                              >
+                                <svg viewBox="0 0 12 12" width="11" height="11" fill="none"
+                                     stroke="currentColor" strokeWidth="1.4"
+                                     strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="1" y="1" width="10" height="10" rx="1.5"/>
+                                  <path d="M1 4l5 3.5L11 4"/>
+                                </svg>
+                                View envelope
+                              </a>
+                            )}
+                            {item.scanSignedUrl && (
+                              <a
+                                href={item.scanSignedUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  font: '500 11px/1 var(--font-text,sans-serif)',
+                                  color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none',
+                                }}
+                              >
+                                <svg viewBox="0 0 12 14" width="10" height="12" fill="none"
+                                     stroke="currentColor" strokeWidth="1.4"
+                                     strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M7 1H3a1 1 0 00-1 1v10a1 1 0 001 1h6a1 1 0 001-1V5L7 1z"/>
+                                  <path d="M7 1v4h4"/>
+                                  <path d="M6 10V7m0 3l-1.5-1.5M6 10l1.5-1.5"/>
+                                </svg>
+                                Download scan
+                              </a>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Action buttons — hidden for terminal statuses or active pending request */}
+                        {!isTerminal && !activeRequest && (
+                          <MailItemActions mailItemId={item.id} />
+                        )}
+                        {!isTerminal && activeRequest && (
+                          <span style={{
+                            font: '400 11px/1 var(--font-text,sans-serif)',
+                            color: 'var(--c-text-3)', marginTop: 8, display: 'block',
+                          }}>
+                            {activeRequest.request_type.replace('_', ' ')} request {activeRequest.status.replace('_', ' ')}
+                          </span>
+                        )}
                       </div>
-                      <MailItemActions mailItemId={item.id} />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div style={{ padding: '24px 0', textAlign: 'center' }}>
@@ -196,13 +361,17 @@ export default async function AccountPage() {
               )}
             </div>
 
+            {/* Sidebar */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
+              {/* Subscription card */}
               <div className="dash-card">
                 <span className="dash-card-title">Subscription</span>
                 <div className="addon-row" style={{ paddingTop: 0 }}>
                   <span className="addon-row-label">Business Address</span>
-                  <span style={{ font: '700 14px/1 var(--font-display,sans-serif)', color: '#fff' }}>$29.99<span style={{ font: '400 11px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>/mo</span></span>
+                  <span style={{ font: '700 14px/1 var(--font-display,sans-serif)', color: '#fff' }}>
+                    $29.99<span style={{ font: '400 11px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>/mo</span>
+                  </span>
                 </div>
                 {subscription ? (
                   <>
@@ -237,6 +406,7 @@ export default async function AccountPage() {
                 )}
               </div>
 
+              {/* Account card */}
               <div className="dash-card">
                 <span className="dash-card-title">Mail authorization</span>
                 <p style={{ font: '400 13px/1.6 var(--font-text,sans-serif)', color: 'var(--c-text-2)', margin: '4px 0 10px' }}>
@@ -254,6 +424,14 @@ export default async function AccountPage() {
 
               <div className="dash-card">
                 <span className="dash-card-title">Account</span>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ font: '500 14px/1.3 var(--font-text,sans-serif)', color: '#fff', marginBottom: 2 }}>
+                    {profile?.full_name || profile?.business_name || '—'}
+                  </div>
+                  <div style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+                    {user.email}
+                  </div>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <a href="/#contact" style={{ font: '500 14px/1.3 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none' }}>
                     Contact support ›
@@ -265,19 +443,64 @@ export default async function AccountPage() {
             </div>
           </div>
 
-          {mailRequests.length > 0 && (
+          {/* Forwarding history */}
+          {customer && (
+            <div className="dash-card" style={{ marginBottom: 20 }}>
+              <span className="dash-card-title">Forwarding requests</span>
+              {forwardingRequests.length > 0 ? (
+                <div>
+                  {forwardingRequests.map(r => (
+                    <div key={r.id} className="dash-mail-item">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 2 }}>
+                          To: {parseDestName(r.notes)}
+                        </div>
+                        <div style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+                          {fmt(r.created_at)}
+                          {r.completed_at ? ` · Delivered ${fmt(r.completed_at)}` : ''}
+                        </div>
+                        {r.admin_notes && (
+                          <div style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-2)', marginTop: 4 }}>
+                            {r.admin_notes}
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className={`mock-badge ${FORWARD_STATUS_CLASS[r.status] ?? 'mock-badge-held'}`}
+                        style={{ flexShrink: 0 }}
+                      >
+                        {FORWARD_STATUS_LABELS[r.status] ?? r.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ font: '400 13px/1.6 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '12px 0 0' }}>
+                  No forwarding requests yet. Use the form below to request forwarding for your mail.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Other recent requests (scan, pickup, shred) */}
+          {otherRequests.length > 0 && (
             <div className="dash-card" style={{ marginBottom: 20 }}>
               <span className="dash-card-title">Recent requests</span>
               <div>
-                {mailRequests.map(r => (
+                {otherRequests.map(r => (
                   <div key={r.id} className="dash-mail-item">
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 3, textTransform: 'capitalize' }}>
-                        {r.request_type} request
+                        {r.request_type.replace('_', ' ')} request
                       </div>
-                      <div style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-                        {fmt(r.created_at)}
+                      <div style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
+                        {fmt(r.created_at)}{r.completed_at ? ` · Completed ${fmt(r.completed_at)}` : ''}
                       </div>
+                      {r.admin_notes && (
+                        <div style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-2)', marginTop: 4 }}>
+                          {r.admin_notes}
+                        </div>
+                      )}
                     </div>
                     <span className={`mock-badge ${REQUEST_STATUS_CLASS[r.status] ?? 'mock-badge-held'}`}
                           style={{ flexShrink: 0 }}>
@@ -287,6 +510,11 @@ export default async function AccountPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Request forwarding — only shown when customer has a record */}
+          {customer && (
+            <ForwardingRequestForm items={forwardingEligible} />
           )}
 
         </div>
