@@ -34,7 +34,7 @@ export async function sendMailReceivedEmail({
   const paragraphs = [
     `${(businessName ?? '').trim() || 'Hello'} — a new piece of mail has arrived at your My Biz Address and is ready to view in your dashboard.`,
   ];
-  const ctaLabel = 'View Mail';
+  const ctaLabel = 'View Mail in Dashboard';
 
   const resend = getResend();
   const { data, error } = await resend.emails.send({

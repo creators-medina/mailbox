@@ -37,10 +37,18 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: { customerEmail?: string };
+}) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
+
+  const customerEmailParam = typeof searchParams.customerEmail === 'string'
+    ? searchParams.customerEmail.trim()
+    : '';
 
   // Use the service-role client for lookups so RLS can't hide a customer
   // whose profile_id was never linked. This is a server component — the
@@ -51,7 +59,13 @@ export default async function AccountPage() {
   const profile = profileRes.data as ProfileRow | null;
 
   // Admins and staff don't have a customer portal — send them to the admin shell.
+  // EXCEPTION: when a customer mail link is opened (?customerEmail=…) while an
+  // admin/staff is signed in, don't bounce to /admin. Show a notice telling them
+  // to sign in as the customer. We never impersonate the customer here.
   if (profile?.role === 'admin' || profile?.role === 'staff') {
+    if (customerEmailParam) {
+      return <CustomerLinkNotice email={customerEmailParam} />;
+    }
     redirect('/admin');
   }
 
@@ -291,6 +305,38 @@ async function resolveCustomer(admin: any, userId: string, email: string | null)
     if (match) return { customer: match as CustomerRow, matchedBy: 'email' };
   }
   return { customer: null, matchedBy: null };
+}
+
+// Shown when an admin/staff user opens a customer mail link. We do NOT load the
+// customer's data here — the correct customer must sign in themselves.
+function CustomerLinkNotice({ email }: { email: string }) {
+  return (
+    <>
+      <Nav />
+      <section
+        className="w-section dark"
+        style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: 96, paddingBottom: 80 }}
+      >
+        <div className="w-section-inner" style={{ maxWidth: 560, textAlign: 'center' }}>
+          <div className="w-hero-eyebrow" style={{ marginBottom: 10 }}>Mail link</div>
+          <h1 style={{ font: '700 28px/1.25 var(--font-display,sans-serif)', color: '#fff', margin: '0 0 14px' }}>
+            This mail link is for the customer account.
+          </h1>
+          <p style={{ font: '400 16px/1.65 var(--font-text,sans-serif)', color: 'var(--c-text-2)', margin: '0 auto 28px', maxWidth: 460 }}>
+            You&rsquo;re signed in as an admin. Sign out and log in as{' '}
+            <strong style={{ color: '#fff' }}>{email}</strong> to view this mail.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+            <SignOutButton />
+            <a className="w-cta-pill outline" href="/admin" style={{ display: 'inline-flex' }}>
+              Back to admin
+            </a>
+          </div>
+        </div>
+      </section>
+      <Footer />
+    </>
+  );
 }
 
 function NoPlan() {
