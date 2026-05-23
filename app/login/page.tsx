@@ -39,12 +39,16 @@ export default function LoginPage() {
         }
         window.location.href = role === 'admin' || role === 'staff' ? '/admin' : '/account';
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/account`,
+        // Branded reset via our own endpoint (Resend + /auth/callback).
+        // Always generic — never reveals whether the account exists.
+        const res = await fetch('/api/auth/request-password-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
         });
-        if (error) throw error;
+        if (!res.ok) throw new Error('Could not send reset instructions. Please try again.');
         setStatus('success');
-        setMessage('Password reset link sent — check your email.');
+        setMessage('If an account exists for that email, we sent password reset instructions.');
         return;
       }
     } catch (err) {

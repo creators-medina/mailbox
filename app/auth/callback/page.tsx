@@ -21,16 +21,35 @@ export default function AuthCallbackPage() {
     ran.current = true;
 
     const supabase = createClient();
+    const url = new URL(window.location.href);
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+    const emailParam = (url.searchParams.get('email') ?? '').trim().toLowerCase();
+    const settled = { current: false };
+
+    // Verify the recovered user, enforce the email match, then show the form.
+    async function verifyAndShow() {
+      if (settled.current) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return; // not ready yet — the auth listener may fire later
+      settled.current = true;
+
+      if (emailParam && user.email && user.email.toLowerCase() !== emailParam) {
+        // Link was issued for a different account than the active session.
+        // Sign out and refuse — never let someone set the wrong user's password.
+        await supabase.auth.signOut().catch(() => {});
+        setErrorMsg('This reset link was issued for a different account. Please request a new one.');
+        setPhase('error');
+        return;
+      }
+      setPhase('form');
+    }
 
     async function init() {
       try {
-        const url = new URL(window.location.href);
-        const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
-
-        // Surface Supabase errors carried in the query or hash (e.g. expired).
         const errDesc =
           url.searchParams.get('error_description') || hash.get('error_description');
         if (errDesc) {
+          settled.current = true;
           setErrorMsg(friendly(errDesc));
           setPhase('error');
           return;
@@ -40,42 +59,61 @@ export default function AuthCallbackPage() {
         const cameFromRecovery =
           !!code || url.hash.includes('access_token') || url.hash.includes('type=recovery');
 
-        // PKCE/code flow → exchange for a session. (Hash/implicit flow is
-        // auto-detected by the browser client.)
+        if (!cameFromRecovery) {
+          // No recovery token in the URL.
+          const { data: { session } } = await supabase.auth.getSession();
+          settled.current = true;
+          if (session) {
+            router.replace('/account'); // already signed in → dashboard
+          } else {
+            setErrorMsg('This password reset link is invalid or has expired.');
+            setPhase('error');
+          }
+          return;
+        }
+
         if (code) {
+          // PKCE flow: clear any stale session (e.g. a different account in
+          // this browser) BEFORE establishing the recovery session.
+          await supabase.auth.signOut().catch(() => {});
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) {
-            setErrorMsg('This password setup link is invalid or has expired.');
+            settled.current = true;
+            setErrorMsg('This password reset link is invalid or has expired.');
             setPhase('error');
             return;
           }
         }
+        // Hash/implicit flow: the browser client auto-detects the token and
+        // sets the recovery session, replacing any prior one.
 
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session && cameFromRecovery) {
-          setPhase('form');
-        } else if (session && !cameFromRecovery) {
-          // Already signed in, not a recovery visit → go to the dashboard.
-          router.replace('/account');
-        } else {
-          setErrorMsg('This password setup link is invalid or has expired.');
-          setPhase('error');
-        }
+        await verifyAndShow();
       } catch {
+        settled.current = true;
         setErrorMsg('Something went wrong opening this link. Please try again.');
         setPhase('error');
       }
     }
 
-    // Catch the recovery session if the browser client resolves the URL hash
-    // slightly after mount.
+    // Catch the recovery session if it resolves slightly after mount.
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setPhase('form');
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') void verifyAndShow();
     });
 
+    // Fallback: if nothing resolved the link in a few seconds, treat as invalid.
+    const timeout = setTimeout(() => {
+      if (!settled.current) {
+        settled.current = true;
+        setErrorMsg('This password reset link is invalid or has expired.');
+        setPhase('error');
+      }
+    }, 6000);
+
     void init();
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      sub.subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [router]);
 
   async function activate(e: FormEvent) {
