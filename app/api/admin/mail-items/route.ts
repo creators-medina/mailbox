@@ -3,6 +3,7 @@ import { checkIsStaff } from '@/lib/auth/require-staff';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { notifyNewMailReceived } from '@/lib/email/notify-mail';
+import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 
 export async function POST(req: Request) {
   if (!(await checkIsStaff())) {
@@ -46,9 +47,13 @@ export async function POST(req: Request) {
     const buffer = await envelopeFile.arrayBuffer();
     const ext = envelopeFile.name.split('.').pop() ?? 'jpg';
     const path = `${customerId}/${Date.now()}-envelope.${ext}`;
-    const { data: up } = await admin.storage
-      .from('mail-envelopes')
+    const { data: up, error: upErr } = await admin.storage
+      .from(MAIL_ENVELOPE_BUCKET)
       .upload(path, buffer, { contentType: envelopeFile.type });
+    if (upErr) {
+      console.error('[mail-items] envelope upload failed:', upErr.message);
+      return Response.json({ error: `Envelope upload failed: ${upErr.message}` }, { status: 500 });
+    }
     if (up) envelopeUrl = (up as { path: string }).path;
   }
 
@@ -56,9 +61,13 @@ export async function POST(req: Request) {
     const buffer = await scanFile.arrayBuffer();
     const ext = scanFile.name.split('.').pop() ?? 'pdf';
     const path = `${customerId}/${Date.now()}-scan.${ext}`;
-    const { data: up } = await admin.storage
-      .from('mail-scans')
+    const { data: up, error: upErr } = await admin.storage
+      .from(MAIL_SCAN_BUCKET)
       .upload(path, buffer, { contentType: scanFile.type });
+    if (upErr) {
+      console.error('[mail-items] scan upload failed:', upErr.message);
+      return Response.json({ error: `Scan upload failed: ${upErr.message}` }, { status: 500 });
+    }
     if (up) scanUrl = (up as { path: string }).path;
   }
 
