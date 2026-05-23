@@ -100,11 +100,21 @@ create table if not exists public.subscriptions (
   updated_at                      timestamptz not null default now()
 );
 
+-- Full repair of subscriptions columns (covers a pre-existing/partial table).
+alter table public.subscriptions add column if not exists stripe_subscription_id          text;
+alter table public.subscriptions add column if not exists status                          text;
 alter table public.subscriptions add column if not exists base_plan                       text not null default 'business_address';
 alter table public.subscriptions add column if not exists mail_scanning_enabled           boolean not null default false;
 alter table public.subscriptions add column if not exists business_phone_enabled          boolean not null default false;
 alter table public.subscriptions add column if not exists google_business_setup_purchased boolean not null default false;
 alter table public.subscriptions add column if not exists current_period_end              timestamptz;
+alter table public.subscriptions add column if not exists created_at                      timestamptz not null default now();
+alter table public.subscriptions add column if not exists updated_at                      timestamptz not null default now();
+
+-- Unique on stripe_subscription_id so the webhook's upsert(onConflict) works
+-- even if the table pre-existed without the inline UNIQUE.
+create unique index if not exists subscriptions_stripe_sub_key
+  on public.subscriptions(stripe_subscription_id);
 
 create index if not exists subscriptions_customer_id_idx on public.subscriptions(customer_id);
 create index if not exists subscriptions_stripe_id_idx on public.subscriptions(stripe_subscription_id);
@@ -305,3 +315,11 @@ drop policy if exists "Public insert only" on public.contact_submissions;
 create policy "Public insert only"
   on public.contact_submissions for insert
   with check (true);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Refresh PostgREST's schema cache so the API sees new columns/tables
+-- immediately. The error "Could not find the 'X' column ... in the schema
+-- cache" happens when the column exists in Postgres but PostgREST cached an
+-- older schema; this NOTIFY forces an immediate reload.
+-- ─────────────────────────────────────────────────────────────────────────────
+notify pgrst, 'reload schema';
