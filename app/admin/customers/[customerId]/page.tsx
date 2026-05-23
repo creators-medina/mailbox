@@ -2,6 +2,7 @@ import 'server-only';
 import { notFound } from 'next/navigation';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import AdminNoteForm from './AdminNoteForm';
+import SuiteEditor from './SuiteEditor';
 
 type MailItem = {
   id: string;
@@ -125,6 +126,7 @@ export default async function CustomerDetailPage({
             <dt>Full name</dt>   <dd>{p?.full_name ?? '—'}</dd>
             <dt>Business</dt>    <dd>{p?.business_name ?? '—'}</dd>
             <dt>Phone</dt>       <dd>{p?.phone ?? '—'}</dd>
+            <dt>Suite</dt>       <dd><SuiteEditor customerId={customer.id} currentSuite={customer.suite_number} /></dd>
             <dt>Address</dt>     <dd style={{ fontSize: 12 }}>{customer.business_address_line ?? '—'}</dd>
             <dt>Forwarding</dt>  <dd style={{ fontSize: 12 }}>{customer.forwarding_address ?? '—'}</dd>
             <dt>Status</dt>
