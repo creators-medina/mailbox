@@ -6,7 +6,7 @@ import { buildCustomerAddress } from '@/lib/config/business';
 export const dynamic = 'force-dynamic';
 
 const STAFF_ROLES = new Set(['admin', 'staff']);
-const SUITE_RE = /^MB\d{4,6}$/;
+const SUITE_RE = /^Suite[0-9A-Za-z-]{1,10}$/;
 
 async function handle(req: Request, customerId: string) {
   // ── Auth: 401 if not signed in, 403 if signed in but not staff/admin ──
@@ -33,12 +33,16 @@ async function handle(req: Request, customerId: string) {
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: 'Suite number must look like MB1001.' }, { status: 400 });
+    return Response.json({ error: 'Suite must look like Suite201.' }, { status: 400 });
   }
 
-  const suiteNumber = (typeof body.suiteNumber === 'string' ? body.suiteNumber : '').trim().toUpperCase();
+  // Trim, then normalize only the leading "Suite" prefix to canonical
+  // capitalization — the remainder (digits/letters) is preserved as entered.
+  const suiteNumber = (typeof body.suiteNumber === 'string' ? body.suiteNumber : '')
+    .trim()
+    .replace(/^suite/i, 'Suite');
   if (!SUITE_RE.test(suiteNumber)) {
-    return Response.json({ error: 'Suite number must look like MB1001.' }, { status: 400 });
+    return Response.json({ error: 'Suite must look like Suite201.' }, { status: 400 });
   }
 
   // ── Duplicate prevention ──

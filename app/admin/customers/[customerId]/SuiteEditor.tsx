@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
-const SUITE_RE = /^MB\d{4,6}$/;
+const SUITE_RE = /^Suite[0-9A-Za-z-]{1,10}$/;
 
 export default function SuiteEditor({
   customerId,
@@ -35,9 +35,9 @@ export default function SuiteEditor({
     setError('');
     setSuccess('');
 
-    const suiteNumber = value.trim().toUpperCase();
+    const suiteNumber = value.trim().replace(/^suite/i, 'Suite');
     if (!SUITE_RE.test(suiteNumber)) {
-      setError('Suite number must look like MB1001.');
+      setError('Suite must look like Suite201.');
       return;
     }
 
@@ -87,7 +87,7 @@ export default function SuiteEditor({
           className="ds-dark-input"
           value={value}
           onChange={e => setValue(e.target.value)}
-          placeholder="MB1001"
+          placeholder="Suite201"
           autoFocus
           disabled={isPending}
           style={{ maxWidth: 160 }}

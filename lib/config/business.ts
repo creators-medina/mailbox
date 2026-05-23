@@ -37,7 +37,11 @@ export const BUSINESS = {
 /** Short address used in signup page plan card and similar compact contexts */
 export const SHORT_ADDRESS = `${BUSINESS.addressStreet} · ${BUSINESS.addressCity}, ${BUSINESS.addressState}`;
 
-/** Full business address line assigned to customers: street + suite + city/state/zip */
+/** Full business address line assigned to customers: street + suite + city/state/zip.
+ *  If the suite label already starts with "Suite" (e.g. "Suite201") it is used
+ *  verbatim; otherwise a "Suite " prefix is added (e.g. legacy "MB1001"). */
 export function buildCustomerAddress(suiteNumber: string): string {
-  return `${BUSINESS.addressStreet}, Suite ${suiteNumber}, ${BUSINESS.addressCity}, ${BUSINESS.addressState} ${BUSINESS.addressZip}`;
+  const suite = suiteNumber.trim();
+  const label = /^suite/i.test(suite) ? suite : `Suite ${suite}`;
+  return `${BUSINESS.addressStreet}, ${label}, ${BUSINESS.addressCity}, ${BUSINESS.addressState} ${BUSINESS.addressZip}`;
 }
