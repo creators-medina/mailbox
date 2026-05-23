@@ -2,6 +2,7 @@ import 'server-only';
 import { checkIsStaff } from '@/lib/auth/require-staff';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { notifyNewMailReceived } from '@/lib/email/notify-mail';
 
 export async function POST(req: Request) {
   if (!(await checkIsStaff())) {
@@ -81,5 +82,12 @@ export async function POST(req: Request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  return Response.json({ success: true, id: (mailItem as { id: string } | null)?.id });
+  const newId = (mailItem as { id: string } | null)?.id;
+
+  // Non-fatal: notify the customer a new piece of mail arrived.
+  if (newId) {
+    await notifyNewMailReceived(admin, newId);
+  }
+
+  return Response.json({ success: true, id: newId });
 }
