@@ -129,7 +129,7 @@ export default async function AccountPage({
       .order('received_at', { ascending: false }).limit(10),
     admin.from('mail_requests').select('*').eq('customer_id', c.id)
       .order('created_at', { ascending: false }).limit(5),
-    admin.from('mail_requests').select('mail_item_id').eq('customer_id', c.id)
+    admin.from('mail_requests').select('mail_item_id, request_type').eq('customer_id', c.id)
       .in('status', ['pending', 'in_progress']),
     admin.from('customer_compliance').select('form_1583_status, photo_id_status').eq('customer_id', c.id)
       .maybeSingle(),
@@ -143,11 +143,12 @@ export default async function AccountPage({
   const form1583Status = compliance?.form_1583_status ?? 'pending';
   const photoIdStatus  = compliance?.photo_id_status ?? 'pending';
 
-  // Mail items that already have an open request — used to suppress duplicate
-  // request buttons in the inbox.
-  const pendingItemIds = Array.from(new Set(
-    ((openRr.data ?? []) as Array<{ mail_item_id: string }>).map(r => r.mail_item_id)
-  ));
+  // Map of mail_item_id → open request_type, to suppress duplicate requests and
+  // show the pending status in the inbox.
+  const pendingByItem = new Map<string, string>();
+  for (const r of (openRr.data ?? []) as Array<{ mail_item_id: string; request_type: string }>) {
+    if (!pendingByItem.has(r.mail_item_id)) pendingByItem.set(r.mail_item_id, r.request_type);
+  }
 
   // Resolve short-lived signed URLs for envelope/scan files server-side. The
   // service-role client stays on the server; the browser only ever sees the
@@ -165,6 +166,7 @@ export default async function AccountPage({
       received_at: m.received_at,
       envelopeUrl,
       scanUrl,
+      pendingRequestType: pendingByItem.get(m.id) ?? null,
     };
   }));
 
@@ -258,7 +260,7 @@ export default async function AccountPage({
 
           <div className="dash-grid" style={{ marginBottom: 20 }}>
 
-            <MailInboxCard mailItems={mailItemsView} pendingItemIds={pendingItemIds} />
+            <MailInboxCard mailItems={mailItemsView} />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <SubscriptionCard
