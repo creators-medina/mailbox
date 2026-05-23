@@ -1,6 +1,9 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { getSignedUrl } from '@/lib/storage/signed-url';
+import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import MailStatusButton from './MailStatusButton';
+import MailFileLinks from '@/app/admin/components/MailFileLinks';
 
 type MailItem = {
   id: string;
@@ -8,6 +11,8 @@ type MailItem = {
   title: string | null;
   status: string;
   received_at: string;
+  envelope_image_url: string | null;
+  scanned_document_url: string | null;
   customers: { suite_number: string | null; profiles: { email: string | null; business_name: string | null } | null } | null;
 };
 
@@ -24,7 +29,7 @@ export default async function AdminMailQueuePage({
   let query = admin
     .from('mail_items')
     .select(`
-      id, sender, title, status, received_at,
+      id, sender, title, status, received_at, envelope_image_url, scanned_document_url,
       customers(suite_number, profiles(email, business_name))
     `)
     .order('received_at', { ascending: false })
@@ -36,6 +41,16 @@ export default async function AdminMailQueuePage({
 
   const { data } = await query;
   const items = (data ?? []) as unknown as MailItem[];
+
+  // Resolve short-lived signed URLs server-side; the browser never sees paths.
+  const fileUrls = new Map<string, { envelopeUrl: string | null; scanUrl: string | null }>();
+  await Promise.all(items.map(async (m) => {
+    const [envelopeUrl, scanUrl] = await Promise.all([
+      m.envelope_image_url ? getSignedUrl(MAIL_ENVELOPE_BUCKET, m.envelope_image_url, 600) : Promise.resolve(null),
+      m.scanned_document_url ? getSignedUrl(MAIL_SCAN_BUCKET, m.scanned_document_url, 600) : Promise.resolve(null),
+    ]);
+    fileUrls.set(m.id, { envelopeUrl, scanUrl });
+  }));
 
   const STATUS_OPTIONS = ['', 'received','notified','scanned','held','forwarded','picked_up','shredded'];
 
@@ -75,6 +90,7 @@ export default async function AdminMailQueuePage({
                 <th>Suite</th>
                 <th>Sender</th>
                 <th>Title</th>
+                <th>Files</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -89,6 +105,12 @@ export default async function AdminMailQueuePage({
                   </td>
                   <td>{m.sender ?? '—'}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{m.title ?? '—'}</td>
+                  <td>
+                    <MailFileLinks
+                      envelopeUrl={fileUrls.get(m.id)?.envelopeUrl ?? null}
+                      scanUrl={fileUrls.get(m.id)?.scanUrl ?? null}
+                    />
+                  </td>
                   <td>
                     <MailStatusButton id={m.id} current={m.status} />
                   </td>
