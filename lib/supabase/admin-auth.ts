@@ -30,3 +30,41 @@ export async function generatePasswordSetupLink(email: string): Promise<string> 
   }
   return actionLink;
 }
+
+export type RecoveryLinkResult = {
+  // Supabase's verify URL (single-use; can be consumed by email scanners).
+  actionLink: string | null;
+  // Token hash for the verifyOtp({ type:'recovery', token_hash }) flow — NOT
+  // consumed by a page load, so it survives link prefetching/scanning.
+  tokenHash: string | null;
+  hasEmailOtp: boolean;
+};
+
+// Generate a recovery link and return the safe token_hash (preferred) plus the
+// raw action_link (fallback). Throws on error (e.g. user not found) so callers
+// can stay generic.
+export async function generateRecoveryLink(
+  email: string,
+  redirectTo: string,
+): Promise<RecoveryLinkResult> {
+  const admin = createAdminClientAny();
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+    options: { redirectTo },
+  });
+  if (error) {
+    throw new Error(`generateLink failed: ${error.message}`);
+  }
+  const props = (data?.properties ?? {}) as {
+    action_link?: string;
+    hashed_token?: string;
+    email_otp?: string;
+  };
+  return {
+    actionLink: props.action_link ?? null,
+    tokenHash: props.hashed_token ?? null,
+    hasEmailOtp: Boolean(props.email_otp),
+  };
+}
+

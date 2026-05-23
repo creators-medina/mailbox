@@ -1,5 +1,5 @@
 import 'server-only';
-import { createAdminClientAny } from '@/lib/supabase/admin';
+import { generateRecoveryLink } from '@/lib/supabase/admin-auth';
 import { sendPasswordResetEmail } from '@/lib/email/send-password-reset-email';
 
 export const dynamic = 'force-dynamic';
@@ -10,14 +10,14 @@ function isEmail(v: string) {
 
 // Branded password-reset request. ALWAYS returns { ok: true } regardless of
 // whether the account exists, so the response can't be used to enumerate
-// users. The branded email is sent via Resend; we never use Supabase's
-// default reset sender. Errors are logged server-side only (no tokens/secrets).
+// users. We email a token_hash link to /auth/reset-password (which only
+// verifies the OTP on an explicit user click) so email scanners/prefetchers
+// can't consume the one-time token on delivery (the otp_expired bug).
 export async function POST(req: Request) {
   let body: { email?: unknown };
   try {
     body = await req.json();
   } catch {
-    // Still generic — don't reveal parsing details.
     return Response.json({ ok: true });
   }
 
@@ -37,34 +37,41 @@ export async function POST(req: Request) {
   }
 
   try {
-    const admin = createAdminClientAny();
-    const { data, error } = await admin.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: {
-        redirectTo: `${appUrl}/auth/callback?email=${encodeURIComponent(email)}`,
-      },
+    const result = await generateRecoveryLink(email, `${appUrl}/auth/reset-password`);
+
+    // Safe debug — presence booleans only, never token values or full URLs.
+    console.log('[reset] generateLink fields', {
+      hasActionLink: Boolean(result.actionLink),
+      hasTokenHash: Boolean(result.tokenHash),
+      hasEmailOtp: result.hasEmailOtp,
     });
 
-    // No such user (or any generateLink error) → stay generic, send nothing.
-    if (error) {
-      console.warn(`[reset] generateLink did not produce a link for a request (user may not exist)`);
+    let resetUrl: string;
+    if (result.tokenHash) {
+      // Preferred: our own URL; the OTP is only consumed when the user clicks
+      // "Continue" on the reset page, so scanners can't burn it on delivery.
+      resetUrl =
+        `${appUrl}/auth/reset-password` +
+        `?email=${encodeURIComponent(email)}` +
+        `&type=recovery` +
+        `&token_hash=${encodeURIComponent(result.tokenHash)}`;
+    } else if (result.actionLink) {
+      // Fallback: no token_hash exposed — send Supabase's action_link. (Still
+      // susceptible to scanner prefetch; see notes.)
+      console.warn('[reset] token_hash unavailable — falling back to action_link');
+      resetUrl = result.actionLink;
+    } else {
+      console.warn('[reset] generateLink produced neither token_hash nor action_link');
       return Response.json({ ok: true });
     }
 
-    const actionLink: string | undefined =
-      data?.properties?.action_link ?? (data as { action_link?: string } | null)?.action_link;
-    if (!actionLink) {
-      console.warn('[reset] generateLink returned no action_link');
-      return Response.json({ ok: true });
-    }
-
-    const id = await sendPasswordResetEmail({ email, resetUrl: actionLink });
+    const id = await sendPasswordResetEmail({ email, resetUrl });
     console.log(`[reset] password reset email sent (id ${id ?? 'n/a'})`);
   } catch (err) {
-    // Never surface details to the client.
-    console.error('[reset] failed to issue password reset:', err);
+    // Generic to the client; user may simply not exist.
+    console.warn('[reset] could not issue reset (user may not exist):', err instanceof Error ? err.message : 'unknown');
   }
 
   return Response.json({ ok: true });
 }
+
