@@ -4,6 +4,8 @@ import type Stripe from 'stripe';
 import { getStripe } from '@/lib/stripe';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { assignSuiteNumber, buildCustomerAddress } from '@/lib/mailbox/suite';
+import { generatePasswordSetupLink } from '@/lib/supabase/admin-auth';
+import { sendOnboardingEmail } from '@/lib/email/send-onboarding-email';
 import type { Database } from '@/types/database';
 
 type ProfileRow  = Database['public']['Tables']['profiles']['Row'];
@@ -148,7 +150,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (subErr) throw new Error(`Subscription upsert failed: ${subErr.message}`);
   }
 
-  console.log(`[webhook] provisioned customer ${customerId} for ${email} (user ${userId}). Onboarding email is deferred to Phase 3.`);
+  console.log(`[webhook] provisioned customer ${customerId} for ${email} (user ${userId})`);
+
+  // Onboarding email — strictly non-fatal. Runs only after provisioning
+  // succeeds; any failure is logged and swallowed so the webhook still 200s.
+  await sendOnboardingEmailSafe(email, fullName);
+}
+
+// Best-effort onboarding email. Never throws — provisioning has already
+// succeeded by the time this runs, and Stripe must receive a 200.
+async function sendOnboardingEmailSafe(email: string, fullName: string): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[webhook] RESEND_API_KEY not set — skipping onboarding email');
+    return;
+  }
+  const firstName = fullName.trim().split(/\s+/)[0] || null;
+  try {
+    const loginUrl = await generatePasswordSetupLink(email);
+    const id = await sendOnboardingEmail({ email, firstName, loginUrl });
+    console.log(`[webhook] onboarding email sent to ${email} (id ${id ?? 'n/a'})`);
+  } catch (err) {
+    console.error(`[webhook] onboarding email failed for ${email}:`, err);
+  }
 }
 
 // ── Auth user resolution (idempotent, email-independent) ────────────────────
