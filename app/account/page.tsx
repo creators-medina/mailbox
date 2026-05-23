@@ -84,17 +84,25 @@ export default async function AccountPage() {
   let mailItems: MailItemRow[] = [];
   let mailRequests: MailRequestRow[] = [];
 
-  const [sr, mr, rr] = await Promise.all([
+  const [sr, mr, rr, openRr] = await Promise.all([
     admin.from('subscriptions').select('*').eq('customer_id', c.id)
       .order('created_at', { ascending: false }).limit(1),
     admin.from('mail_items').select('*').eq('customer_id', c.id)
       .order('received_at', { ascending: false }).limit(10),
     admin.from('mail_requests').select('*').eq('customer_id', c.id)
       .order('created_at', { ascending: false }).limit(5),
+    admin.from('mail_requests').select('mail_item_id').eq('customer_id', c.id)
+      .in('status', ['pending', 'in_progress']),
   ]);
   subscription = ((sr.data ?? [])[0] ?? null) as SubscriptionRow | null;
   mailItems    = (mr.data ?? []) as MailItemRow[];
   mailRequests = (rr.data ?? []) as MailRequestRow[];
+
+  // Mail items that already have an open request — used to suppress duplicate
+  // request buttons in the inbox.
+  const pendingItemIds = Array.from(new Set(
+    ((openRr.data ?? []) as Array<{ mail_item_id: string }>).map(r => r.mail_item_id)
+  ));
 
   console.log('[account] subscription', {
     subscriptionFound: !!subscription,
@@ -182,7 +190,7 @@ export default async function AccountPage() {
 
           <div className="dash-grid" style={{ marginBottom: 20 }}>
 
-            <MailInboxCard mailItems={mailItems} />
+            <MailInboxCard mailItems={mailItems} pendingItemIds={pendingItemIds} />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <SubscriptionCard

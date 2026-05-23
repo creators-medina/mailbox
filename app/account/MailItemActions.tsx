@@ -8,7 +8,13 @@ const ACTIONS = [
   { type: 'shred',   label: 'Request shred',       icon: '🗑️' },
 ] as const;
 
-export default function MailItemActions({ mailItemId }: { mailItemId: string }) {
+export default function MailItemActions({
+  mailItemId,
+  hasPendingRequest = false,
+}: {
+  mailItemId: string;
+  hasPendingRequest?: boolean;
+}) {
   const [done, setDone]              = useState<string | null>(null);
   const [error, setError]            = useState('');
   const [isPending, startTransition] = useTransition();
@@ -35,6 +41,14 @@ export default function MailItemActions({ mailItemId }: { mailItemId: string }) 
     return (
       <span style={{ font: '500 11px/1 var(--font-text,sans-serif)', color: '#4ade80' }}>
         Requested ✓
+      </span>
+    );
+  }
+
+  if (hasPendingRequest) {
+    return (
+      <span style={{ display: 'inline-block', font: '500 11px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)', marginTop: 8 }}>
+        Request pending — our team is on it.
       </span>
     );
   }

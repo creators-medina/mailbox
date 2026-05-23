@@ -1,10 +1,10 @@
 import 'server-only';
-import { checkIsAdmin } from '@/lib/auth/require-admin';
+import { checkIsStaff } from '@/lib/auth/require-staff';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
-  if (!(await checkIsAdmin())) {
+  if (!(await checkIsStaff())) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -12,20 +12,31 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const formData = await req.formData();
-  const customerId    = formData.get('customer_id') as string;
-  const sender        = (formData.get('sender') as string) || null;
-  const title         = (formData.get('title') as string) || null;
-  const recipientName = (formData.get('recipient_name') as string) || null;
-  const notes         = (formData.get('notes') as string) || null;
-  const receivedAt    = (formData.get('received_at') as string) || new Date().toISOString();
-  const envelopeFile  = formData.get('envelope') as File | null;
-  const scanFile      = formData.get('scan') as File | null;
+  const customerId     = formData.get('customer_id') as string;
+  const sender         = (formData.get('sender') as string) || null;
+  const title          = (formData.get('title') as string) || null;
+  const recipientName  = (formData.get('recipient_name') as string) || null;
+  const trackingNumber = (formData.get('tracking_number') as string) || null;
+  const notes          = (formData.get('notes') as string) || null;
+  const receivedAt     = (formData.get('received_at') as string) || new Date().toISOString();
+  const envelopeFile   = formData.get('envelope') as File | null;
+  const scanFile       = formData.get('scan') as File | null;
 
   if (!customerId) {
     return Response.json({ error: 'customer_id is required' }, { status: 400 });
   }
 
   const admin = createAdminClientAny();
+
+  // Validate the customer exists before creating the mail item.
+  const { data: cust } = await admin
+    .from('customers')
+    .select('id')
+    .eq('id', customerId)
+    .maybeSingle();
+  if (!cust) {
+    return Response.json({ error: 'Customer not found.' }, { status: 404 });
+  }
 
   let envelopeUrl: string | null = null;
   let scanUrl: string | null = null;
@@ -57,6 +68,7 @@ export async function POST(req: Request) {
       sender,
       title,
       recipient_name: recipientName,
+      tracking_number: trackingNumber,
       notes,
       envelope_image_url: envelopeUrl,
       scanned_document_url: scanUrl,

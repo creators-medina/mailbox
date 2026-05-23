@@ -12,7 +12,7 @@ export default function MailStatusButton({ id, current }: { id: string; current:
     setOpen(false);
     if (next === status) return;
     startTransition(async () => {
-      const res = await fetch(`/api/admin/mail/${id}/status`, {
+      const res = await fetch(`/api/admin/mail-items/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: next }),

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import AdminNoteForm from './AdminNoteForm';
 import SuiteEditor from './SuiteEditor';
+import MailStatusButton from '@/app/admin/mail/MailStatusButton';
 
 type MailItem = {
   id: string;
@@ -168,9 +169,12 @@ export default async function CustomerDetailPage({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <span className="dash-card-title" style={{ margin: 0 }}>Mail items</span>
           <a href={`/admin/mail/upload?customer_id=${customer.id}`} className="admin-link" style={{ fontSize: 12 }}>
-            + Upload
+            + Add mail
           </a>
         </div>
+        <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 14px' }}>
+          Only process mail once this customer&rsquo;s USPS Form 1583 and photo ID are verified.
+        </p>
         {mailItems.length === 0 ? (
           <p style={{ font: '400 13px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: 0 }}>No mail yet.</p>
         ) : (
@@ -184,7 +188,7 @@ export default async function CustomerDetailPage({
                   <td style={{ color: 'var(--c-text-3)', whiteSpace: 'nowrap', fontSize: 12 }}>{fmt(m.received_at)}</td>
                   <td>{m.sender ?? '—'}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{m.title ?? '—'}</td>
-                  <td><span className={`admin-status-badge admin-status-${m.status}`}>{m.status.replace('_',' ')}</span></td>
+                  <td><MailStatusButton id={m.id} current={m.status} /></td>
                 </tr>
               ))}
             </tbody>
