@@ -76,33 +76,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const stripeCustomerId = typeof session.customer === 'string' ? session.customer : null;
   const stripeSubId = typeof session.subscription === 'string' ? session.subscription : null;
 
+  console.log(`[webhook] checkout.session.completed → provisioning ${email} (session ${session.id})`);
+
   const admin = createAdminClientAny();
 
-  // 1. Find or create Supabase Auth user ─────────────────────────────────────
-  let userId: string;
-
-  const existingProfileRes = await admin
-    .from('profiles')
-    .select('id')
-    .eq('email', email)
-    .maybeSingle();
-  const existingProfile = existingProfileRes.data as Pick<ProfileRow, 'id'> | null;
-
-  if (existingProfile) {
-    // Existing account — use their ID
-    userId = existingProfile.id;
-  } else {
-    // New customer — invite them to set a password.
-    // Supabase sends a "You've been invited" email with a magic link.
-    const { data: inviteData, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
-      email,
-      { data: { full_name: fullName, business_name: businessName } },
-    );
-    if (inviteErr || !inviteData?.user) {
-      throw new Error(`Failed to invite user ${email}: ${inviteErr?.message}`);
-    }
-    userId = inviteData.user.id;
-  }
+  // 1. Idempotently resolve or create the Supabase Auth user. Provisioning
+  //    must NEVER depend on sending an email (no inviteUserByEmail here), so a
+  //    missing/misconfigured SMTP can't block a paid customer's account. The
+  //    onboarding email is sent separately (Phase 3) and is non-fatal.
+  const userId = await resolveOrCreateUserId(admin, email, { fullName, businessName });
 
   // 2. Upsert profile ─────────────────────────────────────────────────────────
   const { error: profileErr } = await admin.from('profiles').upsert(
@@ -166,7 +148,68 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (subErr) throw new Error(`Subscription upsert failed: ${subErr.message}`);
   }
 
-  console.log(`[webhook] checkout.session.completed → customer ${customerId} (${email})`);
+  console.log(`[webhook] provisioned customer ${customerId} for ${email} (user ${userId}). Onboarding email is deferred to Phase 3.`);
+}
+
+// ── Auth user resolution (idempotent, email-independent) ────────────────────
+
+// Returns the auth.users id for `email`, creating the user if needed.
+// Order: (1) reuse the id from an existing profile, (2) create a confirmed
+// user WITHOUT sending any email, (3) if the email already exists in
+// auth.users (orphaned — no profile), find and reuse that id. This removes
+// the old failure mode where a leftover auth user with no profile 500'd the
+// webhook on every retry.
+async function resolveOrCreateUserId(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  email: string,
+  meta: { fullName: string; businessName: string },
+): Promise<string> {
+  // 1) Fast path — existing profile by email.
+  const existing = await admin.from('profiles').select('id').eq('email', email).maybeSingle();
+  const existingId = (existing.data as Pick<ProfileRow, 'id'> | null)?.id;
+  if (existingId) return existingId;
+
+  // 2) Create the auth user. email_confirm: true so they're active immediately;
+  //    no invite/confirmation email is sent (set-password link comes in Phase 3).
+  const created = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    user_metadata: { full_name: meta.fullName, business_name: meta.businessName },
+  });
+  const createdId = created?.data?.user?.id as string | undefined;
+  if (createdId) return createdId;
+
+  // 3) Creation failed — most likely the email already exists in auth.users
+  //    without a profile. Find that user and reuse it (self-heal).
+  console.warn(
+    `[webhook] createUser failed for ${email} (${created?.error?.message ?? 'unknown'}); searching existing auth users`,
+  );
+  const foundId = await findAuthUserIdByEmail(admin, email);
+  if (foundId) return foundId;
+
+  throw new Error(
+    `Could not resolve or create auth user for ${email}: ${created?.error?.message ?? 'unknown error'}`,
+  );
+}
+
+// Paginate auth.users to find a user id by email (case-insensitive). Only hit
+// on the rare conflict path, so the linear scan is acceptable at launch scale.
+async function findAuthUserIdByEmail(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  email: string,
+): Promise<string | null> {
+  const target = email.trim().toLowerCase();
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    const users = (data?.users ?? []) as { id: string; email?: string | null }[];
+    if (error || users.length === 0) break;
+    const match = users.find((u) => (u.email ?? '').toLowerCase() === target);
+    if (match) return match.id;
+    if (users.length < 200) break;
+  }
+  return null;
 }
 
 // ── customer.subscription.created / updated ────────────────────────────────
