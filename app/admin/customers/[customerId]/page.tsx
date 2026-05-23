@@ -1,10 +1,13 @@
 import 'server-only';
 import { notFound } from 'next/navigation';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { getSignedUrl } from '@/lib/storage/signed-url';
+import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import AdminNoteForm from './AdminNoteForm';
 import SuiteEditor from './SuiteEditor';
 import ComplianceEditor from './ComplianceEditor';
 import MailStatusButton from '@/app/admin/mail/MailStatusButton';
+import MailFileLinks from '@/app/admin/components/MailFileLinks';
 
 type MailItem = {
   id: string;
@@ -12,6 +15,8 @@ type MailItem = {
   title: string | null;
   status: string;
   received_at: string;
+  envelope_image_url: string | null;
+  scanned_document_url: string | null;
 };
 type MailRequest = {
   id: string;
@@ -75,7 +80,7 @@ export default async function CustomerDetailPage({
       .eq('customer_id', params.customerId)
       .maybeSingle(),
     admin.from('mail_items')
-      .select('id, sender, title, status, received_at')
+      .select('id, sender, title, status, received_at, envelope_image_url, scanned_document_url')
       .eq('customer_id', params.customerId)
       .order('received_at', { ascending: false })
       .limit(20),
@@ -104,6 +109,16 @@ export default async function CustomerDetailPage({
   const mailItems  = (mailRes.data ?? [])    as MailItem[];
   const requests   = (requestRes.data ?? []) as MailRequest[];
   const adminNotes = (notesRes.data ?? [])   as AdminNote[];
+
+  // Short-lived signed URLs for each mail item's envelope/scan, server-side.
+  const fileUrls = new Map<string, { envelopeUrl: string | null; scanUrl: string | null }>();
+  await Promise.all(mailItems.map(async (m) => {
+    const [envelopeUrl, scanUrl] = await Promise.all([
+      m.envelope_image_url ? getSignedUrl(MAIL_ENVELOPE_BUCKET, m.envelope_image_url, 600) : Promise.resolve(null),
+      m.scanned_document_url ? getSignedUrl(MAIL_SCAN_BUCKET, m.scanned_document_url, 600) : Promise.resolve(null),
+    ]);
+    fileUrls.set(m.id, { envelopeUrl, scanUrl });
+  }));
   const compliance = complianceRes.data as {
     form_1583_status: string;
     photo_id_status: string;
@@ -220,7 +235,7 @@ export default async function CustomerDetailPage({
         ) : (
           <table className="admin-table">
             <thead>
-              <tr><th>Received</th><th>Sender</th><th>Title</th><th>Status</th></tr>
+              <tr><th>Received</th><th>Sender</th><th>Title</th><th>Files</th><th>Status</th></tr>
             </thead>
             <tbody>
               {mailItems.map(m => (
@@ -228,6 +243,12 @@ export default async function CustomerDetailPage({
                   <td style={{ color: 'var(--c-text-3)', whiteSpace: 'nowrap', fontSize: 12 }}>{fmt(m.received_at)}</td>
                   <td>{m.sender ?? '—'}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{m.title ?? '—'}</td>
+                  <td>
+                    <MailFileLinks
+                      envelopeUrl={fileUrls.get(m.id)?.envelopeUrl ?? null}
+                      scanUrl={fileUrls.get(m.id)?.scanUrl ?? null}
+                    />
+                  </td>
                   <td><MailStatusButton id={m.id} current={m.status} /></td>
                 </tr>
               ))}

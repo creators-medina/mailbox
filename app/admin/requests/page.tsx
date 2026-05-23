@@ -1,6 +1,9 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { getSignedUrl } from '@/lib/storage/signed-url';
+import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import RequestStatusButton from './RequestStatusButton';
+import MailFileLinks from '@/app/admin/components/MailFileLinks';
 
 type RequestRow = {
   id: string;
@@ -10,6 +13,8 @@ type RequestRow = {
   created_at: string;
   mailSender: string | null;
   mailTitle: string | null;
+  envelopeUrl: string | null;
+  scanUrl: string | null;
   suiteNumber: string | null;
   businessName: string | null;
   customerEmail: string | null;
@@ -62,14 +67,27 @@ export default async function AdminRequestsPage({
       ? admin.from('customers').select('id, suite_number, email, profile_id').in('id', customerIds)
       : Promise.resolve({ data: [] }),
     mailItemIds.length
-      ? admin.from('mail_items').select('id, sender, title').in('id', mailItemIds)
+      ? admin.from('mail_items').select('id, sender, title, envelope_image_url, scanned_document_url').in('id', mailItemIds)
       : Promise.resolve({ data: [] }),
   ]);
 
   const customers = (custRes.data ?? []) as Array<{
     id: string; suite_number: string | null; email: string | null; profile_id: string | null;
   }>;
-  const mailItems = (miRes.data ?? []) as Array<{ id: string; sender: string | null; title: string | null }>;
+  const mailItems = (miRes.data ?? []) as Array<{
+    id: string; sender: string | null; title: string | null;
+    envelope_image_url: string | null; scanned_document_url: string | null;
+  }>;
+
+  // Resolve short-lived signed URLs for each referenced mail item, server-side.
+  const fileUrls = new Map<string, { envelopeUrl: string | null; scanUrl: string | null }>();
+  await Promise.all(mailItems.map(async (m) => {
+    const [envelopeUrl, scanUrl] = await Promise.all([
+      m.envelope_image_url ? getSignedUrl(MAIL_ENVELOPE_BUCKET, m.envelope_image_url, 600) : Promise.resolve(null),
+      m.scanned_document_url ? getSignedUrl(MAIL_SCAN_BUCKET, m.scanned_document_url, 600) : Promise.resolve(null),
+    ]);
+    fileUrls.set(m.id, { envelopeUrl, scanUrl });
+  }));
 
   const profileIds = Array.from(new Set(customers.map(c => c.profile_id).filter(Boolean))) as string[];
   const profRes = profileIds.length
@@ -95,6 +113,8 @@ export default async function AdminRequestsPage({
       created_at: r.created_at,
       mailSender: mi?.sender ?? null,
       mailTitle: mi?.title ?? null,
+      envelopeUrl: r.mail_item_id ? (fileUrls.get(r.mail_item_id)?.envelopeUrl ?? null) : null,
+      scanUrl: r.mail_item_id ? (fileUrls.get(r.mail_item_id)?.scanUrl ?? null) : null,
       suiteNumber: c?.suite_number ?? null,
       businessName: p?.business_name || p?.full_name || null,
       customerEmail: c?.email || p?.email || null,
@@ -145,6 +165,7 @@ export default async function AdminRequestsPage({
                 <th>Customer</th>
                 <th>Type</th>
                 <th>Mail item</th>
+                <th>Files</th>
                 <th>Customer notes</th>
                 <th>Status</th>
               </tr>
@@ -167,6 +188,9 @@ export default async function AdminRequestsPage({
                   <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{r.request_type}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>
                     {r.mailSender || r.mailTitle || '—'}
+                  </td>
+                  <td>
+                    <MailFileLinks envelopeUrl={r.envelopeUrl} scanUrl={r.scanUrl} />
                   </td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12, maxWidth: 180 }}>{r.notes ?? '—'}</td>
                   <td>
