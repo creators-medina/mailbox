@@ -9,6 +9,8 @@ export type MailItem = {
   // Short-lived signed URLs resolved server-side; null when no file exists.
   envelopeUrl: string | null;
   scanUrl: string | null;
+  // request_type of an open (pending/in_progress) request, else null.
+  pendingRequestType: string | null;
 };
 
 const MAIL_STATUS_CLASS: Record<string, string> = {
@@ -27,10 +29,8 @@ function fmt(iso: string) {
 
 export default function MailInboxCard({
   mailItems,
-  pendingItemIds = [],
 }: {
   mailItems: MailItem[];
-  pendingItemIds?: string[];
 }) {
   return (
     <div className="dash-card">
@@ -76,22 +76,16 @@ export default function MailInboxCard({
                       View envelope ›
                     </a>
                   )}
-                  {item.scanUrl && (
-                    <a
-                      href={item.scanUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ font: '600 11px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none' }}
-                    >
-                      View scan ›
-                    </a>
-                  )}
                   <span className={`mock-badge ${MAIL_STATUS_CLASS[item.status] ?? 'mock-badge-held'}`}>
                     {item.status.replace('_', ' ')}
                   </span>
                 </div>
               </div>
-              <MailItemActions mailItemId={item.id} hasPendingRequest={pendingItemIds.includes(item.id)} />
+              <MailItemActions
+                mailItemId={item.id}
+                scanUrl={item.scanUrl}
+                pendingRequestType={item.pendingRequestType}
+              />
             </div>
           ))}
         </div>
