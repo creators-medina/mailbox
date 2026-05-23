@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClientAny } from '@/lib/supabase/admin';
@@ -64,9 +65,30 @@ export default async function AccountPage({
   // to sign in as the customer. We never impersonate the customer here.
   if (profile?.role === 'admin' || profile?.role === 'staff') {
     if (customerEmailParam) {
-      return <CustomerLinkNotice email={customerEmailParam} />;
+      return (
+        <MailLinkNotice
+          title="This mail link is for the customer account."
+          body={<>Sign out and log in as <strong style={{ color: '#fff' }}>{customerEmailParam}</strong> to view this customer dashboard.</>}
+        />
+      );
     }
     redirect('/admin');
+  }
+
+  // A customer opened a mail link addressed to a DIFFERENT customer. Show a safe
+  // notice rather than their own (or anyone else's) dashboard. We compare the
+  // signed-in auth email to the link's target email.
+  if (
+    customerEmailParam &&
+    user.email &&
+    user.email.toLowerCase() !== customerEmailParam.toLowerCase()
+  ) {
+    return (
+      <MailLinkNotice
+        title="This link is for a different customer account."
+        body={<>This mail link was sent to <strong style={{ color: '#fff' }}>{customerEmailParam}</strong>. Sign out and log in as that account to view it.</>}
+      />
+    );
   }
 
   // Resolve the customer for this signed-in user, tolerant of how the row was
@@ -307,9 +329,10 @@ async function resolveCustomer(admin: any, userId: string, email: string | null)
   return { customer: null, matchedBy: null };
 }
 
-// Shown when an admin/staff user opens a customer mail link. We do NOT load the
-// customer's data here — the correct customer must sign in themselves.
-function CustomerLinkNotice({ email }: { email: string }) {
+// Shown when the signed-in user can't view the requested customer mail link
+// (admin/staff, or a different customer). We never load the target customer's
+// data here — the correct customer must sign in themselves.
+function MailLinkNotice({ title, body }: { title: string; body: ReactNode }) {
   return (
     <>
       <Nav />
@@ -320,16 +343,15 @@ function CustomerLinkNotice({ email }: { email: string }) {
         <div className="w-section-inner" style={{ maxWidth: 560, textAlign: 'center' }}>
           <div className="w-hero-eyebrow" style={{ marginBottom: 10 }}>Mail link</div>
           <h1 style={{ font: '700 28px/1.25 var(--font-display,sans-serif)', color: '#fff', margin: '0 0 14px' }}>
-            This mail link is for the customer account.
+            {title}
           </h1>
           <p style={{ font: '400 16px/1.65 var(--font-text,sans-serif)', color: 'var(--c-text-2)', margin: '0 auto 28px', maxWidth: 460 }}>
-            You&rsquo;re signed in as an admin. Sign out and log in as{' '}
-            <strong style={{ color: '#fff' }}>{email}</strong> to view this mail.
+            {body}
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
             <SignOutButton />
-            <a className="w-cta-pill outline" href="/admin" style={{ display: 'inline-flex' }}>
-              Back to admin
+            <a className="w-cta-pill outline" href="/login" style={{ display: 'inline-flex' }}>
+              Go to sign in
             </a>
           </div>
         </div>
