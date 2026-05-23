@@ -78,6 +78,12 @@ export default function UploadForm({
         <input name="title" type="text" placeholder="Brief description" className="admin-input" />
       </div>
 
+      {/* Tracking number */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <label className="admin-label">Tracking number (optional)</label>
+        <input name="tracking_number" type="text" placeholder="USPS/carrier tracking #" className="admin-input" />
+      </div>
+
       {/* Received at */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <label className="admin-label">Received date</label>

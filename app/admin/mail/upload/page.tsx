@@ -44,6 +44,20 @@ export default async function MailUploadPage({
         </h1>
       </div>
 
+      <div
+        style={{
+          maxWidth: 640, marginBottom: 20,
+          padding: '12px 16px', borderRadius: 10,
+          background: 'rgba(181,138,82,0.08)',
+          border: '1px solid rgba(181,138,82,0.28)',
+          font: '400 13px/1.55 var(--font-text,sans-serif)', color: 'var(--c-text-2)',
+        }}
+      >
+        <strong style={{ color: 'var(--c-gold-2,#C99A5A)' }}>Compliance reminder:</strong>{' '}
+        Only handle and scan mail for customers whose <strong>USPS Form 1583</strong> and
+        photo ID have been verified. This is a manual check for now.
+      </div>
+
       <div className="dash-card" style={{ maxWidth: 640 }}>
         <UploadForm customers={customers} defaultCustomerId={searchParams.customer_id} />
       </div>

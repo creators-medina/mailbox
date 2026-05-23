@@ -1,12 +1,12 @@
 import 'server-only';
-import { checkIsAdmin } from '@/lib/auth/require-admin';
+import { checkIsStaff } from '@/lib/auth/require-staff';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } },
 ) {
-  if (!(await checkIsAdmin())) {
+  if (!(await checkIsStaff())) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 

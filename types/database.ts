@@ -117,6 +117,7 @@ export interface Database {
           created_by: string | null;
           envelope_image_url: string | null;
           scanned_document_url: string | null;
+          tracking_number: string | null;
           status: string;
           received_at: string;
           created_at: string;
@@ -132,6 +133,7 @@ export interface Database {
           created_by?: string | null;
           envelope_image_url?: string | null;
           scanned_document_url?: string | null;
+          tracking_number?: string | null;
           status?: string;
           received_at?: string;
           created_at?: string;
@@ -144,6 +146,7 @@ export interface Database {
           notes?: string | null;
           envelope_image_url?: string | null;
           scanned_document_url?: string | null;
+          tracking_number?: string | null;
           status?: string;
           updated_at?: string;
         };

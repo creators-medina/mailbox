@@ -3,6 +3,7 @@ import MailItemActions from '../MailItemActions';
 export type MailItem = {
   id: string;
   sender: string | null;
+  title: string | null;
   status: string;
   received_at: string;
   scanned_document_url: string | null;
@@ -22,7 +23,13 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function MailInboxCard({ mailItems }: { mailItems: MailItem[] }) {
+export default function MailInboxCard({
+  mailItems,
+  pendingItemIds = [],
+}: {
+  mailItems: MailItem[];
+  pendingItemIds?: string[];
+}) {
   return (
     <div className="dash-card">
       <span className="dash-card-title">Mail inbox</span>
@@ -47,6 +54,11 @@ export default function MailInboxCard({ mailItems }: { mailItems: MailItem[] }) 
                   <div style={{ font: '600 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.88)', marginBottom: 3 }}>
                     {item.sender ?? 'Unknown sender'}
                   </div>
+                  {item.title && (
+                    <div style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-2)', marginBottom: 3 }}>
+                      {item.title}
+                    </div>
+                  )}
                   <div style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
                     {fmt(item.received_at)}
                   </div>
@@ -67,7 +79,7 @@ export default function MailInboxCard({ mailItems }: { mailItems: MailItem[] }) 
                   </span>
                 </div>
               </div>
-              <MailItemActions mailItemId={item.id} />
+              <MailItemActions mailItemId={item.id} hasPendingRequest={pendingItemIds.includes(item.id)} />
             </div>
           ))}
         </div>
