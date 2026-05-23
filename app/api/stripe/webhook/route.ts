@@ -4,7 +4,7 @@ import type Stripe from 'stripe';
 import { getStripe } from '@/lib/stripe';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { assignSuiteNumber, buildCustomerAddress } from '@/lib/mailbox/suite';
-import { generatePasswordSetupLink } from '@/lib/supabase/admin-auth';
+import { generateRecoveryLink } from '@/lib/supabase/admin-auth';
 import { sendOnboardingEmail } from '@/lib/email/send-onboarding-email';
 import type { Database } from '@/types/database';
 
@@ -164,9 +164,36 @@ async function sendOnboardingEmailSafe(email: string, fullName: string): Promise
     console.warn('[webhook] RESEND_API_KEY not set — skipping onboarding email');
     return;
   }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    console.warn('[webhook] NEXT_PUBLIC_APP_URL not set — skipping onboarding email');
+    return;
+  }
   const firstName = fullName.trim().split(/\s+/)[0] || null;
   try {
-    const loginUrl = await generatePasswordSetupLink(email);
+    // token_hash flow (same as forgot-password): the OTP is only consumed when
+    // the user clicks "Set Your Password" on /auth/reset-password, so email
+    // scanners/prefetchers can't burn the link on delivery (otp_expired).
+    const { tokenHash, actionLink } = await generateRecoveryLink(
+      email,
+      `${appUrl}/auth/reset-password`,
+    );
+
+    let loginUrl: string;
+    if (tokenHash) {
+      loginUrl =
+        `${appUrl}/auth/reset-password` +
+        `?email=${encodeURIComponent(email)}` +
+        `&type=recovery` +
+        `&token_hash=${encodeURIComponent(tokenHash)}`;
+    } else if (actionLink) {
+      console.warn('[webhook] token_hash unavailable — falling back to action_link');
+      loginUrl = actionLink;
+    } else {
+      console.warn('[webhook] generateRecoveryLink produced no link — skipping onboarding email');
+      return;
+    }
+
     const id = await sendOnboardingEmail({ email, firstName, loginUrl });
     console.log(`[webhook] onboarding email sent to ${email} (id ${id ?? 'n/a'})`);
   } catch (err) {
