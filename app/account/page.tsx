@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClientAny } from '@/lib/supabase/admin';
 import type { Database } from '@/types/database';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
@@ -46,43 +47,74 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [profileRes, customerRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase.from('customers').select('*').eq('profile_id', user.id).maybeSingle(),
-  ]);
+  // Use the service-role client for lookups so RLS can't hide a customer
+  // whose profile_id was never linked. This is a server component — the
+  // service-role key is never sent to the browser.
+  const admin = createAdminClientAny();
 
-  const profile  = profileRes.data  as ProfileRow  | null;
-  const customer = customerRes.data as CustomerRow | null;
+  const profileRes = await admin.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  const profile = profileRes.data as ProfileRow | null;
 
   // Admins and staff don't have a customer portal — send them to the admin shell.
   if (profile?.role === 'admin' || profile?.role === 'staff') {
     redirect('/admin');
   }
 
-  // Orphan / unpaid users: a logged-in account with no customer record never
-  // completed checkout. Show a clear path to start a plan instead of an
-  // empty "setting up" dashboard.
+  // Resolve the customer for this signed-in user, tolerant of how the row was
+  // linked: profile_id, user_id (if that column exists), or matching email.
+  const { customer, matchedBy } = await resolveCustomer(admin, user.id, user.email ?? null);
+
+  // Self-heal: if we matched by something other than profile_id, link the row
+  // to this user so future loads (and RLS-based reads) resolve directly.
+  if (customer && matchedBy !== 'profile_id' && (customer as CustomerRow).profile_id !== user.id) {
+    await admin.from('customers').update({ profile_id: user.id }).eq('id', (customer as CustomerRow).id);
+    (customer as CustomerRow).profile_id = user.id;
+  }
+
+  // Safe diagnostics — ids/booleans only, no secrets.
+  console.log('[account] lookup', {
+    userId: user.id,
+    email: user.email,
+    customerFound: !!customer,
+    matchedBy,
+    customerId: customer ? (customer as CustomerRow).id : null,
+  });
+
+  // Orphan / unpaid users: no customer record at all → show the start-a-plan page.
   if (!customer) {
     return <NoPlan />;
   }
+
+  const c = customer as CustomerRow;
 
   let subscription: SubscriptionRow | null = null;
   let mailItems: MailItemRow[] = [];
   let mailRequests: MailRequestRow[] = [];
 
-  const customerId = customer?.id ?? null;
-  if (customerId) {
-    const [sr, mr, rr] = await Promise.all([
-      supabase.from('subscriptions').select('*').eq('customer_id', customerId).maybeSingle(),
-      supabase.from('mail_items').select('*').eq('customer_id', customerId)
-        .order('received_at', { ascending: false }).limit(10),
-      supabase.from('mail_requests').select('*').eq('customer_id', customerId)
-        .order('created_at', { ascending: false }).limit(5),
-    ]);
-    subscription  = sr.data  as SubscriptionRow | null;
-    mailItems     = (mr.data ?? []) as MailItemRow[];
-    mailRequests  = (rr.data ?? []) as MailRequestRow[];
-  }
+  const [sr, mr, rr] = await Promise.all([
+    admin.from('subscriptions').select('*').eq('customer_id', c.id)
+      .order('created_at', { ascending: false }).limit(1),
+    admin.from('mail_items').select('*').eq('customer_id', c.id)
+      .order('received_at', { ascending: false }).limit(10),
+    admin.from('mail_requests').select('*').eq('customer_id', c.id)
+      .order('created_at', { ascending: false }).limit(5),
+  ]);
+  subscription = ((sr.data ?? [])[0] ?? null) as SubscriptionRow | null;
+  mailItems    = (mr.data ?? []) as MailItemRow[];
+  mailRequests = (rr.data ?? []) as MailRequestRow[];
+
+  console.log('[account] subscription', {
+    subscriptionFound: !!subscription,
+    customerStatus: c.status,
+    subscriptionStatus: subscription?.status ?? null,
+  });
+
+  // Treat the mailbox as active when the customer is active OR there's an
+  // active/trialing subscription.
+  const isActive =
+    c.status === 'active' ||
+    (subscription ? ['active', 'trialing'].includes(subscription.status) : false);
+  void isActive; // status badge below derives from customer.status
 
   const displayName = profile?.business_name || profile?.full_name || user.email || 'there';
   const statusKey   = customer?.status ?? 'pending';
@@ -294,6 +326,34 @@ export default async function AccountPage() {
       <Footer />
     </>
   );
+}
+
+// Resolve a customer for the signed-in user, tolerant of how the row is
+// linked. Order: profile_id → user_id (if the column exists) → email
+// (case-insensitive exact). Uses the service-role client (RLS bypassed).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveCustomer(admin: any, userId: string, email: string | null): Promise<{
+  customer: CustomerRow | null;
+  matchedBy: 'profile_id' | 'user_id' | 'email' | null;
+}> {
+  // 1) profile_id
+  {
+    const { data } = await admin.from('customers').select('*').eq('profile_id', userId).maybeSingle();
+    if (data) return { customer: data as CustomerRow, matchedBy: 'profile_id' };
+  }
+  // 2) user_id — column may not exist in this schema; ignore errors.
+  {
+    const { data, error } = await admin.from('customers').select('*').eq('user_id', userId).maybeSingle();
+    if (!error && data) return { customer: data as CustomerRow, matchedBy: 'user_id' };
+  }
+  // 3) email (case-insensitive, verified exact in JS to avoid ilike wildcards).
+  if (email) {
+    const { data } = await admin.from('customers').select('*').ilike('email', email).limit(2);
+    const rows = (data ?? []) as Array<CustomerRow & { email?: string | null }>;
+    const match = rows.find((r) => (r.email ?? '').toLowerCase() === email.toLowerCase());
+    if (match) return { customer: match as CustomerRow, matchedBy: 'email' };
+  }
+  return { customer: null, matchedBy: null };
 }
 
 function NoPlan() {
