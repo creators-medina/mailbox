@@ -1,23 +1,39 @@
 'use client';
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 
 const STATUSES = ['received','notified','scanned','held','forwarded','picked_up','shredded'] as const;
 
 export default function MailStatusButton({ id, current }: { id: string; current: string }) {
+  const router = useRouter();
   const [status, setStatus]     = useState(current);
   const [open, setOpen]         = useState(false);
+  const [error, setError]       = useState('');
   const [isPending, startTransition] = useTransition();
 
   function choose(next: string) {
     setOpen(false);
     if (next === status) return;
+    setError('');
     startTransition(async () => {
-      const res = await fetch(`/api/admin/mail-items/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: next }),
-      });
-      if (res.ok) setStatus(next);
+      try {
+        const res = await fetch(`/api/admin/mail-items/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: next }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { status?: string; error?: string };
+        if (res.ok) {
+          // Use the server-confirmed persisted status, then refresh so the
+          // page reflects the authoritative DB value.
+          setStatus(data.status ?? next);
+          router.refresh();
+        } else {
+          setError(data.error ?? 'Could not update status.');
+        }
+      } catch {
+        setError('Network error. Please try again.');
+      }
     });
   }
 
@@ -54,6 +70,11 @@ export default function MailStatusButton({ id, current }: { id: string; current:
               {s.replace('_',' ')}
             </button>
           ))}
+        </div>
+      )}
+      {error && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, font: '400 11px/1.3 var(--font-text,sans-serif)', color: '#f87171', whiteSpace: 'nowrap', zIndex: 11 }}>
+          {error}
         </div>
       )}
     </div>
