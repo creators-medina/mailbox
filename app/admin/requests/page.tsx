@@ -15,11 +15,14 @@ type RequestRow = {
   created_at: string;
   mailSender: string | null;
   mailTitle: string | null;
+  hasMailItem: boolean;
+  mailItemFound: boolean;
   envelopeUrl: string | null;
   scanUrl: string | null;
   suiteNumber: string | null;
   businessName: string | null;
   customerEmail: string | null;
+  customerFound: boolean;
 };
 
 export const dynamic = 'force-dynamic';
@@ -32,40 +35,32 @@ export default async function AdminRequestsPage({
   const statusFilter = searchParams.status ?? 'pending';
   const admin = createAdminClientAny();
 
-  // Flat fetch — no nested embeds. `customer_response` is only present once
-  // migration 016 is applied; if it isn't, selecting it errors and returns no
-  // rows. So try the full select, then fall back to a core select that only
-  // uses columns guaranteed to exist, so requests always render.
-  const FULL_SELECT = 'id, customer_id, mail_item_id, request_type, status, notes, customer_response, admin_notes, completed_at, completed_by, created_at, updated_at';
-  const CORE_SELECT = 'id, customer_id, mail_item_id, request_type, status, notes, completed_at, created_at, updated_at';
-
-  async function fetchRequests(select: string) {
-    let q = admin.from('mail_requests').select(select).order('created_at', { ascending: false }).limit(200);
-    if (statusFilter !== 'all') {
-      q = q.eq('status', statusFilter) as typeof q;
-    }
-    return q;
+  // Simplest possible base query — select('*') returns whatever columns exist,
+  // so an un-applied migration (missing column) can never error the query and
+  // hide rows. Related customer/profile/mail-item data is joined in JS below and
+  // is purely best-effort: a failed lookup never hides a request.
+  let query = admin
+    .from('mail_requests')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (statusFilter !== 'all') {
+    query = query.eq('status', statusFilter) as typeof query;
   }
-
-  let { data: reqData, error: reqErr } = await fetchRequests(FULL_SELECT);
-  if (reqErr) {
-    console.warn('[admin/requests] full select failed, retrying core:', reqErr.message);
-    ({ data: reqData, error: reqErr } = await fetchRequests(CORE_SELECT));
-  }
+  const { data: requestsData, error } = await query;
 
   console.log('[admin/requests]', {
     statusFilter,
-    count: reqData?.length ?? 0,
-    error: reqErr?.message ?? null,
+    count: requestsData?.length ?? 0,
+    error: error?.message ?? null,
   });
 
-  const baseRows = (reqData ?? []) as unknown as Array<{
+  const baseRows = (requestsData ?? []) as unknown as Array<{
     id: string;
     request_type: string;
     status: string;
     notes: string | null;
     customer_response?: string | null;
-    completed_at: string | null;
+    completed_at?: string | null;
     created_at: string;
     customer_id: string | null;
     mail_item_id: string | null;
@@ -74,10 +69,11 @@ export default async function AdminRequestsPage({
   const customerIds = Array.from(new Set(baseRows.map(r => r.customer_id).filter(Boolean))) as string[];
   const mailItemIds = Array.from(new Set(baseRows.map(r => r.mail_item_id).filter(Boolean))) as string[];
 
-  // Resolve related rows in bulk and join in JS.
+  // Best-effort related lookups. Avoid selecting customers.email (may not exist
+  // pre-015); the email comes from profiles. A failure here never hides rows.
   const [custRes, miRes] = await Promise.all([
     customerIds.length
-      ? admin.from('customers').select('id, suite_number, email, profile_id').in('id', customerIds)
+      ? admin.from('customers').select('id, suite_number, profile_id').in('id', customerIds)
       : Promise.resolve({ data: [] }),
     mailItemIds.length
       ? admin.from('mail_items').select('id, sender, title, envelope_image_url, scanned_document_url').in('id', mailItemIds)
@@ -85,7 +81,7 @@ export default async function AdminRequestsPage({
   ]);
 
   const customers = (custRes.data ?? []) as Array<{
-    id: string; suite_number: string | null; email: string | null; profile_id: string | null;
+    id: string; suite_number: string | null; profile_id: string | null;
   }>;
   const mailItems = (miRes.data ?? []) as Array<{
     id: string; sender: string | null; title: string | null;
@@ -124,15 +120,18 @@ export default async function AdminRequestsPage({
       status: r.status,
       notes: r.notes,
       customerResponse: r.customer_response ?? null,
-      completedAt: r.completed_at,
+      completedAt: r.completed_at ?? null,
       created_at: r.created_at,
       mailSender: mi?.sender ?? null,
       mailTitle: mi?.title ?? null,
+      hasMailItem: Boolean(r.mail_item_id),
+      mailItemFound: Boolean(mi),
       envelopeUrl: r.mail_item_id ? (fileUrls.get(r.mail_item_id)?.envelopeUrl ?? null) : null,
       scanUrl: r.mail_item_id ? (fileUrls.get(r.mail_item_id)?.scanUrl ?? null) : null,
       suiteNumber: c?.suite_number ?? null,
       businessName: p?.business_name || p?.full_name || null,
-      customerEmail: c?.email || p?.email || null,
+      customerEmail: p?.email ?? null,
+      customerFound: Boolean(c),
     };
   });
 
@@ -166,6 +165,11 @@ export default async function AdminRequestsPage({
         </div>
       </div>
 
+      {/* Temporary debug aid for the production visibility issue. */}
+      <p style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 16px' }}>
+        Requests loaded: {requests.length} · Error: {error?.message ?? 'none'}
+      </p>
+
       <div className="dash-card" style={{ padding: 0, overflow: 'hidden' }}>
         {requests.length === 0 ? (
           <p style={{ padding: 24, font: '400 13px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: 0 }}>
@@ -195,14 +199,22 @@ export default async function AdminRequestsPage({
                     {r.suiteNumber ?? '—'}
                   </td>
                   <td style={{ fontSize: 12 }}>
-                    <div style={{ color: 'rgba(255,255,255,0.85)' }}>{r.businessName ?? '—'}</div>
-                    {r.customerEmail && (
-                      <div style={{ color: 'var(--c-text-3)' }}>{r.customerEmail}</div>
+                    {r.customerFound ? (
+                      <>
+                        <div style={{ color: 'rgba(255,255,255,0.85)' }}>{r.businessName ?? '—'}</div>
+                        {r.customerEmail && (
+                          <div style={{ color: 'var(--c-text-3)' }}>{r.customerEmail}</div>
+                        )}
+                      </>
+                    ) : (
+                      <span style={{ color: 'var(--c-text-3)' }}>Unknown customer</span>
                     )}
                   </td>
                   <td style={{ textTransform: 'capitalize', fontWeight: 600 }}>{r.request_type}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>
-                    {r.mailSender || r.mailTitle || '—'}
+                    {r.hasMailItem && !r.mailItemFound
+                      ? <span style={{ color: 'var(--c-text-3)' }}>Unknown mail item</span>
+                      : (r.mailSender || r.mailTitle || '—')}
                   </td>
                   <td>
                     <MailFileLinks envelopeUrl={r.envelopeUrl} scanUrl={r.scanUrl} />
