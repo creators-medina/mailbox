@@ -62,13 +62,21 @@ export async function POST(req: Request) {
 // ── checkout.session.completed ─────────────────────────────────────────────
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const meta = session.metadata ?? {};
+
+  // Add-on purchase by an existing customer (Phase 5g) — flip the flag on their
+  // existing subscription row and stop. Do NOT re-provision user/profile/suite.
+  if (meta.purchase_type === 'addon') {
+    await handleAddonPurchase(session, meta);
+    return;
+  }
+
   const email = session.customer_email ?? session.customer_details?.email ?? '';
   if (!email) {
     console.error('[webhook] checkout.session.completed has no email:', session.id);
     return;
   }
 
-  const meta = session.metadata ?? {};
   const fullName = meta.customer_name ?? '';
   const businessName = meta.business_name ?? '';
   const phone = meta.phone ?? '';
@@ -155,6 +163,70 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Onboarding email — strictly non-fatal. Runs only after provisioning
   // succeeds; any failure is logged and swallowed so the webhook still 200s.
   await sendOnboardingEmailSafe(email, fullName);
+}
+
+// ── Add-on purchase (Phase 5g) ─────────────────────────────────────────────
+
+const ADDON_FLAG: Record<string, 'mail_scanning_enabled' | 'business_phone_enabled' | 'google_business_setup_purchased'> = {
+  mail_scanning: 'mail_scanning_enabled',
+  business_phone: 'business_phone_enabled',
+  google_business: 'google_business_setup_purchased',
+};
+
+// Flips the purchased add-on flag on the customer's existing subscription row.
+// Resolves the customer from metadata (our DB id) or the Stripe customer id.
+async function handleAddonPurchase(
+  session: Stripe.Checkout.Session,
+  meta: Record<string, string>,
+) {
+  const addon = meta.addon ?? '';
+  const flag = ADDON_FLAG[addon];
+  if (!flag) {
+    console.error('[webhook] addon purchase with unknown addon:', addon, session.id);
+    return;
+  }
+
+  const admin = createAdminClientAny();
+  const stripeCustomerId = typeof session.customer === 'string' ? session.customer : null;
+
+  // Resolve the customer row.
+  let customerId = meta.customer_db_id || '';
+  if (!customerId && stripeCustomerId) {
+    const { data } = await admin
+      .from('customers')
+      .select('id')
+      .eq('stripe_customer_id', stripeCustomerId)
+      .maybeSingle();
+    customerId = (data as { id: string } | null)?.id ?? '';
+  }
+  if (!customerId) {
+    console.error('[webhook] addon purchase could not resolve customer:', session.id);
+    return;
+  }
+
+  // Update the customer's most-recent subscription row; create one if none.
+  const { data: subRow } = await admin
+    .from('subscriptions')
+    .select('id')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (subRow) {
+    const { error } = await admin
+      .from('subscriptions')
+      .update({ [flag]: true })
+      .eq('id', (subRow as { id: string }).id);
+    if (error) throw new Error(`Addon flag update failed: ${error.message}`);
+  } else {
+    const { error } = await admin
+      .from('subscriptions')
+      .insert({ customer_id: customerId, status: 'active', [flag]: true });
+    if (error) throw new Error(`Addon subscription insert failed: ${error.message}`);
+  }
+
+  console.log(`[webhook] addon ${addon} → ${flag}=true for customer ${customerId}`);
 }
 
 // Best-effort onboarding email. Never throws — provisioning has already
@@ -282,6 +354,26 @@ async function handleSubscriptionUpsert(sub: Stripe.Subscription) {
     return;
   }
 
+  // Add-on purchases (Phase 5g) create their own Stripe subscription. We keep a
+  // single subscriptions row per customer, so don't insert a duplicate row for a
+  // secondary (add-on) subscription — its flag is set in handleAddonPurchase.
+  const existingRes = await admin
+    .from('subscriptions')
+    .select('id, stripe_subscription_id')
+    .eq('customer_id', customer.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const existing = existingRes.data as { id: string; stripe_subscription_id: string | null } | null;
+  const basePrice = process.env.STRIPE_PRICE_BUSINESS_ADDRESS_MONTHLY;
+  const priceIds = (sub.items?.data ?? []).map(i => i.price?.id).filter(Boolean) as string[];
+  const isPrimary = !existing
+    || existing.stripe_subscription_id === sub.id
+    || (!!basePrice && priceIds.includes(basePrice));
+  if (!isPrimary) {
+    return;
+  }
+
   const periodEnd = sub.current_period_end
     ? new Date(sub.current_period_end * 1000).toISOString()
     : null;
@@ -309,19 +401,63 @@ async function handleSubscriptionUpsert(sub: Stripe.Subscription) {
 
 async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
   const admin = createAdminClientAny();
-
-  await admin
-    .from('subscriptions')
-    .update({ status: 'cancelled' })
-    .eq('stripe_subscription_id', sub.id);
-
   const stripeCustomerId = typeof sub.customer === 'string' ? sub.customer : null;
-  if (stripeCustomerId) {
-    await admin
-      .from('customers')
-      .update({ status: 'cancelled' })
-      .eq('stripe_customer_id', stripeCustomerId);
+
+  // Is this a tracked (primary) subscription row, or a secondary add-on sub?
+  const { data: rowData } = await admin
+    .from('subscriptions')
+    .select('id')
+    .eq('stripe_subscription_id', sub.id)
+    .maybeSingle();
+  const trackedRow = rowData as { id: string } | null;
+
+  if (trackedRow) {
+    // Primary subscription cancelled → cancel the row and the customer.
+    await admin.from('subscriptions').update({ status: 'cancelled' }).eq('stripe_subscription_id', sub.id);
+    if (stripeCustomerId) {
+      await admin.from('customers').update({ status: 'cancelled' }).eq('stripe_customer_id', stripeCustomerId);
+    }
+    return;
   }
+
+  // No tracked row → this is an add-on subscription. Turn off its flag on the
+  // customer's primary subscription row; do NOT cancel the whole customer.
+  if (!stripeCustomerId) return;
+  const flag = addonFlagForSub(sub);
+  if (!flag) return;
+
+  const { data: cust } = await admin
+    .from('customers')
+    .select('id')
+    .eq('stripe_customer_id', stripeCustomerId)
+    .maybeSingle();
+  const customerId = (cust as { id: string } | null)?.id;
+  if (!customerId) return;
+
+  const { data: primary } = await admin
+    .from('subscriptions')
+    .select('id')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const primaryId = (primary as { id: string } | null)?.id;
+  if (primaryId) {
+    await admin.from('subscriptions').update({ [flag]: false }).eq('id', primaryId);
+    console.log(`[webhook] add-on cancelled → ${flag}=false for customer ${customerId}`);
+  }
+}
+
+// Maps a subscription's recurring add-on price back to its flag column.
+function addonFlagForSub(sub: Stripe.Subscription): 'mail_scanning_enabled' | 'business_phone_enabled' | null {
+  const priceIds = (sub.items?.data ?? []).map(i => i.price?.id).filter(Boolean) as string[];
+  if (process.env.STRIPE_PRICE_MAIL_SCANNING_MONTHLY && priceIds.includes(process.env.STRIPE_PRICE_MAIL_SCANNING_MONTHLY)) {
+    return 'mail_scanning_enabled';
+  }
+  if (process.env.STRIPE_PRICE_BUSINESS_PHONE_MONTHLY && priceIds.includes(process.env.STRIPE_PRICE_BUSINESS_PHONE_MONTHLY)) {
+    return 'business_phone_enabled';
+  }
+  return null;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
