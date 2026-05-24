@@ -29,24 +29,30 @@ export async function POST(req: Request) {
 
   const admin = createAdminClientAny();
 
-  // Verify the mail item belongs to this user
+  // Resolve THIS user's customer record the same way /account does — tolerant
+  // of how the row was linked (profile_id, user_id, or matching email) so a
+  // self-healed/email-matched customer isn't wrongly rejected.
+  const customer = await resolveCustomer(admin, user.id, user.email ?? null);
+
+  // Confirm the requested mail item exists and belongs to the resolved customer.
   const { data: itemData } = await admin
     .from('mail_items')
-    .select('customer_id')
+    .select('id, customer_id')
     .eq('id', mail_item_id)
-    .single();
+    .maybeSingle();
+  const item = itemData as { id: string; customer_id: string } | null;
 
-  const item = itemData as { customer_id: string } | null;
+  const mailItemBelongsToCustomer = Boolean(customer && item && item.customer_id === customer.id);
+
+  console.warn('[mail-request]', {
+    userId: user.id,
+    email: user.email,
+    customerFound: Boolean(customer),
+    mailItemBelongsToCustomer,
+  });
+
   if (!item) return Response.json({ error: 'Not found' }, { status: 404 });
-
-  const { data: custData } = await admin
-    .from('customers')
-    .select('profile_id')
-    .eq('id', item.customer_id)
-    .single();
-
-  const cust = custData as { profile_id: string } | null;
-  if (cust?.profile_id !== user.id) {
+  if (!mailItemBelongsToCustomer) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -67,7 +73,7 @@ export async function POST(req: Request) {
 
   const { error } = await admin.from('mail_requests').insert({
     mail_item_id,
-    customer_id: item.customer_id,
+    customer_id: item!.customer_id,
     request_type,
     notes,
     status: 'pending',
@@ -76,4 +82,26 @@ export async function POST(req: Request) {
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({ success: true });
+}
+
+// Resolve a customer for the signed-in user, tolerant of how the row is linked.
+// Order: profile_id → user_id (column may not exist) → email (exact, verified
+// in JS). Uses the service-role client (server-only).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveCustomer(admin: any, userId: string, email: string | null): Promise<{ id: string } | null> {
+  {
+    const { data } = await admin.from('customers').select('id').eq('profile_id', userId).maybeSingle();
+    if (data) return data as { id: string };
+  }
+  {
+    const { data, error } = await admin.from('customers').select('id').eq('user_id', userId).maybeSingle();
+    if (!error && data) return data as { id: string };
+  }
+  if (email) {
+    const { data } = await admin.from('customers').select('id, email').ilike('email', email).limit(2);
+    const rows = (data ?? []) as Array<{ id: string; email?: string | null }>;
+    const match = rows.find((r) => (r.email ?? '').toLowerCase() === email.toLowerCase());
+    if (match) return { id: match.id };
+  }
+  return null;
 }
