@@ -30,8 +30,32 @@ export default function ComplianceEditor({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [sendMsg, setSendMsg] = useState('');
+  const [sendErr, setSendErr] = useState('');
+  const [isSending, startSending] = useTransition();
 
   const bothVerified = form1583 === 'verified' && photoId === 'verified';
+
+  function sendRequest() {
+    setSendMsg('');
+    setSendErr('');
+    startSending(async () => {
+      try {
+        const res = await fetch(`/api/admin/customers/${customerId}/send-compliance-request`, {
+          method: 'POST',
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setSendErr(data.error || 'Could not send the request.');
+          return;
+        }
+        setSendMsg('Authorization request emailed.');
+        router.refresh();
+      } catch {
+        setSendErr('Network error. Please try again.');
+      }
+    });
+  }
 
   function save() {
     setError('');
@@ -94,12 +118,32 @@ export default function ComplianceEditor({
           : 'Not yet authorized for mail handling. Both items must be verified.'}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <button type="button" className="admin-btn-primary" onClick={save} disabled={isPending} style={{ alignSelf: 'flex-start' }}>
           {isPending ? 'Saving…' : 'Save compliance'}
         </button>
         {success && <span style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: '#4ade80' }}>{success}</span>}
         {error && <span style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: '#f87171' }}>{error}</span>}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', paddingTop: 14, borderTop: '1px solid var(--c-border,rgba(255,255,255,0.07))' }}>
+        <button
+          type="button"
+          onClick={sendRequest}
+          disabled={isSending}
+          style={{
+            font: '600 13px/1 var(--font-text,sans-serif)',
+            color: 'var(--c-gold-2,#C99A5A)',
+            background: 'rgba(181,138,82,0.10)',
+            border: '1px solid rgba(181,138,82,0.28)',
+            borderRadius: 100, padding: '9px 16px',
+            cursor: isSending ? 'default' : 'pointer', opacity: isSending ? 0.6 : 1,
+          }}
+        >
+          {isSending ? 'Sending…' : 'Send authorization request'}
+        </button>
+        {sendMsg && <span style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: '#4ade80' }}>{sendMsg}</span>}
+        {sendErr && <span style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: '#f87171' }}>{sendErr}</span>}
       </div>
     </div>
   );
