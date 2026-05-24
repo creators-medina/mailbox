@@ -36,8 +36,8 @@ export default async function AdminRequestsPage({
   // migration 016 is applied; if it isn't, selecting it errors and returns no
   // rows. So try the full select, then fall back to a core select that only
   // uses columns guaranteed to exist, so requests always render.
-  const FULL_SELECT = 'id, request_type, status, notes, customer_response, admin_notes, completed_at, created_at, updated_at, customer_id, mail_item_id';
-  const CORE_SELECT = 'id, request_type, status, notes, admin_notes, completed_at, created_at, updated_at, customer_id, mail_item_id';
+  const FULL_SELECT = 'id, customer_id, mail_item_id, request_type, status, notes, customer_response, admin_notes, completed_at, completed_by, created_at, updated_at';
+  const CORE_SELECT = 'id, customer_id, mail_item_id, request_type, status, notes, completed_at, created_at, updated_at';
 
   async function fetchRequests(select: string) {
     let q = admin.from('mail_requests').select(select).order('created_at', { ascending: false }).limit(200);
@@ -55,8 +55,8 @@ export default async function AdminRequestsPage({
 
   console.log('[admin/requests]', {
     statusFilter,
-    baseCount: reqData?.length ?? 0,
-    baseError: reqErr?.message ?? null,
+    count: reqData?.length ?? 0,
+    error: reqErr?.message ?? null,
   });
 
   const baseRows = (reqData ?? []) as unknown as Array<{

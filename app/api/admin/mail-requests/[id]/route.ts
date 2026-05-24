@@ -30,18 +30,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return Response.json({ error: 'Forbidden.' }, { status: 403 });
   }
 
-  // ── Parse + validate ──
+  // ── Parse + validate (accept camelCase or snake_case) ──
   let body: {
     status?: unknown;
-    staff_note?: unknown;
-    customer_response?: unknown;
-    tracking_number?: unknown;
+    adminNotes?: unknown; staff_note?: unknown;
+    customerResponse?: unknown; customer_response?: unknown;
+    trackingNumber?: unknown; tracking_number?: unknown;
   };
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   }
+
+  const rawStaffNote = body.adminNotes ?? body.staff_note;
+  const rawCustomerResponse = body.customerResponse ?? body.customer_response;
+  const rawTracking = body.trackingNumber ?? body.tracking_number;
 
   if (body.status !== undefined && !VALID_STATUSES.has(String(body.status))) {
     return Response.json({ error: 'Invalid status value.' }, { status: 400 });
@@ -61,11 +65,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const priorStatus = reqRow.status;
   const nextStatus = body.status !== undefined ? String(body.status) : priorStatus;
 
-  const staffNote = typeof body.staff_note === 'string' && body.staff_note.trim() !== '' ? body.staff_note.trim() : null;
-  let customerResponse = typeof body.customer_response === 'string' && body.customer_response.trim() !== ''
-    ? body.customer_response.trim() : null;
-  const tracking = typeof body.tracking_number === 'string' && body.tracking_number.trim() !== ''
-    ? body.tracking_number.trim() : null;
+  const staffNote = typeof rawStaffNote === 'string' && rawStaffNote.trim() !== '' ? rawStaffNote.trim() : null;
+  let customerResponse = typeof rawCustomerResponse === 'string' && rawCustomerResponse.trim() !== ''
+    ? rawCustomerResponse.trim() : null;
+  const tracking = typeof rawTracking === 'string' && rawTracking.trim() !== ''
+    ? rawTracking.trim() : null;
 
   // For forwards, fold any tracking number into the customer-visible note.
   if (reqRow.request_type === 'forward' && tracking) {
@@ -80,10 +84,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     update.completed_by = user.id;
   }
 
-  const { error: upErr } = await admin.from('mail_requests').update(update).eq('id', params.id);
+  let { error: upErr } = await admin.from('mail_requests').update(update).eq('id', params.id);
   if (upErr) {
-    console.error('[admin/mail-requests PATCH] update failed:', upErr.message);
-    return Response.json({ error: 'Could not update the request.' }, { status: 500 });
+    // Migration 016 may not be applied yet — retry without the newer columns so
+    // the status change still succeeds. customer_response is folded into nothing
+    // here, but the core fulfillment (status/completed_at) still lands.
+    console.warn('[admin/mail-requests PATCH] full update failed, retrying core:', upErr.message);
+    const coreUpdate: Record<string, unknown> = { status: nextStatus, updated_at: new Date().toISOString() };
+    if (staffNote !== null) coreUpdate.admin_notes = staffNote;
+    if (nextStatus === 'completed') coreUpdate.completed_at = new Date().toISOString();
+    ({ error: upErr } = await admin.from('mail_requests').update(coreUpdate).eq('id', params.id));
+    if (upErr) {
+      console.error('[admin/mail-requests PATCH] update failed:', upErr.message);
+      return Response.json({ error: 'Could not update the request.' }, { status: 500 });
+    }
   }
 
   // ── On completion, sync the related mail item's status (valid enum only) ──
@@ -103,7 +117,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const { data: updated } = await admin
     .from('mail_requests')
-    .select('id, status, request_type, customer_response, admin_notes, completed_at, updated_at')
+    .select('id, status, request_type, completed_at, updated_at')
     .eq('id', params.id)
     .maybeSingle();
 

@@ -2,15 +2,18 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Suggested customer-visible note per request type, shown when completing.
-const RESPONSE_SUGGESTION: Record<string, string> = {
+// Suggested customer-visible note when approving/completing, per request type.
+const APPROVE_SUGGESTION: Record<string, string> = {
   scan: 'Your scan has been uploaded to your dashboard.',
   forward: 'Your mail was forwarded to the address you provided.',
   pickup: 'Your mail is being held for pickup.',
   shred: 'Your mail was securely shredded.',
 };
+const DENY_SUGGESTION = 'We could not complete this request. Please contact support for help.';
 
 const badgeClass = (s: string) => `admin-status-badge admin-status-${s}`;
+
+type Mode = 'approve' | 'deny';
 
 export default function RequestFulfillment({
   id,
@@ -25,9 +28,9 @@ export default function RequestFulfillment({
 }) {
   const router = useRouter();
   const [status, setStatus] = useState(current);
-  const [formOpen, setFormOpen] = useState(false);
-  const [staffNote, setStaffNote] = useState('');
-  const [response, setResponse] = useState(customerResponse ?? RESPONSE_SUGGESTION[requestType] ?? '');
+  const [mode, setMode] = useState<Mode | null>(null);
+  const [adminNotes, setAdminNotes] = useState('');
+  const [response, setResponse] = useState(customerResponse ?? '');
   const [tracking, setTracking] = useState('');
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -52,39 +55,51 @@ export default function RequestFulfillment({
     });
   }
 
+  function openForm(next: Mode) {
+    setMode(next);
+    setResponse(customerResponse ?? (next === 'approve' ? (APPROVE_SUGGESTION[requestType] ?? 'Your request has been completed.') : DENY_SUGGESTION));
+    setAdminNotes('');
+    setError('');
+  }
+
+  function confirm() {
+    patch(
+      {
+        status: mode === 'approve' ? 'completed' : 'cancelled',
+        customerResponse: response,
+        adminNotes,
+        trackingNumber: tracking,
+      },
+      () => setMode(null),
+    );
+  }
+
   if (status === 'completed' || status === 'cancelled') {
     return <span className={badgeClass(status)}>{status.replace('_', ' ')}</span>;
   }
 
-  if (formOpen) {
+  if (mode) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 230 }}>
         <textarea
           className="admin-textarea" rows={2} value={response}
           onChange={e => setResponse(e.target.value)} placeholder="Customer-visible note" disabled={isPending}
         />
         <textarea
-          className="admin-textarea" rows={2} value={staffNote}
-          onChange={e => setStaffNote(e.target.value)} placeholder="Internal staff note (not shown to customer)" disabled={isPending}
+          className="admin-textarea" rows={2} value={adminNotes}
+          onChange={e => setAdminNotes(e.target.value)} placeholder="Internal admin note (not shown to customer)" disabled={isPending}
         />
-        {requestType === 'forward' && (
+        {mode === 'approve' && requestType === 'forward' && (
           <input
             className="admin-input" value={tracking} onChange={e => setTracking(e.target.value)}
             placeholder="Tracking number (optional)" disabled={isPending}
           />
         )}
         <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            className="admin-btn-primary"
-            disabled={isPending}
-            onClick={() => patch(
-              { status: 'completed', staff_note: staffNote, customer_response: response, tracking_number: tracking },
-              () => setFormOpen(false),
-            )}
-          >
-            {isPending ? 'Saving…' : 'Confirm complete'}
+          <button className="admin-btn-primary" disabled={isPending} onClick={confirm}>
+            {isPending ? 'Saving…' : (mode === 'approve' ? 'Confirm approve' : 'Confirm deny')}
           </button>
-          <button className="admin-btn-secondary" disabled={isPending} onClick={() => setFormOpen(false)}>Cancel</button>
+          <button className="admin-btn-secondary" disabled={isPending} onClick={() => setMode(null)}>Cancel</button>
         </div>
         {error && <span style={{ font: '400 11px/1.3 var(--font-text,sans-serif)', color: '#f87171' }}>{error}</span>}
       </div>
@@ -92,18 +107,18 @@ export default function RequestFulfillment({
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
       <span className={badgeClass(status)}>{status.replace('_', ' ')}</span>
       {status === 'pending' && (
         <button className="admin-link" style={btn} disabled={isPending} onClick={() => patch({ status: 'in_progress' })}>
-          Start
+          Mark in progress
         </button>
       )}
-      <button className="admin-link" style={btn} disabled={isPending} onClick={() => setFormOpen(true)}>
-        Complete
+      <button className="admin-link" style={btn} disabled={isPending} onClick={() => openForm('approve')}>
+        Approve request
       </button>
-      <button className="admin-link" style={{ ...btn, color: '#f87171' }} disabled={isPending} onClick={() => patch({ status: 'cancelled' })}>
-        Cancel
+      <button className="admin-link" style={{ ...btn, color: '#f87171' }} disabled={isPending} onClick={() => openForm('deny')}>
+        Deny request
       </button>
       {error && <span style={{ font: '400 11px/1.3 var(--font-text,sans-serif)', color: '#f87171' }}>{error}</span>}
     </div>
