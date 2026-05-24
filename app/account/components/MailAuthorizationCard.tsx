@@ -41,13 +41,18 @@ export default function MailAuthorizationCard({
       </div>
 
       {!verified && (
-        <a
-          href="/#contact"
-          className="w-cta-pill outline"
-          style={{ display: 'inline-flex', fontSize: 13 }}
-        >
-          Get help completing Form 1583
-        </a>
+        <>
+          <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 14px' }}>
+            Check your email for instructions if our team has requested your authorization documents.
+          </p>
+          <a
+            href="/#contact"
+            className="w-cta-pill outline"
+            style={{ display: 'inline-flex', fontSize: 13 }}
+          >
+            Get help completing Form 1583
+          </a>
+        </>
       )}
     </div>
   );
