@@ -39,13 +39,6 @@ export async function POST(req: Request) {
   try {
     const result = await generateRecoveryLink(email, `${appUrl}/auth/reset-password`);
 
-    // Safe debug — presence booleans only, never token values or full URLs.
-    console.log('[reset] generateLink fields', {
-      hasActionLink: Boolean(result.actionLink),
-      hasTokenHash: Boolean(result.tokenHash),
-      hasEmailOtp: result.hasEmailOtp,
-    });
-
     let resetUrl: string;
     if (result.tokenHash) {
       // Preferred: our own URL; the OTP is only consumed when the user clicks

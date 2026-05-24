@@ -2,7 +2,9 @@ import { Resend } from 'resend';
 import { createLead, resolveDefaultDestination } from '@/lib/crm/leads';
 
 const DEFAULT_TO = 'isabelle@bomacnation.com';
-const FROM_ADDRESS = 'My Biz Address <contact@mybizmailbox.biz>';
+// Prefer the configured Resend sender (verified domain); fall back to the
+// legacy address so existing deployments keep working.
+const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL || 'My Biz Address <contact@mybizmailbox.biz>';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);

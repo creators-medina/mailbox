@@ -102,15 +102,6 @@ export default async function AccountPage({
     (customer as CustomerRow).profile_id = user.id;
   }
 
-  // Safe diagnostics — ids/booleans only, no secrets.
-  console.log('[account] lookup', {
-    userId: user.id,
-    email: user.email,
-    customerFound: !!customer,
-    matchedBy,
-    customerId: customer ? (customer as CustomerRow).id : null,
-  });
-
   // Orphan / unpaid users: no customer record at all → show the start-a-plan page.
   if (!customer) {
     return <NoPlan />;
@@ -169,12 +160,6 @@ export default async function AccountPage({
       pendingRequestType: pendingByItem.get(m.id) ?? null,
     };
   }));
-
-  console.log('[account] subscription', {
-    subscriptionFound: !!subscription,
-    customerStatus: c.status,
-    subscriptionStatus: subscription?.status ?? null,
-  });
 
   // Treat the mailbox as active when the customer is active OR there's an
   // active/trialing subscription.
@@ -393,7 +378,7 @@ function NoPlan() {
         <div className="w-section-inner" style={{ maxWidth: 560, textAlign: 'center' }}>
           <div className="w-hero-eyebrow" style={{ marginBottom: 10 }}>Account</div>
           <h1 style={{ font: '700 30px/1.2 var(--font-display,sans-serif)', color: '#fff', margin: '0 0 14px' }}>
-            Your account isn&rsquo;t connected to a mailbox plan yet.
+            Your account isn&rsquo;t connected to a business address plan yet.
           </h1>
           <p
             style={{
