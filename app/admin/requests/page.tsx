@@ -32,30 +32,39 @@ export default async function AdminRequestsPage({
   const statusFilter = searchParams.status ?? 'pending';
   const admin = createAdminClientAny();
 
-  // Fetch mail_requests FLAT — no nested PostgREST embeds. Embedding
-  // customers→profiles can fail (e.g. ambiguous relationships from extra
-  // columns), which previously returned an error and silently showed nothing.
-  let query = admin
-    .from('mail_requests')
-    .select('id, request_type, status, notes, customer_response, completed_at, created_at, customer_id, mail_item_id')
-    .order('created_at', { ascending: false })
-    .limit(200);
+  // Flat fetch — no nested embeds. `customer_response` is only present once
+  // migration 016 is applied; if it isn't, selecting it errors and returns no
+  // rows. So try the full select, then fall back to a core select that only
+  // uses columns guaranteed to exist, so requests always render.
+  const FULL_SELECT = 'id, request_type, status, notes, customer_response, admin_notes, completed_at, created_at, updated_at, customer_id, mail_item_id';
+  const CORE_SELECT = 'id, request_type, status, notes, admin_notes, completed_at, created_at, updated_at, customer_id, mail_item_id';
 
-  if (statusFilter !== 'all') {
-    query = query.eq('status', statusFilter) as typeof query;
+  async function fetchRequests(select: string) {
+    let q = admin.from('mail_requests').select(select).order('created_at', { ascending: false }).limit(200);
+    if (statusFilter !== 'all') {
+      q = q.eq('status', statusFilter) as typeof q;
+    }
+    return q;
   }
 
-  const { data: reqData, error: reqErr } = await query;
+  let { data: reqData, error: reqErr } = await fetchRequests(FULL_SELECT);
   if (reqErr) {
-    console.error('[admin/requests] mail_requests query failed:', reqErr.message);
+    console.warn('[admin/requests] full select failed, retrying core:', reqErr.message);
+    ({ data: reqData, error: reqErr } = await fetchRequests(CORE_SELECT));
   }
 
-  const baseRows = (reqData ?? []) as Array<{
+  console.log('[admin/requests]', {
+    statusFilter,
+    baseCount: reqData?.length ?? 0,
+    baseError: reqErr?.message ?? null,
+  });
+
+  const baseRows = (reqData ?? []) as unknown as Array<{
     id: string;
     request_type: string;
     status: string;
     notes: string | null;
-    customer_response: string | null;
+    customer_response?: string | null;
     completed_at: string | null;
     created_at: string;
     customer_id: string | null;
@@ -114,7 +123,7 @@ export default async function AdminRequestsPage({
       request_type: r.request_type,
       status: r.status,
       notes: r.notes,
-      customerResponse: r.customer_response,
+      customerResponse: r.customer_response ?? null,
       completedAt: r.completed_at,
       created_at: r.created_at,
       mailSender: mi?.sender ?? null,
