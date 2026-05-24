@@ -505,6 +505,51 @@ html { scroll-behavior: smooth; }
   .dash-actions-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ── Mail item action buttons (customer dashboard) ───────────────────────────────────────── */
+.mail-action-row {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+}
+.mail-action-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 38px; padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #2a3655;
+  background: var(--c-surface-2, #1E2D42);
+  color: var(--c-text-2, rgba(255,255,255,0.62));
+  font: 600 13px/1 var(--font-text, sans-serif);
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+.mail-action-btn:hover:not(:disabled) {
+  border-color: var(--c-gold-2, #C99A5A);
+  color: #fff;
+}
+.mail-action-btn:focus-visible {
+  outline: 2px solid var(--c-gold-2, #C99A5A);
+  outline-offset: 2px;
+}
+.mail-action-btn:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+/* Primary emphasis — "View scan" */
+.mail-action-btn-primary {
+  background: rgba(181,138,82,0.14);
+  border-color: rgba(201,154,90,0.45);
+  color: var(--c-gold-2, #C99A5A);
+}
+.mail-action-btn-primary:hover:not(:disabled) {
+  background: rgba(181,138,82,0.22);
+  border-color: var(--c-gold-2, #C99A5A);
+  color: #fff;
+}
+.mail-action-spinner {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: currentColor;
+  animation: mail-action-spin 0.6s linear infinite;
+}
+@keyframes mail-action-spin { to { transform: rotate(360deg); } }
+
 /* ── Admin panel ──────────────────────────────────────────────────────────────────────── */
 .admin-table {
   width: 100%;

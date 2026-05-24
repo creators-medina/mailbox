@@ -19,17 +19,9 @@ const NOTE_CONFIG: Partial<Record<RequestType, { label: string; placeholder: str
   shred:   { label: 'Shred note (optional)', placeholder: 'Confirm you want this securely shredded' },
 };
 
-const chipStyle = (disabled: boolean): React.CSSProperties => ({
-  display: 'inline-flex', alignItems: 'center', gap: 4,
-  padding: '4px 10px', borderRadius: 6,
-  font: '500 11px/1.2 var(--font-text,sans-serif)',
-  color: 'var(--c-text-2)',
-  background: 'var(--c-surface-2,#222)',
-  border: '1px solid var(--c-border,rgba(255,255,255,0.07))',
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.5 : 1,
-  transition: 'border-color 120ms ease',
-});
+function Spinner() {
+  return <span className="mail-action-spinner" aria-hidden="true" />;
+}
 
 export default function MailItemActions({
   mailItemId,
@@ -121,15 +113,15 @@ export default function MailItemActions({
             border: '1px solid var(--c-border-2,rgba(255,255,255,0.13))',
           }}
         />
-        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+        <div className="mail-action-row" style={{ marginTop: 8 }}>
           <button
+            className="mail-action-btn mail-action-btn-primary"
             onClick={() => submit(activeNote, note)}
             disabled={isPending || (activeNote === 'forward' && !note.trim())}
-            style={chipStyle(isPending || (activeNote === 'forward' && !note.trim()))}
           >
-            {isPending ? 'Submitting…' : 'Confirm'}
+            {isPending ? <><Spinner /> Submitting…</> : 'Confirm'}
           </button>
-          <button onClick={() => { setActiveNote(null); setNote(''); }} disabled={isPending} style={chipStyle(isPending)}>
+          <button className="mail-action-btn" onClick={() => { setActiveNote(null); setNote(''); }} disabled={isPending}>
             Cancel
           </button>
         </div>
@@ -140,24 +132,24 @@ export default function MailItemActions({
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+      <div className="mail-action-row">
         {scanUrl ? (
-          <a href={scanUrl} target="_blank" rel="noopener noreferrer" style={chipStyle(false)}>
-            📄 View scan
+          <a className="mail-action-btn mail-action-btn-primary" href={scanUrl} target="_blank" rel="noopener noreferrer">
+            View scan
           </a>
         ) : (
-          <button onClick={() => onAction('scan')} disabled={isPending} style={chipStyle(isPending)}>
-            📄 Request scan
+          <button className="mail-action-btn mail-action-btn-primary" onClick={() => onAction('scan')} disabled={isPending}>
+            {isPending ? <><Spinner /> Working…</> : 'Request scan'}
           </button>
         )}
-        <button onClick={() => onAction('forward')} disabled={isPending} style={chipStyle(isPending)}>
-          📦 {scanUrl ? 'Forward' : 'Forward unopened'}
+        <button className="mail-action-btn" onClick={() => onAction('forward')} disabled={isPending}>
+          Request forwarding
         </button>
-        <button onClick={() => onAction('pickup')} disabled={isPending} style={chipStyle(isPending)}>
-          🏠 Hold for pickup
+        <button className="mail-action-btn" onClick={() => onAction('pickup')} disabled={isPending}>
+          Hold for pickup
         </button>
-        <button onClick={() => onAction('shred')} disabled={isPending} style={chipStyle(isPending)}>
-          🗑️ Shred
+        <button className="mail-action-btn" onClick={() => onAction('shred')} disabled={isPending}>
+          Request shred
         </button>
       </div>
       {error && <p style={{ font: '400 11px/1 var(--font-text,sans-serif)', color: '#f87171', margin: '6px 0 0' }}>{error}</p>}
