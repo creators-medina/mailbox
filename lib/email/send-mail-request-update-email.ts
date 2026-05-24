@@ -17,6 +17,7 @@ export async function sendMailRequestUpdateEmail({
   status,
   mailSender,
   mailTitle,
+  customerResponse,
   accountUrl,
 }: {
   email: string;
@@ -24,6 +25,7 @@ export async function sendMailRequestUpdateEmail({
   status: string;
   mailSender?: string | null;
   mailTitle?: string | null;
+  customerResponse?: string | null;
   accountUrl: string;
 }): Promise<string | null> {
   const from = process.env.RESEND_FROM_EMAIL;
@@ -43,6 +45,7 @@ export async function sendMailRequestUpdateEmail({
   const paragraphs = [
     `Your ${typeLabel.toLowerCase()} request is now marked “${statusLabel}.” You can review the details in your dashboard.`,
   ];
+  if (customerResponse) paragraphs.push(customerResponse);
   const ctaLabel = 'View Request';
 
   const resend = getResend();

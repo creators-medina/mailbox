@@ -162,7 +162,9 @@ export interface Database {
           status: string;
           notes: string | null;
           admin_notes: string | null;
+          customer_response: string | null;
           completed_at: string | null;
+          completed_by: string | null;
           last_status_email_sent_at: string | null;
           created_at: string;
           updated_at: string;
@@ -175,7 +177,9 @@ export interface Database {
           status?: string;
           notes?: string | null;
           admin_notes?: string | null;
+          customer_response?: string | null;
           completed_at?: string | null;
+          completed_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -183,7 +187,9 @@ export interface Database {
           status?: string;
           notes?: string | null;
           admin_notes?: string | null;
+          customer_response?: string | null;
           completed_at?: string | null;
+          completed_by?: string | null;
           updated_at?: string;
         };
       };

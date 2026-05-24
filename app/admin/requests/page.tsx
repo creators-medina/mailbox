@@ -2,7 +2,7 @@ import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { getSignedUrl } from '@/lib/storage/signed-url';
 import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
-import RequestStatusButton from './RequestStatusButton';
+import RequestFulfillment from './RequestFulfillment';
 import MailFileLinks from '@/app/admin/components/MailFileLinks';
 
 type RequestRow = {
@@ -10,6 +10,8 @@ type RequestRow = {
   request_type: string;
   status: string;
   notes: string | null;
+  customerResponse: string | null;
+  completedAt: string | null;
   created_at: string;
   mailSender: string | null;
   mailTitle: string | null;
@@ -35,7 +37,7 @@ export default async function AdminRequestsPage({
   // columns), which previously returned an error and silently showed nothing.
   let query = admin
     .from('mail_requests')
-    .select('id, request_type, status, notes, created_at, customer_id, mail_item_id')
+    .select('id, request_type, status, notes, customer_response, completed_at, created_at, customer_id, mail_item_id')
     .order('created_at', { ascending: false })
     .limit(200);
 
@@ -53,6 +55,8 @@ export default async function AdminRequestsPage({
     request_type: string;
     status: string;
     notes: string | null;
+    customer_response: string | null;
+    completed_at: string | null;
     created_at: string;
     customer_id: string | null;
     mail_item_id: string | null;
@@ -110,6 +114,8 @@ export default async function AdminRequestsPage({
       request_type: r.request_type,
       status: r.status,
       notes: r.notes,
+      customerResponse: r.customer_response,
+      completedAt: r.completed_at,
       created_at: r.created_at,
       mailSender: mi?.sender ?? null,
       mailTitle: mi?.title ?? null,
@@ -192,9 +198,21 @@ export default async function AdminRequestsPage({
                   <td>
                     <MailFileLinks envelopeUrl={r.envelopeUrl} scanUrl={r.scanUrl} />
                   </td>
-                  <td style={{ color: 'var(--c-text-2)', fontSize: 12, maxWidth: 180 }}>{r.notes ?? '—'}</td>
+                  <td style={{ color: 'var(--c-text-2)', fontSize: 12, maxWidth: 200 }}>
+                    <div>{r.notes ?? '—'}</div>
+                    {r.customerResponse && (
+                      <div style={{ marginTop: 4, color: '#4ade80', fontSize: 11 }}>
+                        ↳ {r.customerResponse}
+                      </div>
+                    )}
+                  </td>
                   <td>
-                    <RequestStatusButton id={r.id} current={r.status} />
+                    <RequestFulfillment
+                      id={r.id}
+                      requestType={r.request_type}
+                      current={r.status}
+                      customerResponse={r.customerResponse}
+                    />
                   </td>
                 </tr>
               ))}
