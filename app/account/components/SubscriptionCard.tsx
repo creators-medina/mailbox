@@ -1,4 +1,5 @@
 import BillingButton from '../BillingButton';
+import AddonPurchaseButton from './AddonPurchaseButton';
 
 export type SubscriptionSummary = {
   status: string;
@@ -36,19 +37,19 @@ export default function SubscriptionCard({
             <span className="addon-row-label">Mail Scanning</span>
             {subscription.mail_scanning_enabled
               ? <span className="addon-active">Active</span>
-              : <span className="addon-inactive">Not active</span>}
+              : <AddonPurchaseButton endpoint="/api/billing/addons/mail-scanning" label="Add Mail Scanning" />}
           </div>
           <div className="addon-row">
             <span className="addon-row-label">Business Phone</span>
             {subscription.business_phone_enabled
               ? <span className="addon-active">Active</span>
-              : <span className="addon-inactive">Not active</span>}
+              : <AddonPurchaseButton endpoint="/api/billing/addons/business-phone" label="Add Business Phone" />}
           </div>
           <div className="addon-row">
             <span className="addon-row-label">Google Business Setup</span>
             {subscription.google_business_setup_purchased
               ? <span className="addon-active">Purchased</span>
-              : <span className="addon-inactive">Not purchased</span>}
+              : <AddonPurchaseButton endpoint="/api/billing/addons/google-business" label="Purchase Google Business Setup" />}
           </div>
           {subscription.current_period_end && (
             <p style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '14px 0 0' }}>

@@ -41,7 +41,7 @@ function fmt(iso: string) {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: { customerEmail?: string };
+  searchParams: { customerEmail?: string; billing?: string };
 }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -250,6 +250,25 @@ export default async function AccountPage({
               <SignOutButton />
             </div>
           </div>
+
+          {searchParams.billing === 'success' && (
+            <div style={{
+              marginBottom: 20, padding: '12px 16px', borderRadius: 10,
+              background: 'rgba(74,222,128,0.10)', border: '1px solid rgba(74,222,128,0.30)',
+              font: '500 14px/1.5 var(--font-text,sans-serif)', color: '#4ade80',
+            }}>
+              Purchase complete — your add-on is being activated and will appear here shortly.
+            </div>
+          )}
+          {searchParams.billing === 'cancelled' && (
+            <div style={{
+              marginBottom: 20, padding: '12px 16px', borderRadius: 10,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid var(--c-border-2,rgba(255,255,255,0.13))',
+              font: '500 14px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-2)',
+            }}>
+              Checkout cancelled — no changes were made.
+            </div>
+          )}
 
           <AddressCard
             suiteNumber={c.suite_number}
