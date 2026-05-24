@@ -287,8 +287,13 @@ export default async function AccountPage({
                         {r.request_type} request
                       </div>
                       <div style={{ font: '400 12px/1 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-                        {fmt(r.created_at)}
+                        {r.completed_at ? `Completed ${fmt(r.completed_at)}` : fmt(r.created_at)}
                       </div>
+                      {r.customer_response && (
+                        <div style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-2)', marginTop: 6 }}>
+                          {r.customer_response}
+                        </div>
+                      )}
                     </div>
                     <span className={`mock-badge ${REQUEST_STATUS_CLASS[r.status] ?? 'mock-badge-held'}`}
                           style={{ flexShrink: 0 }}>

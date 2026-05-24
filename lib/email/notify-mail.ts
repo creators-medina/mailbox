@@ -140,7 +140,7 @@ export async function notifyMailRequestUpdate(admin: any, requestId: string): Pr
 
     const { data: reqRow } = await admin
       .from('mail_requests')
-      .select('id, customer_id, request_type, status, mail_items(sender, title)')
+      .select('id, customer_id, request_type, status, customer_response, mail_items(sender, title)')
       .eq('id', requestId)
       .maybeSingle();
     if (!reqRow) return;
@@ -158,6 +158,7 @@ export async function notifyMailRequestUpdate(admin: any, requestId: string): Pr
       status: reqRow.status,
       mailSender: mail?.sender ?? null,
       mailTitle: mail?.title ?? null,
+      customerResponse: reqRow.customer_response ?? null,
       accountUrl: url,
     });
 
