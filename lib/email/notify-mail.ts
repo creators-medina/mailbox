@@ -14,8 +14,12 @@ import { sendMailRequestUpdateEmail } from './send-mail-request-update-email';
 // a preview deployment URL) and always targets /account — never /admin. The
 // recipient email is attached so /account can show the right guidance if an
 // admin happens to be signed in when opening the link.
+function appBase(): string | undefined {
+  return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL;
+}
+
 function accountUrl(customerEmail?: string | null): string | null {
-  const base = process.env.NEXT_PUBLIC_APP_URL;
+  const base = appBase();
   if (!base) return null;
   const url = `${base.replace(/\/$/, '')}/account`;
   return customerEmail ? `${url}?customerEmail=${encodeURIComponent(customerEmail)}` : url;
@@ -58,7 +62,7 @@ async function loadCustomerCtx(admin: any, customerId: string): Promise<Customer
 export async function notifyNewMailReceived(admin: any, mailItemId: string): Promise<void> {
   try {
     if (!isResendConfigured() || !process.env.RESEND_FROM_EMAIL) return;
-    if (!process.env.NEXT_PUBLIC_APP_URL) { console.warn('[notify] NEXT_PUBLIC_APP_URL not set — skipping mail-received email'); return; }
+    if (!appBase()) { console.warn('[notify] app URL not set — skipping mail-received email'); return; }
 
     const { data: item } = await admin
       .from('mail_items')
@@ -96,7 +100,7 @@ export async function notifyNewMailReceived(admin: any, mailItemId: string): Pro
 export async function notifyScanReady(admin: any, mailItemId: string): Promise<void> {
   try {
     if (!isResendConfigured() || !process.env.RESEND_FROM_EMAIL) return;
-    if (!process.env.NEXT_PUBLIC_APP_URL) { console.warn('[notify] NEXT_PUBLIC_APP_URL not set — skipping scan-ready email'); return; }
+    if (!appBase()) { console.warn('[notify] app URL not set — skipping scan-ready email'); return; }
 
     const { data: item } = await admin
       .from('mail_items')
@@ -132,7 +136,7 @@ export async function notifyScanReady(admin: any, mailItemId: string): Promise<v
 export async function notifyMailRequestUpdate(admin: any, requestId: string): Promise<void> {
   try {
     if (!isResendConfigured() || !process.env.RESEND_FROM_EMAIL) return;
-    if (!process.env.NEXT_PUBLIC_APP_URL) { console.warn('[notify] NEXT_PUBLIC_APP_URL not set — skipping request-update email'); return; }
+    if (!appBase()) { console.warn('[notify] app URL not set — skipping request-update email'); return; }
 
     const { data: reqRow } = await admin
       .from('mail_requests')
