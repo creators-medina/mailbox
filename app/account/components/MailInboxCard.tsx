@@ -1,4 +1,5 @@
 import MailItemActions from '../MailItemActions';
+import { mailStatusLabel } from '@/lib/mail/statuses';
 
 export type MailItem = {
   id: string;
@@ -14,13 +15,12 @@ export type MailItem = {
 };
 
 const MAIL_STATUS_CLASS: Record<string, string> = {
-  received:  'mock-badge-new',
-  notified:  'mock-badge-new',
-  scanned:   'mock-badge-scanned',
-  held:      'mock-badge-held',
-  forwarded: 'mock-badge-ready',
-  picked_up: 'mock-badge-ready',
-  shredded:  'mock-badge-held',
+  received:        'mock-badge-new',
+  scanned:         'mock-badge-scanned',
+  awaiting_action: 'mock-badge-new',
+  forwarded:       'mock-badge-ready',
+  picked_up:       'mock-badge-ready',
+  shredded:        'mock-badge-held',
 };
 
 function fmt(iso: string) {
@@ -77,7 +77,7 @@ export default function MailInboxCard({
                     </a>
                   )}
                   <span className={`mock-badge ${MAIL_STATUS_CLASS[item.status] ?? 'mock-badge-held'}`}>
-                    {item.status.replace('_', ' ')}
+                    {mailStatusLabel(item.status)}
                   </span>
                 </div>
               </div>

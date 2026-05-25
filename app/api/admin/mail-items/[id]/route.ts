@@ -2,13 +2,12 @@ import 'server-only';
 import { checkIsStaff } from '@/lib/auth/require-staff';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { notifyScanReady } from '@/lib/email/notify-mail';
+import { MAIL_ITEM_STATUSES } from '@/lib/mail/statuses';
 
 export const dynamic = 'force-dynamic';
 
-// Mirrors the mail_items.status CHECK constraint defined in the schema.
-const VALID_STATUSES = new Set([
-  'received', 'notified', 'scanned', 'held', 'forwarded', 'picked_up', 'shredded',
-]);
+// Allowed mail item statuses — must match the production mail_item_status enum.
+const VALID_STATUSES = new Set<string>(MAIL_ITEM_STATUSES);
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   if (!(await checkIsStaff())) {
