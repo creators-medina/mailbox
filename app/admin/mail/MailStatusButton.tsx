@@ -1,9 +1,9 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { MAIL_ITEM_STATUSES } from '@/lib/mail/statuses';
+import { MAIL_ITEM_STATUSES, mailStatusLabel } from '@/lib/mail/statuses';
 
-const label = (s: string) => s.replace('_', ' ');
+const label = (s: string) => mailStatusLabel(s);
 
 export default function MailStatusButton({ id, current }: { id: string; current: string }) {
   const router = useRouter();
@@ -80,7 +80,6 @@ export default function MailStatusButton({ id, current }: { id: string; current:
                   display: 'block', width: '100%', textAlign: 'left',
                   padding: '9px 12px', borderRadius: 7,
                   font: '500 13px/1.2 var(--font-text,sans-serif)',
-                  textTransform: 'capitalize',
                   color: s === status ? 'var(--c-gold-2,#C99A5A)' : 'rgba(255,255,255,0.82)',
                   background: s === status ? 'rgba(181,138,82,0.10)' : 'none',
                   border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',

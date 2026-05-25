@@ -2,6 +2,7 @@ import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { getSignedUrl } from '@/lib/storage/signed-url';
 import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
+import { MAIL_ITEM_STATUSES, mailStatusLabel } from '@/lib/mail/statuses';
 import MailStatusButton from './MailStatusButton';
 import MailFileLinks from '@/app/admin/components/MailFileLinks';
 
@@ -52,7 +53,7 @@ export default async function AdminMailQueuePage({
     fileUrls.set(m.id, { envelopeUrl, scanUrl });
   }));
 
-  const STATUS_OPTIONS = ['', 'received','notified','scanned','held','forwarded','picked_up','shredded'];
+  const STATUS_OPTIONS = ['', ...MAIL_ITEM_STATUSES];
 
   return (
     <div>
@@ -71,7 +72,7 @@ export default async function AdminMailQueuePage({
               href={s ? `/admin/mail?status=${s}` : '/admin/mail'}
               className={`admin-filter-chip ${statusFilter === s ? 'admin-filter-chip-active' : ''}`}
             >
-              {s || 'All'}
+              {s ? mailStatusLabel(s) : 'All'}
             </a>
           ))}
         </div>
