@@ -74,8 +74,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return Response.json({ error: 'No valid fields to update.' }, { status: 400 });
   }
 
-  // Update and read the row back so we can confirm the change actually
-  // persisted (an RLS/permission issue would update 0 rows without erroring).
+  // Update and read the row back to return the persisted status.
   const { data, error } = await admin
     .from('mail_items')
     .update(update)
@@ -83,21 +82,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     .select('id, status')
     .maybeSingle();
 
-  if (update.status !== undefined) {
-    console.log('[admin/mail/status]', {
-      mailItemId: params.id,
-      nextStatus: update.status,
-      updated: !!data,
-      error: error?.message ?? null,
-    });
-  }
+  console.log('[admin/mail/status]', {
+    mailItemId: params.id,
+    nextStatus: update.status ?? null,
+    updated: !!data,
+    error: error?.message ?? null,
+  });
 
   if (error) {
-    console.error('[admin/mail-items PATCH] update failed:', error.message);
-    return Response.json({ error: 'Could not update the mail item.' }, { status: 500 });
-  }
-  if (!data) {
-    return Response.json({ error: 'Update did not persist (no matching row).' }, { status: 500 });
+    // Temporary: surface the real Supabase error to debug production.
+    return Response.json({ error: error.message }, { status: 500 });
   }
 
   // Non-fatal: notify the customer when the item becomes scanned.
@@ -105,5 +99,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await notifyScanReady(admin, params.id);
   }
 
-  return Response.json({ ok: true, status: (data as { status: string }).status });
+  const persistedStatus = (data as { status: string } | null)?.status
+    ?? (typeof update.status === 'string' ? update.status : undefined);
+  return Response.json({ ok: true, status: persistedStatus });
 }

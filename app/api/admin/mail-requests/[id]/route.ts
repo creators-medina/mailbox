@@ -84,20 +84,31 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     update.completed_by = user.id;
   }
 
+  // Try the full update; if an optional column is missing (e.g. migration 016
+  // not applied), progressively drop optional columns so the core status change
+  // always lands.
   let { error: upErr } = await admin.from('mail_requests').update(update).eq('id', params.id);
   if (upErr) {
-    // Migration 016 may not be applied yet — retry without the newer columns so
-    // the status change still succeeds. customer_response is folded into nothing
-    // here, but the core fulfillment (status/completed_at) still lands.
     console.warn('[admin/mail-requests PATCH] full update failed, retrying core:', upErr.message);
     const coreUpdate: Record<string, unknown> = { status: nextStatus, updated_at: new Date().toISOString() };
-    if (staffNote !== null) coreUpdate.admin_notes = staffNote;
     if (nextStatus === 'completed') coreUpdate.completed_at = new Date().toISOString();
     ({ error: upErr } = await admin.from('mail_requests').update(coreUpdate).eq('id', params.id));
     if (upErr) {
-      console.error('[admin/mail-requests PATCH] update failed:', upErr.message);
-      return Response.json({ error: 'Could not update the request.' }, { status: 500 });
+      console.warn('[admin/mail-requests PATCH] core update failed, retrying status only:', upErr.message);
+      ({ error: upErr } = await admin.from('mail_requests').update({ status: nextStatus }).eq('id', params.id));
     }
+  }
+
+  console.log('[admin/request/status]', {
+    requestId: params.id,
+    nextStatus,
+    updated: !upErr,
+    error: upErr?.message ?? null,
+  });
+
+  if (upErr) {
+    // Temporary: surface the real Supabase error to debug production.
+    return Response.json({ error: upErr.message }, { status: 500 });
   }
 
   // ── On completion, sync the related mail item's status (valid enum only) ──
