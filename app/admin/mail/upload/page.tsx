@@ -64,15 +64,16 @@ export default async function MailUploadPage({
         style={{
           maxWidth: 640, marginBottom: 20,
           padding: '12px 16px', borderRadius: 10,
-          background: 'rgba(181,138,82,0.08)',
-          border: '1px solid rgba(181,138,82,0.28)',
+          background: 'rgba(248,113,113,0.06)',
+          border: '1px solid rgba(248,113,113,0.35)',
           font: '400 13px/1.55 var(--font-text,sans-serif)', color: 'var(--c-text-2)',
         }}
       >
-        <strong style={{ color: 'var(--c-gold-2,#C99A5A)' }}>Compliance check:</strong>{' '}
-        Confirm <strong>Form 1583 and ID are verified</strong> before accepting or
-        processing mail. The selected customer&rsquo;s status is shown below the
-        customer field.
+        <strong style={{ color: '#f87171' }}>Do not process mail without a verified Form 1583 and photo ID.</strong>{' '}
+        USPS rules prohibit accepting or handling mail for an unverified
+        customer. The selected customer&rsquo;s status (✓ verified / ⚠ not
+        verified) is shown below the customer field — only proceed when it
+        shows ✓.
       </div>
 
       <div className="dash-card" style={{ maxWidth: 640 }}>

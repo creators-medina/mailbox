@@ -52,9 +52,10 @@ function renderText(name: string, url: string): string {
   return [
     `Welcome to My Biz Address, ${name}!`,
     '',
-    'Your virtual Rockwall business address is now active. Set your password to',
-    'access your dashboard, view incoming mail, and manage scans, forwarding,',
-    'and pickups online.',
+    'Your My Biz Address account is set up. Set your password to access your',
+    'dashboard, view your assigned Rockwall suite, and complete the USPS',
+    'Form 1583 + ID verification we need before we can begin handling mail',
+    'on your behalf.',
     '',
     'Set your password:',
     url,
@@ -97,13 +98,16 @@ function renderHtml(name: string, url: string): string {
               <td style="padding:16px 32px 8px;">
                 <h1 style="margin:0 0 14px;color:#ffffff;font-size:24px;line-height:1.25;font-weight:700;">Welcome, ${name}.</h1>
                 <p style="margin:0 0 16px;color:rgba(245,240,232,0.78);font-size:15px;line-height:1.65;">
-                  Your virtual <strong style="color:#fff;">Rockwall business address</strong> is now active. Set your password to access your dashboard, where you can:
+                  Your My Biz Address account is set up. Set your password to access your dashboard, where you can:
                 </p>
                 <ul style="margin:0 0 22px;padding-left:20px;color:rgba(245,240,232,0.78);font-size:15px;line-height:1.7;">
-                  <li>View incoming mail with envelope photos</li>
-                  <li>Request scans, forwarding, or local pickup</li>
-                  <li>Manage your plan and account online</li>
+                  <li>View your assigned <strong style="color:#fff;">Rockwall</strong> suite</li>
+                  <li>Complete USPS Form 1583 + ID verification</li>
+                  <li>Manage your plan and add-ons online</li>
                 </ul>
+                <p style="margin:0 0 16px;color:rgba(245,240,232,0.65);font-size:14px;line-height:1.55;">
+                  <strong style="color:#C99A5A;">Note:</strong> mail handling begins after we verify your Form 1583 and photo ID — we'll guide you through it.
+                </p>
               </td>
             </tr>
             <!-- CTA -->

@@ -5,9 +5,11 @@ import { useState } from 'react';
 export default function AddressCard({
   suiteNumber,
   addressLine,
+  authorized = false,
 }: {
   suiteNumber: string | null;
   addressLine: string | null;
+  authorized?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const hasSuite = Boolean(suiteNumber);
@@ -79,6 +81,14 @@ export default function AddressCard({
 
           <p style={{ font: '400 13px/1.6 var(--font-text,sans-serif)', color: 'var(--c-text-2)', margin: '16px 0 0' }}>
             Use this address for business mail, filings, vendors, and correspondence.
+            {!authorized && (
+              <>
+                {' '}
+                <strong style={{ color: 'var(--c-gold-2,#C99A5A)' }}>
+                  Mail handling begins after Form 1583 and ID verification are complete.
+                </strong>
+              </>
+            )}
           </p>
         </>
       ) : (
