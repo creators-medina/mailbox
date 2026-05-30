@@ -171,16 +171,21 @@ export default async function AccountPage({
     || (profile?.full_name ? profile.full_name.split(' ')[0] : null)
     || user.email
     || 'there';
-  const statusKey   = isActive ? 'active' : (c.status ?? 'pending');
+  // The subscription can be active while compliance is still pending. In that
+  // case we surface "Verification needed" instead of "Active" so we never imply
+  // the mailbox is fully ready to receive/handle mail.
+  const complianceVerified = form1583Status === 'verified' && photoIdStatus === 'verified';
+  const baseKey = isActive ? 'active' : (c.status ?? 'pending');
+  const statusKey = baseKey === 'active' && !complianceVerified ? 'pending' : baseKey;
   const statusClass = statusKey === 'active'    ? 'status-pill-active'
     : statusKey === 'cancelled' ? 'status-pill-cancelled'
     : 'status-pill-pending';
   const dotClass    = statusKey === 'active'    ? 'status-dot-active'
     : statusKey === 'cancelled' ? 'status-dot-cancelled'
     : 'status-dot-pending';
-  const statusLabel = statusKey === 'active'    ? 'Active'
-    : statusKey === 'cancelled' ? 'Cancelled'
-    : 'Setting up';
+  const statusLabel = statusKey === 'cancelled' ? 'Cancelled'
+    : statusKey === 'active'    ? 'Active'
+    : (isActive && !complianceVerified ? 'Verification needed' : 'Setting up');
 
   const checklist: ChecklistItem[] = [
     { label: 'Account activated', status: 'done', note: 'Your password is set and you can sign in.' },
@@ -255,9 +260,22 @@ export default async function AccountPage({
             </div>
           )}
 
+          {!complianceVerified && (
+            <div style={{
+              marginBottom: 20, padding: '12px 16px', borderRadius: 10,
+              background: 'rgba(181,138,82,0.08)', border: '1px solid rgba(181,138,82,0.28)',
+              font: '500 13px/1.55 var(--font-text,sans-serif)', color: 'var(--c-text-2)',
+            }}>
+              <strong style={{ color: 'var(--c-gold-2,#C99A5A)' }}>Verification needed:</strong>{' '}
+              Mail handling begins after Form 1583 and ID verification are complete.
+              Watch your email — our team will guide you through it.
+            </div>
+          )}
+
           <AddressCard
             suiteNumber={c.suite_number}
             addressLine={c.business_address_line}
+            authorized={complianceVerified}
           />
 
           <OnboardingChecklist items={checklist} />
