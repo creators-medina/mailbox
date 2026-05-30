@@ -79,7 +79,10 @@ export async function POST(req: Request) {
     status: 'pending',
   });
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[mail-requests] insert failed:', error.message);
+    return Response.json({ error: 'Could not submit your request.' }, { status: 500 });
+  }
 
   return Response.json({ success: true });
 }

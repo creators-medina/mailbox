@@ -107,8 +107,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   });
 
   if (upErr) {
-    // Temporary: surface the real Supabase error to debug production.
-    return Response.json({ error: upErr.message }, { status: 500 });
+    console.error('[admin/mail-requests PATCH] update failed:', upErr.message);
+    return Response.json({ error: 'Could not complete request.' }, { status: 500 });
   }
 
   // ── On completion, sync the related mail item's status (valid enum only) ──

@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       .upload(path, buffer, { contentType: envelopeFile.type });
     if (upErr) {
       console.error('[mail-items] envelope upload failed:', upErr.message);
-      return Response.json({ error: `Envelope upload failed: ${upErr.message}` }, { status: 500 });
+      return Response.json({ error: 'Could not upload the envelope image.' }, { status: 500 });
     }
     if (up) envelopeUrl = (up as { path: string }).path;
   }
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       .upload(path, buffer, { contentType: scanFile.type });
     if (upErr) {
       console.error('[mail-items] scan upload failed:', upErr.message);
-      return Response.json({ error: `Scan upload failed: ${upErr.message}` }, { status: 500 });
+      return Response.json({ error: 'Could not upload the scanned document.' }, { status: 500 });
     }
     if (up) scanUrl = (up as { path: string }).path;
   }
@@ -89,7 +89,10 @@ export async function POST(req: Request) {
     .select('id')
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[mail-items] insert failed:', error.message);
+    return Response.json({ error: 'Could not create the mail item.' }, { status: 500 });
+  }
 
   const newId = (mailItem as { id: string } | null)?.id;
 
