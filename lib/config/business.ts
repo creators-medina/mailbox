@@ -18,7 +18,7 @@ export const BUSINESS = {
   // Contact
   phone:          '(469) 893-4120',
   phoneE164:      '+14698934120',
-  email:          'info@mybizmailbox.biz',
+  email:          'info@mybizaddress.co',
 
   // Hours
   hoursShort:     'Mon–Sat, 9 am – 6 pm',
@@ -27,7 +27,7 @@ export const BUSINESS = {
   hoursClose:     '18:00',
 
   // Web
-  websiteUrl:     'https://mybizmailbox.biz',
+  websiteUrl:     'https://www.mybizaddress.co',
 
   // Suite assignment prefix
   suitePrefix:    'MB',
