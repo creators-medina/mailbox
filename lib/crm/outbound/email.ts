@@ -6,7 +6,7 @@ import { createMessage, updateMessageDeliveryStatus } from '@/lib/crm/messages';
 import { findUnresolvedVars } from '@/lib/crm/template-vars';
 import type { Message } from '@/lib/crm/types';
 
-const DEFAULT_FROM = 'My Biz Address <contact@mybizmailbox.biz>';
+const DEFAULT_FROM = 'My Biz Address <hello@mybizaddress.co>';
 const DEFAULT_SUBJECT = 'Re: Your My Biz Address inquiry';
 
 export type SendEmailInput = {
