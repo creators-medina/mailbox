@@ -89,8 +89,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   });
 
   if (error) {
-    // Temporary: surface the real Supabase error to debug production.
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[admin/mail-items PATCH] update failed:', error.message);
+    return Response.json({ error: 'Could not update status.' }, { status: 500 });
   }
 
   // Non-fatal: notify the customer when the item becomes scanned.

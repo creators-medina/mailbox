@@ -165,11 +165,6 @@ export default async function AdminRequestsPage({
         </div>
       </div>
 
-      {/* Temporary debug aid for the production visibility issue. */}
-      <p style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 16px' }}>
-        Requests loaded: {requests.length} · Error: {error?.message ?? 'none'}
-      </p>
-
       <div className="dash-card" style={{ padding: 0, overflow: 'hidden' }}>
         {requests.length === 0 ? (
           <p style={{ padding: 24, font: '400 13px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: 0 }}>
