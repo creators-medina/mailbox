@@ -237,8 +237,15 @@ export interface Database {
           customer_id: string;
           form_1583_status: string;
           photo_id_status: string;
+          form_1583_file_path: string | null;
+          photo_id_file_path: string | null;
+          form_1583_uploaded_at: string | null;
+          photo_id_uploaded_at: string | null;
           verified_at: string | null;
           verified_by: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          rejected_reason: string | null;
           notes: string | null;
           created_at: string;
           updated_at: string;
@@ -248,8 +255,15 @@ export interface Database {
           customer_id: string;
           form_1583_status?: string;
           photo_id_status?: string;
+          form_1583_file_path?: string | null;
+          photo_id_file_path?: string | null;
+          form_1583_uploaded_at?: string | null;
+          photo_id_uploaded_at?: string | null;
           verified_at?: string | null;
           verified_by?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          rejected_reason?: string | null;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -257,8 +271,15 @@ export interface Database {
         Update: {
           form_1583_status?: string;
           photo_id_status?: string;
+          form_1583_file_path?: string | null;
+          photo_id_file_path?: string | null;
+          form_1583_uploaded_at?: string | null;
+          photo_id_uploaded_at?: string | null;
           verified_at?: string | null;
           verified_by?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          rejected_reason?: string | null;
           notes?: string | null;
           updated_at?: string;
         };
