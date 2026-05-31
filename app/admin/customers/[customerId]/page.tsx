@@ -2,7 +2,7 @@ import 'server-only';
 import { notFound } from 'next/navigation';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { getSignedUrl } from '@/lib/storage/signed-url';
-import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
+import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET, COMPLIANCE_DOCUMENTS_BUCKET } from '@/lib/storage/buckets';
 import AdminNoteForm from './AdminNoteForm';
 import SuiteEditor from './SuiteEditor';
 import ComplianceEditor from './ComplianceEditor';
@@ -94,7 +94,7 @@ export default async function CustomerDetailPage({
       .eq('customer_id', params.customerId)
       .order('created_at', { ascending: false }),
     admin.from('customer_compliance')
-      .select('form_1583_status, photo_id_status, verified_at, verified_by, notes')
+      .select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, form_1583_uploaded_at, photo_id_uploaded_at, rejected_reason, form_1583_rejected_reason, photo_id_rejected_reason, reviewed_at, reviewed_by, verified_at, verified_by, notes')
       .eq('customer_id', params.customerId)
       .maybeSingle(),
   ]);
@@ -122,22 +122,41 @@ export default async function CustomerDetailPage({
   const compliance = complianceRes.data as {
     form_1583_status: string;
     photo_id_status: string;
+    form_1583_file_path: string | null;
+    photo_id_file_path: string | null;
+    form_1583_uploaded_at: string | null;
+    photo_id_uploaded_at: string | null;
+    rejected_reason: string | null;
+    form_1583_rejected_reason: string | null;
+    photo_id_rejected_reason: string | null;
+    reviewed_at: string | null;
+    reviewed_by: string | null;
     verified_at: string | null;
     verified_by: string | null;
     notes: string | null;
   } | null;
 
-  // Resolve verified_by → a human label (best-effort).
-  let verifiedByLabel: string | null = null;
-  if (compliance?.verified_by) {
-    const { data: vb } = await admin
-      .from('profiles')
-      .select('full_name, email')
-      .eq('id', compliance.verified_by)
-      .maybeSingle();
-    const v = vb as { full_name: string | null; email: string | null } | null;
-    verifiedByLabel = v?.full_name || v?.email || 'staff';
+  // Resolve verified_by + reviewed_by → human labels (best-effort).
+  async function profileLabel(id: string | null | undefined): Promise<string | null> {
+    if (!id) return null;
+    const { data } = await admin.from('profiles').select('full_name, email').eq('id', id).maybeSingle();
+    const v = data as { full_name: string | null; email: string | null } | null;
+    return v?.full_name || v?.email || 'staff';
   }
+  const [verifiedByLabel, reviewedByLabel] = await Promise.all([
+    profileLabel(compliance?.verified_by),
+    profileLabel(compliance?.reviewed_by),
+  ]);
+
+  // Short-lived signed URLs for the customer-uploaded documents. Server-only.
+  const [form1583Url, photoIdUrl] = await Promise.all([
+    compliance?.form_1583_file_path
+      ? getSignedUrl(COMPLIANCE_DOCUMENTS_BUCKET, compliance.form_1583_file_path, 600)
+      : Promise.resolve(null),
+    compliance?.photo_id_file_path
+      ? getSignedUrl(COMPLIANCE_DOCUMENTS_BUCKET, compliance.photo_id_file_path, 600)
+      : Promise.resolve(null),
+  ]);
 
   const p = customer.profiles;
 
@@ -214,6 +233,20 @@ export default async function CustomerDetailPage({
           initialForm1583={compliance?.form_1583_status ?? 'pending'}
           initialPhotoId={compliance?.photo_id_status ?? 'pending'}
           initialNotes={compliance?.notes ?? ''}
+          initialForm1583RejectedReason={
+            compliance?.form_1583_rejected_reason
+              ?? (compliance?.form_1583_status === 'rejected' ? (compliance?.rejected_reason ?? '') : '')
+          }
+          initialPhotoIdRejectedReason={
+            compliance?.photo_id_rejected_reason
+              ?? (compliance?.photo_id_status === 'rejected' ? (compliance?.rejected_reason ?? '') : '')
+          }
+          form1583UploadedAt={compliance?.form_1583_uploaded_at ?? null}
+          photoIdUploadedAt={compliance?.photo_id_uploaded_at ?? null}
+          form1583Url={form1583Url}
+          photoIdUrl={photoIdUrl}
+          reviewedAt={compliance?.reviewed_at ?? null}
+          reviewedByLabel={reviewedByLabel}
           verifiedAt={compliance?.verified_at ?? null}
           verifiedByLabel={verifiedByLabel}
         />
