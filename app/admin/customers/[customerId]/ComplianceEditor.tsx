@@ -13,7 +13,8 @@ export default function ComplianceEditor({
   initialForm1583,
   initialPhotoId,
   initialNotes,
-  initialRejectedReason,
+  initialForm1583RejectedReason,
+  initialPhotoIdRejectedReason,
   form1583UploadedAt,
   photoIdUploadedAt,
   form1583Url,
@@ -27,7 +28,8 @@ export default function ComplianceEditor({
   initialForm1583: string;
   initialPhotoId: string;
   initialNotes: string;
-  initialRejectedReason: string;
+  initialForm1583RejectedReason: string;
+  initialPhotoIdRejectedReason: string;
   form1583UploadedAt: string | null;
   photoIdUploadedAt: string | null;
   form1583Url: string | null;
@@ -41,7 +43,8 @@ export default function ComplianceEditor({
   const [form1583, setForm1583] = useState(initialForm1583);
   const [photoId, setPhotoId] = useState(initialPhotoId);
   const [notes, setNotes] = useState(initialNotes);
-  const [rejectedReason, setRejectedReason] = useState(initialRejectedReason);
+  const [form1583Reason, setForm1583Reason] = useState(initialForm1583RejectedReason);
+  const [photoIdReason, setPhotoIdReason]   = useState(initialPhotoIdRejectedReason);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -80,25 +83,28 @@ export default function ComplianceEditor({
       form_1583_status: form1583,
       photo_id_status: photoId,
       notes,
-      rejected_reason: rejectedReason,
+      form_1583_rejected_reason: form1583Reason,
+      photo_id_rejected_reason: photoIdReason,
     });
   }
 
   function verifyOne(which: 'form_1583' | 'photo_id') {
     const key = which === 'form_1583' ? 'form_1583_status' : 'photo_id_status';
     patch({ [key]: 'verified' }, () => {
-      if (which === 'form_1583') setForm1583('verified');
-      else setPhotoId('verified');
+      if (which === 'form_1583') { setForm1583('verified'); setForm1583Reason(''); }
+      else { setPhotoId('verified'); setPhotoIdReason(''); }
     });
   }
 
   function rejectOne(which: 'form_1583' | 'photo_id') {
-    if (!rejectedReason.trim()) {
-      setError('Add a rejection reason — the customer will see it.');
+    const reason = which === 'form_1583' ? form1583Reason : photoIdReason;
+    if (!reason.trim()) {
+      setError(`Add a ${which === 'form_1583' ? 'Form 1583' : 'Photo ID'} rejection reason — the customer will see it.`);
       return;
     }
-    const key = which === 'form_1583' ? 'form_1583_status' : 'photo_id_status';
-    patch({ [key]: 'rejected', rejected_reason: rejectedReason }, () => {
+    const statusKey = which === 'form_1583' ? 'form_1583_status' : 'photo_id_status';
+    const reasonKey = which === 'form_1583' ? 'form_1583_rejected_reason' : 'photo_id_rejected_reason';
+    patch({ [statusKey]: 'rejected', [reasonKey]: reason }, () => {
       if (which === 'form_1583') setForm1583('rejected');
       else setPhotoId('rejected');
     });
@@ -148,16 +154,29 @@ export default function ComplianceEditor({
         />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <label className="admin-label">Rejection reason (shown to customer if either status is set to rejected)</label>
-        <textarea
-          className="admin-textarea"
-          rows={2}
-          value={rejectedReason}
-          onChange={e => setRejectedReason(e.target.value)}
-          placeholder="e.g. ID image is too blurry to read — please re-upload."
-          disabled={isPending}
-        />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label className="admin-label">Form 1583 rejection reason (shown to customer)</label>
+          <textarea
+            className="admin-textarea"
+            rows={2}
+            value={form1583Reason}
+            onChange={e => setForm1583Reason(e.target.value)}
+            placeholder="e.g. Signature is missing on page 2 — please re-sign and re-upload."
+            disabled={isPending}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label className="admin-label">Photo ID rejection reason (shown to customer)</label>
+          <textarea
+            className="admin-textarea"
+            rows={2}
+            value={photoIdReason}
+            onChange={e => setPhotoIdReason(e.target.value)}
+            placeholder="e.g. ID image is too blurry to read — please re-upload."
+            disabled={isPending}
+          />
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

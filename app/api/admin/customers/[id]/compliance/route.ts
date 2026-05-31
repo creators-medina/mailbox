@@ -31,7 +31,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // ── Parse + validate ──
   let body: {
     form_1583_status?: unknown; photo_id_status?: unknown;
-    notes?: unknown; rejected_reason?: unknown;
+    notes?: unknown;
+    rejected_reason?: unknown;
+    form_1583_rejected_reason?: unknown;
+    photo_id_rejected_reason?: unknown;
   };
   try {
     body = await req.json();
@@ -58,12 +61,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Merge with any existing row so partial updates are preserved.
   const { data: existing } = await admin
     .from('customer_compliance')
-    .select('form_1583_status, photo_id_status, notes, rejected_reason, verified_at, verified_by')
+    .select('form_1583_status, photo_id_status, notes, rejected_reason, form_1583_rejected_reason, photo_id_rejected_reason, verified_at, verified_by')
     .eq('customer_id', customerId)
     .maybeSingle();
   const ex = (existing ?? {}) as {
     form_1583_status?: string; photo_id_status?: string; notes?: string | null;
-    rejected_reason?: string | null; verified_at?: string | null; verified_by?: string | null;
+    rejected_reason?: string | null;
+    form_1583_rejected_reason?: string | null;
+    photo_id_rejected_reason?: string | null;
+    verified_at?: string | null; verified_by?: string | null;
   };
 
   const form1583 = body.form_1583_status !== undefined
@@ -75,11 +81,28 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const notes = body.notes !== undefined
     ? (typeof body.notes === 'string' && body.notes.trim() !== '' ? body.notes.trim() : null)
     : (ex.notes ?? null);
-  // rejected_reason: explicit empty string from the admin clears it; absent
-  // preserves any existing reason; a non-empty value updates it.
+
+  // rejected_reason (legacy shared field): explicit empty string clears it,
+  // absent preserves it. Kept for read-back compatibility; no longer the
+  // authoritative reason.
   const rejectedReason = body.rejected_reason !== undefined
     ? (typeof body.rejected_reason === 'string' && body.rejected_reason.trim() !== '' ? body.rejected_reason.trim() : null)
     : (ex.rejected_reason ?? null);
+
+  // Per-document rejection reasons. Each is preserved when absent in the body.
+  // When the document is being verified, its reason is auto-cleared (verified
+  // implies no outstanding rejection).
+  function resolveReason(
+    bodyVal: unknown,
+    existingVal: string | null | undefined,
+    newStatus: string,
+  ): string | null {
+    if (newStatus === 'verified') return null;
+    if (bodyVal === undefined) return existingVal ?? null;
+    return typeof bodyVal === 'string' && bodyVal.trim() !== '' ? bodyVal.trim() : null;
+  }
+  const form1583Reason = resolveReason(body.form_1583_rejected_reason, ex.form_1583_rejected_reason, form1583);
+  const photoIdReason  = resolveReason(body.photo_id_rejected_reason,  ex.photo_id_rejected_reason,  photoId);
 
   const nowIso = new Date().toISOString();
   const bothVerified = form1583 === 'verified' && photoId === 'verified';
@@ -100,6 +123,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     photo_id_status: photoId,
     notes,
     rejected_reason: rejectedReason,
+    form_1583_rejected_reason: form1583Reason,
+    photo_id_rejected_reason: photoIdReason,
     // Every admin save is a review; stamp the review trail.
     reviewed_at: nowIso,
     reviewed_by: user.id,
@@ -111,7 +136,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const { data: saved, error } = await admin
     .from('customer_compliance')
     .upsert(row, { onConflict: 'customer_id' })
-    .select('id, customer_id, form_1583_status, photo_id_status, rejected_reason, reviewed_at, reviewed_by, verified_at, verified_by, notes, updated_at')
+    .select('id, customer_id, form_1583_status, photo_id_status, rejected_reason, form_1583_rejected_reason, photo_id_rejected_reason, reviewed_at, reviewed_by, verified_at, verified_by, notes, updated_at')
     .single();
 
   if (error) {

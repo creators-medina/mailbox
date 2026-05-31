@@ -246,6 +246,8 @@ export interface Database {
           reviewed_at: string | null;
           reviewed_by: string | null;
           rejected_reason: string | null;
+          form_1583_rejected_reason: string | null;
+          photo_id_rejected_reason: string | null;
           notes: string | null;
           created_at: string;
           updated_at: string;
@@ -264,6 +266,8 @@ export interface Database {
           reviewed_at?: string | null;
           reviewed_by?: string | null;
           rejected_reason?: string | null;
+          form_1583_rejected_reason?: string | null;
+          photo_id_rejected_reason?: string | null;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -280,6 +284,8 @@ export interface Database {
           reviewed_at?: string | null;
           reviewed_by?: string | null;
           rejected_reason?: string | null;
+          form_1583_rejected_reason?: string | null;
+          photo_id_rejected_reason?: string | null;
           notes?: string | null;
           updated_at?: string;
         };

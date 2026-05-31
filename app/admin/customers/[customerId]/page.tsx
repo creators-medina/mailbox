@@ -94,7 +94,7 @@ export default async function CustomerDetailPage({
       .eq('customer_id', params.customerId)
       .order('created_at', { ascending: false }),
     admin.from('customer_compliance')
-      .select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, form_1583_uploaded_at, photo_id_uploaded_at, rejected_reason, reviewed_at, reviewed_by, verified_at, verified_by, notes')
+      .select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, form_1583_uploaded_at, photo_id_uploaded_at, rejected_reason, form_1583_rejected_reason, photo_id_rejected_reason, reviewed_at, reviewed_by, verified_at, verified_by, notes')
       .eq('customer_id', params.customerId)
       .maybeSingle(),
   ]);
@@ -127,6 +127,8 @@ export default async function CustomerDetailPage({
     form_1583_uploaded_at: string | null;
     photo_id_uploaded_at: string | null;
     rejected_reason: string | null;
+    form_1583_rejected_reason: string | null;
+    photo_id_rejected_reason: string | null;
     reviewed_at: string | null;
     reviewed_by: string | null;
     verified_at: string | null;
@@ -231,7 +233,14 @@ export default async function CustomerDetailPage({
           initialForm1583={compliance?.form_1583_status ?? 'pending'}
           initialPhotoId={compliance?.photo_id_status ?? 'pending'}
           initialNotes={compliance?.notes ?? ''}
-          initialRejectedReason={compliance?.rejected_reason ?? ''}
+          initialForm1583RejectedReason={
+            compliance?.form_1583_rejected_reason
+              ?? (compliance?.form_1583_status === 'rejected' ? (compliance?.rejected_reason ?? '') : '')
+          }
+          initialPhotoIdRejectedReason={
+            compliance?.photo_id_rejected_reason
+              ?? (compliance?.photo_id_status === 'rejected' ? (compliance?.rejected_reason ?? '') : '')
+          }
           form1583UploadedAt={compliance?.form_1583_uploaded_at ?? null}
           photoIdUploadedAt={compliance?.photo_id_uploaded_at ?? null}
           form1583Url={form1583Url}

@@ -123,7 +123,7 @@ export default async function AccountPage({
       .order('created_at', { ascending: false }).limit(5),
     admin.from('mail_requests').select('mail_item_id, request_type').eq('customer_id', c.id)
       .in('status', ['pending', 'in_progress']),
-    admin.from('customer_compliance').select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, rejected_reason').eq('customer_id', c.id)
+    admin.from('customer_compliance').select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, rejected_reason, form_1583_rejected_reason, photo_id_rejected_reason').eq('customer_id', c.id)
       .maybeSingle(),
   ]);
   subscription = ((sr.data ?? [])[0] ?? null) as SubscriptionRow | null;
@@ -135,12 +135,16 @@ export default async function AccountPage({
     form_1583_status: string; photo_id_status: string;
     form_1583_file_path: string | null; photo_id_file_path: string | null;
     rejected_reason: string | null;
+    form_1583_rejected_reason: string | null;
+    photo_id_rejected_reason: string | null;
   } | null;
   const form1583Status = compliance?.form_1583_status ?? 'pending';
   const photoIdStatus  = compliance?.photo_id_status ?? 'pending';
   const form1583Uploaded = Boolean(compliance?.form_1583_file_path);
   const photoIdUploaded  = Boolean(compliance?.photo_id_file_path);
-  const rejectedReason   = compliance?.rejected_reason ?? null;
+  const form1583RejectedReason = compliance?.form_1583_rejected_reason ?? null;
+  const photoIdRejectedReason  = compliance?.photo_id_rejected_reason ?? null;
+  const legacyRejectedReason   = compliance?.rejected_reason ?? null;
 
   // Map of mail_item_id → open request_type, to suppress duplicate requests and
   // show the pending status in the inbox.
@@ -303,7 +307,9 @@ export default async function AccountPage({
                 photoIdStatus={photoIdStatus}
                 form1583Uploaded={form1583Uploaded}
                 photoIdUploaded={photoIdUploaded}
-                rejectedReason={rejectedReason}
+                form1583RejectedReason={form1583RejectedReason}
+                photoIdRejectedReason={photoIdRejectedReason}
+                legacyRejectedReason={legacyRejectedReason}
               />
               <QuickActionsCard />
             </div>

@@ -87,13 +87,15 @@ export async function POST(req: Request) {
   // to "rejected" or "pending" if a redo is genuinely required.
   const { data: existing } = await admin
     .from('customer_compliance')
-    .select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, notes')
+    .select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, notes, form_1583_rejected_reason, photo_id_rejected_reason')
     .eq('customer_id', customerId)
     .maybeSingle();
   const ex = (existing ?? {}) as {
     form_1583_status?: string; photo_id_status?: string;
     form_1583_file_path?: string | null; photo_id_file_path?: string | null;
     notes?: string | null;
+    form_1583_rejected_reason?: string | null;
+    photo_id_rejected_reason?: string | null;
   };
 
   if (hasForm && ex.form_1583_status === 'verified') {
@@ -109,8 +111,10 @@ export async function POST(req: Request) {
     form_1583_status: ex.form_1583_status ?? 'pending',
     photo_id_status: ex.photo_id_status ?? 'pending',
     notes: ex.notes ?? null,
-    // Submitting fresh files clears any prior rejection reason for the items being re-uploaded.
-    rejected_reason: null,
+    // Preserve the other document's reason; we only clear the matching one(s)
+    // for the document(s) actually being re-uploaded, below.
+    form_1583_rejected_reason: ex.form_1583_rejected_reason ?? null,
+    photo_id_rejected_reason: ex.photo_id_rejected_reason ?? null,
     updated_at: now,
   };
 
@@ -120,6 +124,7 @@ export async function POST(req: Request) {
     update.form_1583_file_path = r.path;
     update.form_1583_uploaded_at = now;
     update.form_1583_status = 'received';
+    update.form_1583_rejected_reason = null;
   }
   if (hasId) {
     const r = await uploadOne(admin, customerId, photoId as File, 'photo-id');
@@ -127,6 +132,7 @@ export async function POST(req: Request) {
     update.photo_id_file_path = r.path;
     update.photo_id_uploaded_at = now;
     update.photo_id_status = 'received';
+    update.photo_id_rejected_reason = null;
   }
 
   const { error: upErr } = await admin

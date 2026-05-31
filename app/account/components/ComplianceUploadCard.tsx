@@ -28,14 +28,26 @@ export default function ComplianceUploadCard({
   photoIdStatus,
   form1583Uploaded,
   photoIdUploaded,
-  rejectedReason,
+  form1583RejectedReason,
+  photoIdRejectedReason,
+  legacyRejectedReason,
 }: {
   form1583Status: string;
   photoIdStatus: string;
   form1583Uploaded: boolean;
   photoIdUploaded: boolean;
-  rejectedReason: string | null;
+  form1583RejectedReason: string | null;
+  photoIdRejectedReason: string | null;
+  legacyRejectedReason: string | null;
 }) {
+  // Per-document reason wins; the legacy shared reason is only shown as a
+  // fallback when the document is rejected but has no specific reason yet.
+  const form1583Reason =
+    (form1583RejectedReason && form1583RejectedReason.trim())
+      || (form1583Status === 'rejected' ? (legacyRejectedReason ?? null) : null);
+  const photoIdReason =
+    (photoIdRejectedReason && photoIdRejectedReason.trim())
+      || (photoIdStatus === 'rejected' ? (legacyRejectedReason ?? null) : null);
   const router = useRouter();
   const formRef = useRef<HTMLInputElement>(null);
   const idRef   = useRef<HTMLInputElement>(null);
@@ -112,22 +124,13 @@ export default function ComplianceUploadCard({
             PDF or image (JPG/PNG), up to 20 MB each.
           </p>
 
-          {rejectedReason && (
-            <div style={{
-              marginBottom: 14, padding: '10px 12px', borderRadius: 8,
-              background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.35)',
-              font: '400 12px/1.5 var(--font-text,sans-serif)', color: '#f87171',
-            }}>
-              <strong>Needs attention:</strong> {rejectedReason}
-            </div>
-          )}
-
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Field
               label="USPS Form 1583"
               status={form1583Status}
               uploaded={form1583Uploaded}
               locked={form1583Locked}
+              rejectedReason={form1583Reason}
               inputRef={formRef}
               disabled={isPending}
             />
@@ -136,6 +139,7 @@ export default function ComplianceUploadCard({
               status={photoIdStatus}
               uploaded={photoIdUploaded}
               locked={photoIdLocked}
+              rejectedReason={photoIdReason}
               inputRef={idRef}
               disabled={isPending}
             />
@@ -171,12 +175,13 @@ export default function ComplianceUploadCard({
 }
 
 function Field({
-  label, status, uploaded, locked, inputRef, disabled,
+  label, status, uploaded, locked, rejectedReason, inputRef, disabled,
 }: {
   label: string;
   status: Status;
   uploaded: boolean;
   locked: boolean;
+  rejectedReason: string | null;
   inputRef: React.RefObject<HTMLInputElement>;
   disabled: boolean;
 }) {
@@ -188,6 +193,15 @@ function Field({
           {statusLabel(status)}{uploaded && status !== 'verified' && ' · file on file'}
         </span>
       </div>
+      {rejectedReason && (
+        <div style={{
+          padding: '8px 10px', borderRadius: 6,
+          background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.35)',
+          font: '400 12px/1.5 var(--font-text,sans-serif)', color: '#f87171',
+        }}>
+          <strong>Needs attention:</strong> {rejectedReason}
+        </div>
+      )}
       {locked ? (
         <span style={{ font: '400 12px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
           Verified — no further upload needed. Contact support to replace this document.
