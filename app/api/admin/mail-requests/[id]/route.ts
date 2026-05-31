@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { notifyMailRequestUpdate } from '@/lib/email/notify-mail';
+import { isCustomerAuthorized } from '@/lib/compliance/isCustomerAuthorized';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,6 +65,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const priorStatus = reqRow.status;
   const nextStatus = body.status !== undefined ? String(body.status) : priorStatus;
+
+  // Compliance gate: completing a scan / forward / pickup means we're handling
+  // the customer's physical mail. Block unless Form 1583 + ID are verified.
+  // Shred (safe disposal) and cancel (unblocking) are not gated.
+  const PHYSICAL_HANDLING = new Set(['scan', 'forward', 'pickup']);
+  if (
+    nextStatus === 'completed'
+    && PHYSICAL_HANDLING.has(reqRow.request_type)
+    && reqRow.customer_id
+    && !(await isCustomerAuthorized(admin, reqRow.customer_id))
+  ) {
+    return Response.json(
+      { error: 'Customer authorization is not verified.' },
+      { status: 403 },
+    );
+  }
 
   const staffNote = typeof rawStaffNote === 'string' && rawStaffNote.trim() !== '' ? rawStaffNote.trim() : null;
   let customerResponse = typeof rawCustomerResponse === 'string' && rawCustomerResponse.trim() !== ''
