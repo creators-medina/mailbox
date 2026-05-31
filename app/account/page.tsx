@@ -14,6 +14,7 @@ import OnboardingChecklist, { type ChecklistItem } from './components/Onboarding
 import MailInboxCard from './components/MailInboxCard';
 import SubscriptionCard from './components/SubscriptionCard';
 import MailAuthorizationCard from './components/MailAuthorizationCard';
+import ComplianceUploadCard from './components/ComplianceUploadCard';
 import QuickActionsCard from './components/QuickActionsCard';
 
 type ProfileRow      = Database['public']['Tables']['profiles']['Row'];
@@ -122,7 +123,7 @@ export default async function AccountPage({
       .order('created_at', { ascending: false }).limit(5),
     admin.from('mail_requests').select('mail_item_id, request_type').eq('customer_id', c.id)
       .in('status', ['pending', 'in_progress']),
-    admin.from('customer_compliance').select('form_1583_status, photo_id_status').eq('customer_id', c.id)
+    admin.from('customer_compliance').select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, rejected_reason').eq('customer_id', c.id)
       .maybeSingle(),
   ]);
   subscription = ((sr.data ?? [])[0] ?? null) as SubscriptionRow | null;
@@ -130,9 +131,16 @@ export default async function AccountPage({
   mailRequests = (rr.data ?? []) as MailRequestRow[];
 
   // Compliance — absent row means both items are still pending.
-  const compliance = compRes.data as { form_1583_status: string; photo_id_status: string } | null;
+  const compliance = compRes.data as {
+    form_1583_status: string; photo_id_status: string;
+    form_1583_file_path: string | null; photo_id_file_path: string | null;
+    rejected_reason: string | null;
+  } | null;
   const form1583Status = compliance?.form_1583_status ?? 'pending';
   const photoIdStatus  = compliance?.photo_id_status ?? 'pending';
+  const form1583Uploaded = Boolean(compliance?.form_1583_file_path);
+  const photoIdUploaded  = Boolean(compliance?.photo_id_file_path);
+  const rejectedReason   = compliance?.rejected_reason ?? null;
 
   // Map of mail_item_id → open request_type, to suppress duplicate requests and
   // show the pending status in the inbox.
@@ -290,6 +298,13 @@ export default async function AccountPage({
                 hasStripeCustomer={Boolean(c.stripe_customer_id)}
               />
               <MailAuthorizationCard form1583Status={form1583Status} photoIdStatus={photoIdStatus} />
+              <ComplianceUploadCard
+                form1583Status={form1583Status}
+                photoIdStatus={photoIdStatus}
+                form1583Uploaded={form1583Uploaded}
+                photoIdUploaded={photoIdUploaded}
+                rejectedReason={rejectedReason}
+              />
               <QuickActionsCard />
             </div>
           </div>
