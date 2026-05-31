@@ -223,7 +223,7 @@ export default async function CustomerDetailPage({
       </div>
 
       {/* ── Compliance ────────────────────────────────────────────────────────── */}
-      <div className="dash-card" style={{ marginBottom: 20 }}>
+      <div id="compliance" className="dash-card" style={{ marginBottom: 20, scrollMarginTop: 80 }}>
         <span className="dash-card-title">Mail authorization (Form 1583)</span>
         <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 18px' }}>
           Verify the signed USPS Form 1583 and a valid photo ID before processing this customer&rsquo;s mail.
