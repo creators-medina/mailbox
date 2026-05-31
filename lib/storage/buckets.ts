@@ -1,4 +1,6 @@
-// Single source of truth for private Storage bucket names. Both buckets are
+// Single source of truth for private Storage bucket names. All buckets are
 // private; all access is via short-lived signed URLs generated server-side.
 export const MAIL_ENVELOPE_BUCKET = 'mail-envelope-images';
 export const MAIL_SCAN_BUCKET = 'mail-scans';
+// USPS Form 1583 + photo ID uploads. Stores PII — never make public.
+export const COMPLIANCE_DOCUMENTS_BUCKET = 'compliance-documents';
