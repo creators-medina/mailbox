@@ -11,20 +11,34 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const customerId = params.id;
 
   // ── Auth: 401 unauth, 403 non-staff ──
+  // Uses .maybeSingle() (not .single()) so a 0-row profile lookup doesn't
+  // collapse role to '' and falsely 403 a real admin. Detailed cause is
+  // surfaced in the [admin/compliance-api] server log below.
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
+    console.warn('[admin/compliance-api]', { customerId, userId: null, role: null, authorized: false, error: 'no auth user' });
     return Response.json({ error: 'Not authenticated.' }, { status: 401 });
   }
 
   const admin = createAdminClientAny();
-  const { data: profile } = await admin
+  const { data: profile, error: profileErr } = await admin
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
   const role = (profile as { role: string } | null)?.role ?? '';
-  if (!STAFF_ROLES.has(role)) {
+  const authorized = STAFF_ROLES.has(role);
+
+  console.log('[admin/compliance-api]', {
+    customerId,
+    userId: user.id,
+    role: role || null,
+    authorized,
+    error: profileErr?.message ?? null,
+  });
+
+  if (!authorized) {
     return Response.json({ error: 'Forbidden.' }, { status: 403 });
   }
 
