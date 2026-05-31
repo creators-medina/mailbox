@@ -250,6 +250,7 @@ function DocCard({
   onReject: () => void;
   disabled: boolean;
 }) {
+  const uploaded = Boolean(uploadedAt);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 12, borderRadius: 10, border: '1px solid var(--c-border-2,rgba(255,255,255,0.13))' }}>
       <span style={{ font: '600 13px/1 var(--font-text,sans-serif)', color: '#fff' }}>{title}</span>
@@ -257,29 +258,34 @@ function DocCard({
         {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
       </select>
       <div style={{ font: '400 11px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)' }}>
-        {uploadedAt ? `Uploaded ${fmt(uploadedAt)}` : 'Not uploaded'}
+        {uploaded ? `Uploaded ${fmt(uploadedAt!)}` : 'Not uploaded'}
       </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-        {viewUrl && (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4, alignItems: 'center' }}>
+        {viewUrl ? (
           <a
             href={viewUrl}
             target="_blank"
             rel="noopener noreferrer"
             style={{ font: '600 11px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(201,154,90,0.45)', textDecoration: 'none' }}
           >
-            View document ›
+            View {title} ›
           </a>
-        )}
+        ) : uploaded ? (
+          <span style={{ font: '500 11px/1.3 var(--font-text,sans-serif)', color: '#f87171', padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(248,113,113,0.30)', background: 'rgba(248,113,113,0.08)' }}>
+            File uploaded — link unavailable
+          </span>
+        ) : null}
         <button
           type="button"
           onClick={onVerify}
-          disabled={disabled || !viewUrl || status === 'verified'}
+          disabled={disabled || !uploaded || status === 'verified'}
+          title={!uploaded ? 'Customer has not uploaded this document yet.' : status === 'verified' ? 'Already verified.' : ''}
           style={{
             font: '600 11px/1 var(--font-text,sans-serif)', color: '#4ade80',
             background: 'rgba(74,222,128,0.10)', border: '1px solid rgba(74,222,128,0.30)',
             borderRadius: 6, padding: '6px 10px',
-            cursor: disabled || !viewUrl || status === 'verified' ? 'not-allowed' : 'pointer',
-            opacity: disabled || !viewUrl || status === 'verified' ? 0.5 : 1,
+            cursor: disabled || !uploaded || status === 'verified' ? 'not-allowed' : 'pointer',
+            opacity: disabled || !uploaded || status === 'verified' ? 0.5 : 1,
           }}
         >
           Verify

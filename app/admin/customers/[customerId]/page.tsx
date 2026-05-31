@@ -149,13 +149,29 @@ export default async function CustomerDetailPage({
   ]);
 
   // Short-lived signed URLs for the customer-uploaded documents. Server-only.
+  // If signing fails we keep rendering — the editor shows "File uploaded —
+  // link unavailable" so admins still know a file exists. Failure is logged.
+  async function safeSign(field: 'form_1583' | 'photo_id', path: string | null | undefined): Promise<string | null> {
+    if (!path) return null;
+    try {
+      const url = await getSignedUrl(COMPLIANCE_DOCUMENTS_BUCKET, path, 600);
+      if (!url) {
+        console.warn('[admin/compliance-file-url]', {
+          customerId: params.customerId, field, bucket: COMPLIANCE_DOCUMENTS_BUCKET, error: 'signed URL returned null',
+        });
+      }
+      return url;
+    } catch (err) {
+      console.warn('[admin/compliance-file-url]', {
+        customerId: params.customerId, field, bucket: COMPLIANCE_DOCUMENTS_BUCKET,
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+      return null;
+    }
+  }
   const [form1583Url, photoIdUrl] = await Promise.all([
-    compliance?.form_1583_file_path
-      ? getSignedUrl(COMPLIANCE_DOCUMENTS_BUCKET, compliance.form_1583_file_path, 600)
-      : Promise.resolve(null),
-    compliance?.photo_id_file_path
-      ? getSignedUrl(COMPLIANCE_DOCUMENTS_BUCKET, compliance.photo_id_file_path, 600)
-      : Promise.resolve(null),
+    safeSign('form_1583', compliance?.form_1583_file_path),
+    safeSign('photo_id',  compliance?.photo_id_file_path),
   ]);
 
   const p = customer.profiles;
