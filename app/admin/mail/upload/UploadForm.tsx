@@ -77,7 +77,7 @@ export default function UploadForm({
           }}>
             {selected.complianceVerified
               ? '✓ Form 1583 & ID verified — cleared for mail handling.'
-              : '⚠ Not verified — confirm Form 1583 & ID before processing mail.'}
+              : 'Mail cannot be processed until Form 1583 and ID are verified.'}
           </span>
         )}
       </div>
@@ -142,7 +142,13 @@ export default function UploadForm({
         <p style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: '#4ade80', margin: 0 }}>{success}</p>
       )}
 
-      <button type="submit" disabled={isPending} className="admin-btn-primary" style={{ alignSelf: 'flex-start' }}>
+      <button
+        type="submit"
+        disabled={isPending || !selected || !selected.complianceVerified}
+        className="admin-btn-primary"
+        style={{ alignSelf: 'flex-start' }}
+        title={!selected ? 'Select a customer first.' : !selected.complianceVerified ? 'Mail cannot be processed until Form 1583 and ID are verified.' : ''}
+      >
         {isPending ? 'Uploading…' : 'Upload mail item'}
       </button>
     </form>

@@ -4,6 +4,7 @@ import { createAdminClientAny } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { notifyNewMailReceived } from '@/lib/email/notify-mail';
 import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
+import { isCustomerAuthorized } from '@/lib/compliance/isCustomerAuthorized';
 
 export async function POST(req: Request) {
   if (!(await checkIsStaff())) {
@@ -38,6 +39,14 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (!cust) {
     return Response.json({ error: 'Customer not found.' }, { status: 404 });
+  }
+
+  // Compliance gate: no mail intake until Form 1583 + photo ID are verified.
+  if (!(await isCustomerAuthorized(admin, customerId))) {
+    return Response.json(
+      { error: 'Customer authorization is not verified.' },
+      { status: 403 },
+    );
   }
 
   let envelopeUrl: string | null = null;
