@@ -29,7 +29,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   // ── Parse + validate ──
-  let body: { form_1583_status?: unknown; photo_id_status?: unknown; notes?: unknown };
+  let body: {
+    form_1583_status?: unknown; photo_id_status?: unknown;
+    notes?: unknown; rejected_reason?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
@@ -55,36 +58,60 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Merge with any existing row so partial updates are preserved.
   const { data: existing } = await admin
     .from('customer_compliance')
-    .select('form_1583_status, photo_id_status, notes')
+    .select('form_1583_status, photo_id_status, notes, rejected_reason, verified_at, verified_by')
     .eq('customer_id', customerId)
     .maybeSingle();
+  const ex = (existing ?? {}) as {
+    form_1583_status?: string; photo_id_status?: string; notes?: string | null;
+    rejected_reason?: string | null; verified_at?: string | null; verified_by?: string | null;
+  };
 
   const form1583 = body.form_1583_status !== undefined
     ? String(body.form_1583_status)
-    : (existing?.form_1583_status ?? 'pending');
+    : (ex.form_1583_status ?? 'pending');
   const photoId = body.photo_id_status !== undefined
     ? String(body.photo_id_status)
-    : (existing?.photo_id_status ?? 'pending');
+    : (ex.photo_id_status ?? 'pending');
   const notes = body.notes !== undefined
     ? (typeof body.notes === 'string' && body.notes.trim() !== '' ? body.notes.trim() : null)
-    : (existing?.notes ?? null);
+    : (ex.notes ?? null);
+  // rejected_reason: explicit empty string from the admin clears it; absent
+  // preserves any existing reason; a non-empty value updates it.
+  const rejectedReason = body.rejected_reason !== undefined
+    ? (typeof body.rejected_reason === 'string' && body.rejected_reason.trim() !== '' ? body.rejected_reason.trim() : null)
+    : (ex.rejected_reason ?? null);
 
+  const nowIso = new Date().toISOString();
   const bothVerified = form1583 === 'verified' && photoId === 'verified';
+
+  // Preserve the original verification timestamp/staff if the customer was
+  // already verified; only stamp now() on the verified transition. If the
+  // admin downgraded either status away from verified, clear both fields.
+  let verifiedAt: string | null = null;
+  let verifiedBy: string | null = null;
+  if (bothVerified) {
+    verifiedAt = ex.verified_at ?? nowIso;
+    verifiedBy = ex.verified_by ?? user.id;
+  }
 
   const row = {
     customer_id: customerId,
     form_1583_status: form1583,
     photo_id_status: photoId,
     notes,
-    verified_at: bothVerified ? new Date().toISOString() : null,
-    verified_by: bothVerified ? user.id : null,
-    updated_at: new Date().toISOString(),
+    rejected_reason: rejectedReason,
+    // Every admin save is a review; stamp the review trail.
+    reviewed_at: nowIso,
+    reviewed_by: user.id,
+    verified_at: verifiedAt,
+    verified_by: verifiedBy,
+    updated_at: nowIso,
   };
 
   const { data: saved, error } = await admin
     .from('customer_compliance')
     .upsert(row, { onConflict: 'customer_id' })
-    .select('id, customer_id, form_1583_status, photo_id_status, verified_at, verified_by, notes, updated_at')
+    .select('id, customer_id, form_1583_status, photo_id_status, rejected_reason, reviewed_at, reviewed_by, verified_at, verified_by, notes, updated_at')
     .single();
 
   if (error) {
