@@ -10,32 +10,62 @@ const VALID_STATUSES = new Set(['pending', 'requested', 'received', 'verified', 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const customerId = params.id;
 
-  // ── Auth: 401 unauth, 403 non-staff ──
-  // Uses .maybeSingle() (not .single()) so a 0-row profile lookup doesn't
-  // collapse role to '' and falsely 403 a real admin. Detailed cause is
-  // surfaced in the [admin/compliance-api] server log below.
+  // ── Auth ──
+  // Robust staff-role resolution, in order:
+  //   1. profiles.id  = auth user id
+  //   2. profiles.user_id = auth user id  (tolerated if column doesn't exist)
+  //   3. lower(profiles.email) = lower(auth user email)
+  // A real admin who matches by email (e.g., legacy id mismatch) is still
+  // authorized. Cause of any denial is surfaced in the diagnostic log.
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    console.warn('[admin/compliance-api]', { customerId, userId: null, role: null, authorized: false, error: 'no auth user' });
+    console.warn('[admin/compliance-api]', {
+      customerId, userId: null, email: null, role: null,
+      authorized: false, reason: 'no_auth_user', error: null,
+    });
     return Response.json({ error: 'Not authenticated.' }, { status: 401 });
   }
 
   const admin = createAdminClientAny();
-  const { data: profile, error: profileErr } = await admin
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-  const role = (profile as { role: string } | null)?.role ?? '';
-  const authorized = STAFF_ROLES.has(role);
+  const email = user.email ?? null;
+
+  let role: string | null = null;
+  let lookupErr: string | null = null;
+  let matchedBy: 'id' | 'user_id' | 'email' | null = null;
+
+  // 1) profiles.id
+  {
+    const { data, error } = await admin.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (data) { role = (data as { role: string }).role; matchedBy = 'id'; }
+    if (error) lookupErr = error.message;
+  }
+  // 2) profiles.user_id (column may not exist)
+  if (!role) {
+    try {
+      const { data, error } = await admin.from('profiles').select('role').eq('user_id', user.id).maybeSingle();
+      if (data) { role = (data as { role: string }).role; matchedBy = 'user_id'; }
+      else if (error && !lookupErr) lookupErr = error.message;
+    } catch { /* column missing — ignore */ }
+  }
+  // 3) case-insensitive email fallback
+  if (!role && email) {
+    const { data } = await admin.from('profiles').select('role, email').ilike('email', email).limit(2);
+    const rows = (data ?? []) as Array<{ role: string; email?: string | null }>;
+    const match = rows.find(r => (r.email ?? '').toLowerCase() === email.toLowerCase());
+    if (match) { role = match.role; matchedBy = 'email'; }
+  }
+
+  const authorized = !!role && STAFF_ROLES.has(role);
 
   console.log('[admin/compliance-api]', {
     customerId,
     userId: user.id,
-    role: role || null,
+    email,
+    role,
     authorized,
-    error: profileErr?.message ?? null,
+    reason: !user ? 'no_auth_user' : authorized ? `ok_via_${matchedBy}` : role ? 'non_staff_role' : 'no_profile_match',
+    error: lookupErr,
   });
 
   if (!authorized) {

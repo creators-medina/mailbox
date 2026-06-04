@@ -8,18 +8,37 @@ const CATEGORY_LABEL: Record<Check['category'], string> = {
   column: 'Database columns',
   enum: 'mail_item_status enum',
   bucket: 'Storage buckets',
+  data: 'Data sanity (warnings)',
 };
+
+const CATEGORY_ORDER: Check['category'][] = ['env', 'column', 'enum', 'bucket', 'data'];
+
+function dotColor(item: Check): string {
+  if (item.ok) return '#4ade80';                       // green
+  if (item.severity === 'warning') return '#fbbf24';   // yellow warning
+  return '#f87171';                                    // red required failure
+}
+function textColor(item: Check): string {
+  if (item.ok) return 'var(--c-text-3)';
+  return item.severity === 'warning' ? '#fbbf24' : '#f87171';
+}
+function statusText(item: Check): string {
+  if (item.ok) return item.detail ?? 'ok';
+  return item.detail ?? (item.severity === 'warning' ? 'warning' : 'missing');
+}
 
 export default async function AdminSystemPage() {
   const { ok, checks } = await runLaunchChecks();
 
   // Group by category for readability.
-  const grouped = (['env', 'column', 'enum', 'bucket'] as const).map(cat => ({
+  const grouped = CATEGORY_ORDER.map(cat => ({
     cat,
     items: checks.filter(c => c.category === cat),
-  }));
+  })).filter(g => g.items.length > 0);
 
   const totalOk = checks.filter(c => c.ok).length;
+  const requiredFailing = checks.filter(c => !c.ok && c.severity === 'required').length;
+  const warningFailing  = checks.filter(c => !c.ok && c.severity === 'warning').length;
 
   return (
     <div>
@@ -31,14 +50,16 @@ export default async function AdminSystemPage() {
           className={`admin-status-badge admin-status-${ok ? 'active' : 'pending'}`}
           style={{ fontSize: 12 }}
         >
-          {ok ? 'All green' : `${totalOk}/${checks.length} passing`}
+          {ok
+            ? warningFailing > 0 ? `Required OK · ${warningFailing} warning${warningFailing === 1 ? '' : 's'}` : 'All green'
+            : `${requiredFailing} required failing · ${totalOk}/${checks.length} passing`}
         </span>
       </div>
 
       <p style={{ font: '400 13px/1.55 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 22px' }}>
-        Verifies the production environment, required Supabase columns, the
-        <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4, marginInline: 4 }}>mail_item_status</code>
-        enum values, and the private storage buckets. Secrets are never read or returned — only presence is checked.
+        Verifies env vars, required Supabase columns, the{' '}
+        <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 4 }}>mail_item_status</code>{' '}
+        enum, and the private storage buckets. Yellow rows are warnings that don&rsquo;t block launch. Secrets are never read or returned — only presence is checked.
       </p>
 
       {grouped.map(({ cat, items }) => (
@@ -59,15 +80,20 @@ export default async function AdminSystemPage() {
                     <span
                       style={{
                         display: 'inline-block', width: 9, height: 9, borderRadius: '50%',
-                        background: item.ok ? '#4ade80' : '#f87171',
+                        background: dotColor(item),
                       }}
                     />
                   </td>
                   <td style={{ font: '500 13px/1.3 var(--font-text,sans-serif)', color: 'rgba(255,255,255,0.85)' }}>
                     {item.name}
+                    {item.severity === 'warning' && (
+                      <span style={{ marginLeft: 8, font: '600 10px/1 var(--font-text,sans-serif)', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#fbbf24' }}>
+                        warning
+                      </span>
+                    )}
                   </td>
-                  <td style={{ color: item.ok ? 'var(--c-text-3)' : '#f87171', fontSize: 12 }}>
-                    {item.ok ? (item.detail ?? 'ok') : (item.detail ?? 'missing')}
+                  <td style={{ color: textColor(item), fontSize: 12 }}>
+                    {statusText(item)}
                   </td>
                 </tr>
               ))}
