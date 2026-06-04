@@ -87,13 +87,12 @@ export async function POST(req: Request) {
   // to "rejected" or "pending" if a redo is genuinely required.
   const { data: existing } = await admin
     .from('customer_compliance')
-    .select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, notes, form_1583_rejected_reason, photo_id_rejected_reason')
+    .select('form_1583_status, photo_id_status, form_1583_file_path, photo_id_file_path, form_1583_rejected_reason, photo_id_rejected_reason')
     .eq('customer_id', customerId)
     .maybeSingle();
   const ex = (existing ?? {}) as {
     form_1583_status?: string; photo_id_status?: string;
     form_1583_file_path?: string | null; photo_id_file_path?: string | null;
-    notes?: string | null;
     form_1583_rejected_reason?: string | null;
     photo_id_rejected_reason?: string | null;
   };
@@ -106,11 +105,13 @@ export async function POST(req: Request) {
   }
 
   const now = new Date().toISOString();
+  // Customer-side upload never writes internal `admin_notes`/`notes` (those
+  // are staff-only). Avoiding the column also dodges a PostgREST schema-cache
+  // "Could not find the 'notes' column" error in production.
   const update: Record<string, unknown> = {
     customer_id: customerId,
     form_1583_status: ex.form_1583_status ?? 'pending',
     photo_id_status: ex.photo_id_status ?? 'pending',
-    notes: ex.notes ?? null,
     // Preserve the other document's reason; we only clear the matching one(s)
     // for the document(s) actually being re-uploaded, below.
     form_1583_rejected_reason: ex.form_1583_rejected_reason ?? null,
