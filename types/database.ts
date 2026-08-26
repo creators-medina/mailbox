@@ -37,26 +37,41 @@ export interface Database {
           updated_at?: string;
         };
       };
+      // One row = one mailbox/suite. Operational identity (business_name,
+      // recipient_name, contact_*) belongs to the mailbox; stripe_customer_id
+      // and status are billing identity and are never written by mailbox edits.
       customers: {
         Row: {
           id: string;
           profile_id: string;
+          user_id: string | null;
+          email: string | null;
           stripe_customer_id: string | null;
           status: string;
           suite_number: string | null;
           business_address_line: string | null;
           forwarding_address: string | null;
+          business_name: string | null;
+          recipient_name: string | null;
+          contact_email: string | null;
+          contact_phone: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           profile_id: string;
+          user_id?: string | null;
+          email?: string | null;
           stripe_customer_id?: string | null;
           status?: string;
           suite_number?: string | null;
           business_address_line?: string | null;
           forwarding_address?: string | null;
+          business_name?: string | null;
+          recipient_name?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -66,6 +81,10 @@ export interface Database {
           suite_number?: string | null;
           business_address_line?: string | null;
           forwarding_address?: string | null;
+          business_name?: string | null;
+          recipient_name?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
           updated_at?: string;
         };
       };

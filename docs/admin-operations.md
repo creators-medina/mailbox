@@ -7,8 +7,20 @@ For admin/staff using the `/admin` dashboard. All admin pages require a
 - **Find a customer:** `/admin/customers` → search by name/business/email → open the detail page.
 - **Detail page (`/admin/customers/[id]`)** shows profile, subscription + add-ons, compliance, mail items, requests, and internal notes.
 
+## Mailbox & business details
+- The customer detail page separates **Mailbox & business details** (safe to edit) from
+  **Billing & account** (read-only here).
+- Click **Edit mailbox details** to change the business name, recipient name, mailbox
+  contact email/phone, and forwarding address for **that suite only**.
+- These fields live on the mailbox record. Saving them never touches the Stripe customer,
+  the subscription, the billing email, or any other mailbox on the same account.
+- To change billing name, billing email, payment method, or the plan, use the Stripe
+  dashboard or the customer's billing portal — not this form.
+- Customers created before this change show their original business name until an admin
+  saves the mailbox form; nothing needs to be re-entered for them to keep working.
+
 ## Suite assignment
-- In the customer detail header, click **Edit** next to the suite.
+- In the customer detail **Mailbox & business details** card, click **Edit** next to the suite.
 - Format: `Suite201` (the leading "Suite" is normalized; digits/letters/hyphen after, e.g. `Suite12A`, `Suite-12`).
 - Saving updates the suite number and the full business address line. Duplicate suites are rejected.
 

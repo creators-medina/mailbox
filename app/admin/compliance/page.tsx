@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,9 +89,12 @@ export default async function AdminCompliancePage({
   // Bulk-fetch related customers + profiles in JS so a join failure can't hide rows.
   const customerIds = Array.from(new Set(rows.map(r => r.customer_id).filter(Boolean)));
   const { data: custData } = customerIds.length
-    ? await admin.from('customers').select('id, suite_number, profile_id').in('id', customerIds)
+    ? await admin.from('customers').select('id, suite_number, profile_id, business_name, recipient_name').in('id', customerIds)
     : { data: [] };
-  const customers = (custData ?? []) as Array<{ id: string; suite_number: string | null; profile_id: string | null }>;
+  const customers = (custData ?? []) as Array<{
+    id: string; suite_number: string | null; profile_id: string | null;
+    business_name: string | null; recipient_name: string | null;
+  }>;
 
   const profileIds = Array.from(new Set(customers.map(c => c.profile_id).filter(Boolean))) as string[];
   const { data: profData } = profileIds.length
@@ -108,7 +112,7 @@ export default async function AdminCompliancePage({
     const p = c?.profile_id ? profById.get(c.profile_id) : undefined;
     return {
       ...r,
-      businessName: p?.business_name || p?.full_name || null,
+      businessName: c ? resolveMailboxDisplayName(c, p) : null,
       email: p?.email || null,
       suite: c?.suite_number ?? null,
     };

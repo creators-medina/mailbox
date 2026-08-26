@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 import UploadForm from './UploadForm';
 
 type CustomerOption = {
@@ -20,13 +21,15 @@ export default async function MailUploadPage({
 
   const { data } = await admin
     .from('customers')
-    .select('id, suite_number, profiles(full_name, business_name)')
+    .select('id, suite_number, business_name, recipient_name, profiles(full_name, business_name)')
     .in('status', ['active', 'pending'])
     .order('suite_number');
 
   const rows = (data ?? []) as unknown as Array<{
     id: string;
     suite_number: string | null;
+    business_name: string | null;
+    recipient_name: string | null;
     profiles: { full_name: string | null; business_name: string | null } | null;
   }>;
 
@@ -45,7 +48,7 @@ export default async function MailUploadPage({
   const customers: CustomerOption[] = rows.map(c => ({
     id: c.id,
     suite_number: c.suite_number,
-    display: c.profiles?.business_name || c.profiles?.full_name || c.id,
+    display: resolveMailboxDisplayName(c, c.profiles) ?? c.id,
     complianceVerified: verifiedSet.has(c.id),
   }));
 

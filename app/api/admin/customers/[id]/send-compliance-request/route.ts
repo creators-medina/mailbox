@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 import { isResendConfigured } from '@/lib/email/resend';
 import { sendComplianceRequestEmail } from '@/lib/email/send-compliance-request-email';
 
@@ -40,7 +41,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   // ── Resolve customer + recipient email ──
   const { data: custData } = await admin
     .from('customers')
-    .select('id, email, profiles(email, business_name, full_name)')
+    .select('id, email, business_name, recipient_name, profiles(email, business_name, full_name)')
     .eq('id', customerId)
     .maybeSingle();
   if (!custData) {
@@ -49,13 +50,15 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   const cust = custData as unknown as {
     id: string;
     email: string | null;
+    business_name: string | null;
+    recipient_name: string | null;
     profiles: { email: string | null; business_name: string | null; full_name: string | null } | null;
   };
   const recipient = cust.email || cust.profiles?.email || null;
   if (!recipient) {
     return Response.json({ error: 'No email on file for this customer.' }, { status: 400 });
   }
-  const businessName = cust.profiles?.business_name || cust.profiles?.full_name || null;
+  const businessName = resolveMailboxDisplayName(cust, cust.profiles);
 
   // ── Send the branded email (fatal if it fails — admin needs to know) ──
   try {
