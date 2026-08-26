@@ -6,6 +6,7 @@ import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET, COMPLIANCE_DOCUMENTS_BUCKET } f
 import AdminNoteForm from './AdminNoteForm';
 import SuiteEditor from './SuiteEditor';
 import MailboxProfileEditor from './MailboxProfileEditor';
+import PersonNameEditor from './PersonNameEditor';
 import ComplianceEditor from './ComplianceEditor';
 import MailStatusButton from '@/app/admin/mail/MailStatusButton';
 import MailFileLinks from '@/app/admin/components/MailFileLinks';
@@ -234,11 +235,14 @@ export default async function CustomerDetailPage({
         <div className="dash-card">
           <span className="dash-card-title">Billing &amp; account</span>
           <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 14px' }}>
-            Read-only here. Change these in the Stripe dashboard or the customer&rsquo;s billing portal.
+            Billing fields are read-only here &mdash; change those in the Stripe dashboard or the
+            customer&rsquo;s billing portal. The account holder&rsquo;s name is the person&rsquo;s own
+            and can be edited.
           </p>
           <dl className="admin-dl">
             <dt>Billing / login email</dt> <dd>{p?.email ?? '—'}</dd>
-            <dt>Account holder</dt>        <dd>{p?.full_name ?? '—'}</dd>
+            <dt>Account holder</dt>
+            <dd><PersonNameEditor customerId={customer.id} currentName={p?.full_name ?? null} /></dd>
             <dt>Account phone</dt>         <dd>{p?.phone ?? '—'}</dd>
             <dt>Stripe customer</dt>
             <dd style={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>

@@ -6,6 +6,7 @@ import { createAdminClientAny } from '@/lib/supabase/admin';
 import { getSignedUrl } from '@/lib/storage/signed-url';
 import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import type { Database } from '@/types/database';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
 import SignOutButton from './SignOutButton';
@@ -179,7 +180,13 @@ export default async function AccountPage({
     c.status === 'active' ||
     (subscription ? ['active', 'trialing'].includes(subscription.status) : false);
 
-  const displayName = profile?.business_name
+  // Mailbox-first, matching every admin page and outbound email: the business
+  // name on THIS mailbox wins, falling back to the legacy profile value for
+  // customers provisioned before migration 020. Previously this read
+  // profile.business_name directly, so an admin renaming the mailbox saw no
+  // change here. The first-name greeting remains the fallback when neither the
+  // mailbox nor the person carries a name.
+  const displayName = resolveMailboxDisplayName(c, profile)
     || (profile?.full_name ? profile.full_name.split(' ')[0] : null)
     || user.email
     || 'there';
