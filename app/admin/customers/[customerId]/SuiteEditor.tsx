@@ -1,8 +1,8 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-
-const SUITE_RE = /^Suite[0-9A-Za-z-]{1,10}$/;
+import { BUSINESS } from '@/lib/config/business';
+import { parseSuiteNumber, suiteFormatHint } from '@/lib/mailbox/suite-format';
 
 export default function SuiteEditor({
   customerId,
@@ -35,11 +35,14 @@ export default function SuiteEditor({
     setError('');
     setSuccess('');
 
-    const suiteNumber = value.trim().replace(/^suite/i, 'Suite');
-    if (!SUITE_RE.test(suiteNumber)) {
-      setError('Suite must look like Suite201.');
+    // Same validator the API route uses, so the two can never disagree.
+    // The server re-validates regardless — this is only for fast feedback.
+    const parsed = parseSuiteNumber(value, BUSINESS.suitePrefix);
+    if (!parsed.ok) {
+      setError(parsed.error);
       return;
     }
+    const { suiteNumber } = parsed;
 
     startTransition(async () => {
       try {
@@ -88,6 +91,7 @@ export default function SuiteEditor({
           value={value}
           onChange={e => setValue(e.target.value)}
           placeholder="Suite201"
+          title={suiteFormatHint(BUSINESS.suitePrefix)}
           autoFocus
           disabled={isPending}
           style={{ maxWidth: 160 }}
