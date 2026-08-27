@@ -5,9 +5,12 @@ import { getSignedUrl } from '@/lib/storage/signed-url';
 import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET, COMPLIANCE_DOCUMENTS_BUCKET } from '@/lib/storage/buckets';
 import AdminNoteForm from './AdminNoteForm';
 import SuiteEditor from './SuiteEditor';
+import MailboxProfileEditor from './MailboxProfileEditor';
+import PersonNameEditor from './PersonNameEditor';
 import ComplianceEditor from './ComplianceEditor';
 import MailStatusButton from '@/app/admin/mail/MailStatusButton';
 import MailFileLinks from '@/app/admin/components/MailFileLinks';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 
 type MailItem = {
   id: string;
@@ -48,6 +51,7 @@ export default async function CustomerDetailPage({
     .from('customers')
     .select(`
       id, suite_number, status, business_address_line, forwarding_address,
+      business_name, recipient_name, contact_email, contact_phone,
       stripe_customer_id, created_at,
       profiles(id, full_name, business_name, email, phone, role)
     `)
@@ -62,6 +66,10 @@ export default async function CustomerDetailPage({
     status: string;
     business_address_line: string | null;
     forwarding_address: string | null;
+    business_name: string | null;
+    recipient_name: string | null;
+    contact_email: string | null;
+    contact_phone: string | null;
     stripe_customer_id: string | null;
     created_at: string;
     profiles: {
@@ -175,6 +183,7 @@ export default async function CustomerDetailPage({
   ]);
 
   const p = customer.profiles;
+  const mailboxName = resolveMailboxDisplayName(customer, p);
 
   return (
     <div>
@@ -184,27 +193,62 @@ export default async function CustomerDetailPage({
           ← All customers
         </a>
         <h1 style={{ font: '700 24px/1.2 var(--font-display,sans-serif)', color: '#fff', margin: '8px 0 0' }}>
-          {p?.business_name || p?.full_name || 'Customer'}
+          {mailboxName ?? 'Mailbox'}
           <span style={{ font: '500 16px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', marginLeft: 12 }}>
             {customer.suite_number ?? '—'}
           </span>
         </h1>
+        <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '6px 0 0' }}>
+          One mailbox. Editing its details below never changes billing or any other mailbox on this account.
+        </p>
+      </div>
+
+      {/* ── Mailbox / business details ──────────────────────────────────────── */}
+      <div className="dash-card" style={{ marginBottom: 20 }}>
+        <span className="dash-card-title">Mailbox &amp; business details</span>
+        <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 18px' }}>
+          Operational information for this suite. Safe to edit — these fields are stored on the
+          mailbox itself and are never sent to Stripe.
+        </p>
+
+        <dl className="admin-dl" style={{ marginBottom: 16 }}>
+          <dt>Suite</dt>    <dd><SuiteEditor customerId={customer.id} currentSuite={customer.suite_number} /></dd>
+          <dt>Address</dt>  <dd style={{ fontSize: 12 }}>{customer.business_address_line ?? '—'}</dd>
+        </dl>
+
+        <MailboxProfileEditor
+          customerId={customer.id}
+          suiteNumber={customer.suite_number}
+          initial={{
+            business_name:      customer.business_name      ?? '',
+            recipient_name:     customer.recipient_name     ?? '',
+            contact_email:      customer.contact_email      ?? '',
+            contact_phone:      customer.contact_phone      ?? '',
+            forwarding_address: customer.forwarding_address ?? '',
+          }}
+        />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
 
-        {/* ── Profile ───────────────────────────────────────────────────────── */}
+        {/* ── Billing & account ─────────────────────────────────────────────── */}
         <div className="dash-card">
-          <span className="dash-card-title">Profile</span>
+          <span className="dash-card-title">Billing &amp; account</span>
+          <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 14px' }}>
+            Billing fields are read-only here &mdash; change those in the Stripe dashboard or the
+            customer&rsquo;s billing portal. The account holder&rsquo;s name is the person&rsquo;s own
+            and can be edited.
+          </p>
           <dl className="admin-dl">
-            <dt>Email</dt>       <dd>{p?.email ?? '—'}</dd>
-            <dt>Full name</dt>   <dd>{p?.full_name ?? '—'}</dd>
-            <dt>Business</dt>    <dd>{p?.business_name ?? '—'}</dd>
-            <dt>Phone</dt>       <dd>{p?.phone ?? '—'}</dd>
-            <dt>Suite</dt>       <dd><SuiteEditor customerId={customer.id} currentSuite={customer.suite_number} /></dd>
-            <dt>Address</dt>     <dd style={{ fontSize: 12 }}>{customer.business_address_line ?? '—'}</dd>
-            <dt>Forwarding</dt>  <dd style={{ fontSize: 12 }}>{customer.forwarding_address ?? '—'}</dd>
-            <dt>Status</dt>
+            <dt>Billing / login email</dt> <dd>{p?.email ?? '—'}</dd>
+            <dt>Account holder</dt>
+            <dd><PersonNameEditor customerId={customer.id} currentName={p?.full_name ?? null} /></dd>
+            <dt>Account phone</dt>         <dd>{p?.phone ?? '—'}</dd>
+            <dt>Stripe customer</dt>
+            <dd style={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+              {customer.stripe_customer_id ?? '—'}
+            </dd>
+            <dt>Account status</dt>
             <dd><span className={`admin-status-badge admin-status-${customer.status}`}>{customer.status}</span></dd>
             <dt>Customer since</dt> <dd>{fmt(customer.created_at)}</dd>
           </dl>

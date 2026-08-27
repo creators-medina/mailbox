@@ -3,6 +3,7 @@ import { isResendConfigured } from './resend';
 import { sendMailReceivedEmail } from './send-mail-received-email';
 import { sendScanReadyEmail } from './send-scan-ready-email';
 import { sendMailRequestUpdateEmail } from './send-mail-request-update-email';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 
 // All functions here are non-throwing: a notification failure must never break
 // the admin workflow. They handle recipient lookup, duplicate prevention via
@@ -42,18 +43,22 @@ type CustomerCtx = {
 async function loadCustomerCtx(admin: any, customerId: string): Promise<CustomerCtx | null> {
   const { data } = await admin
     .from('customers')
-    .select('id, suite_number, email, profiles(email, business_name, full_name)')
+    .select('id, suite_number, email, business_name, recipient_name, profiles(email, business_name, full_name)')
     .eq('id', customerId)
     .maybeSingle();
   if (!data) return null;
   const c = data as {
     suite_number: string | null;
     email: string | null;
+    business_name: string | null;
+    recipient_name: string | null;
     profiles: { email: string | null; business_name: string | null; full_name: string | null } | null;
   };
   return {
+    // Recipient stays the account/login email — the mailbox contact_email is
+    // display-only for now and must not silently redirect customer mail.
     email: c.email || c.profiles?.email || null,
-    businessName: c.profiles?.business_name || c.profiles?.full_name || null,
+    businessName: resolveMailboxDisplayName(c, c.profiles),
     suiteNumber: c.suite_number ?? null,
   };
 }

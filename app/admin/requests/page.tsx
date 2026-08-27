@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 import { getSignedUrl } from '@/lib/storage/signed-url';
 import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import RequestFulfillment from './RequestFulfillment';
@@ -73,7 +74,7 @@ export default async function AdminRequestsPage({
   // pre-015); the email comes from profiles. A failure here never hides rows.
   const [custRes, miRes] = await Promise.all([
     customerIds.length
-      ? admin.from('customers').select('id, suite_number, profile_id').in('id', customerIds)
+      ? admin.from('customers').select('id, suite_number, profile_id, business_name, recipient_name').in('id', customerIds)
       : Promise.resolve({ data: [] }),
     mailItemIds.length
       ? admin.from('mail_items').select('id, sender, title, envelope_image_url, scanned_document_url').in('id', mailItemIds)
@@ -82,6 +83,7 @@ export default async function AdminRequestsPage({
 
   const customers = (custRes.data ?? []) as Array<{
     id: string; suite_number: string | null; profile_id: string | null;
+    business_name: string | null; recipient_name: string | null;
   }>;
   const mailItems = (miRes.data ?? []) as Array<{
     id: string; sender: string | null; title: string | null;
@@ -129,7 +131,7 @@ export default async function AdminRequestsPage({
       envelopeUrl: r.mail_item_id ? (fileUrls.get(r.mail_item_id)?.envelopeUrl ?? null) : null,
       scanUrl: r.mail_item_id ? (fileUrls.get(r.mail_item_id)?.scanUrl ?? null) : null,
       suiteNumber: c?.suite_number ?? null,
-      businessName: p?.business_name || p?.full_name || null,
+      businessName: c ? resolveMailboxDisplayName(c, p) : null,
       customerEmail: p?.email ?? null,
       customerFound: Boolean(c),
     };

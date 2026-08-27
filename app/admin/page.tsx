@@ -1,5 +1,6 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export default async function AdminOverviewPage() {
       .gte('received_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
     admin.from('mail_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     admin.from('customers')
-      .select('id, suite_number, status, created_at, profiles(full_name, business_name, email)')
+      .select('id, suite_number, status, created_at, business_name, recipient_name, profiles(full_name, business_name, email)')
       .order('created_at', { ascending: false })
       .limit(5),
   ]);
@@ -28,6 +29,8 @@ export default async function AdminOverviewPage() {
     suite_number: string | null;
     status: string;
     created_at: string;
+    business_name: string | null;
+    recipient_name: string | null;
     profiles: { full_name: string | null; business_name: string | null; email: string | null } | null;
   };
   const customers = (recentCustomers.data ?? []) as unknown as RecentCustomer[];
@@ -90,7 +93,7 @@ export default async function AdminOverviewPage() {
                       {c.suite_number ?? '—'}
                     </a>
                   </td>
-                  <td>{c.profiles?.business_name || c.profiles?.full_name || '—'}</td>
+                  <td>{resolveMailboxDisplayName(c, c.profiles) ?? '—'}</td>
                   <td style={{ color: 'var(--c-text-2)' }}>{c.profiles?.email ?? '—'}</td>
                   <td>
                     <span className={`admin-status-badge admin-status-${c.status}`}>{c.status}</span>

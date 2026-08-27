@@ -1,12 +1,12 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClientAny } from '@/lib/supabase/admin';
-import { buildCustomerAddress } from '@/lib/config/business';
+import { BUSINESS, buildCustomerAddress } from '@/lib/config/business';
+import { parseSuiteNumber, suiteFormatHint } from '@/lib/mailbox/suite-format';
 
 export const dynamic = 'force-dynamic';
 
 const STAFF_ROLES = new Set(['admin', 'staff']);
-const SUITE_RE = /^Suite[0-9A-Za-z-]{1,10}$/;
 
 async function handle(req: Request, customerId: string) {
   // ── Auth: 401 if not signed in, 403 if signed in but not staff/admin ──
@@ -29,21 +29,21 @@ async function handle(req: Request, customerId: string) {
   }
 
   // ── Parse + validate ──
+  // Normalization and the accepted formats live in lib/mailbox/suite-format.ts
+  // so this route and the admin editor can never disagree. Both the generated
+  // (MB1001) and hand-assigned (Suite201) shapes are valid.
   let body: { suiteNumber?: unknown };
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: 'Suite must look like Suite201.' }, { status: 400 });
+    return Response.json({ error: suiteFormatHint(BUSINESS.suitePrefix) }, { status: 400 });
   }
 
-  // Trim, then normalize only the leading "Suite" prefix to canonical
-  // capitalization — the remainder (digits/letters) is preserved as entered.
-  const suiteNumber = (typeof body.suiteNumber === 'string' ? body.suiteNumber : '')
-    .trim()
-    .replace(/^suite/i, 'Suite');
-  if (!SUITE_RE.test(suiteNumber)) {
-    return Response.json({ error: 'Suite must look like Suite201.' }, { status: 400 });
+  const parsed = parseSuiteNumber(body.suiteNumber, BUSINESS.suitePrefix);
+  if (!parsed.ok) {
+    return Response.json({ error: parsed.error }, { status: 400 });
   }
+  const { suiteNumber } = parsed;
 
   // ── Duplicate prevention ──
   const { data: dupe } = await admin

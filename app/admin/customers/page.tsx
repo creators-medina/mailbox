@@ -1,11 +1,14 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
+import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
 
 type CustomerRow = {
   id: string;
   suite_number: string | null;
   status: string;
   created_at: string;
+  business_name: string | null;
+  recipient_name: string | null;
   profiles: { full_name: string | null; business_name: string | null; email: string | null } | null;
 };
 
@@ -21,7 +24,7 @@ export default async function AdminCustomersPage({
 
   let query = admin
     .from('customers')
-    .select('id, suite_number, status, created_at, profiles(full_name, business_name, email)')
+    .select('id, suite_number, status, created_at, business_name, recipient_name, profiles(full_name, business_name, email)')
     .order('created_at', { ascending: false })
     .limit(100);
 
@@ -33,6 +36,8 @@ export default async function AdminCustomersPage({
     const lq = q.toLowerCase();
     customers = customers.filter(c =>
       c.suite_number?.toLowerCase().includes(lq) ||
+      c.business_name?.toLowerCase().includes(lq) ||
+      c.recipient_name?.toLowerCase().includes(lq) ||
       c.profiles?.full_name?.toLowerCase().includes(lq) ||
       c.profiles?.business_name?.toLowerCase().includes(lq) ||
       c.profiles?.email?.toLowerCase().includes(lq),
@@ -82,7 +87,7 @@ export default async function AdminCustomersPage({
                   <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#C99A5A)' }}>
                     {c.suite_number ?? '—'}
                   </td>
-                  <td>{c.profiles?.business_name || c.profiles?.full_name || '—'}</td>
+                  <td>{resolveMailboxDisplayName(c, c.profiles) ?? '—'}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{c.profiles?.email ?? '—'}</td>
                   <td>
                     <span className={`admin-status-badge admin-status-${c.status}`}>{c.status}</span>
