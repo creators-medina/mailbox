@@ -7,9 +7,9 @@ import { HeroImage } from '@/components/HeroImage';
 import { BUSINESS } from '@/lib/config/business';
 
 export const metadata: Metadata = {
-  title: 'My Biz Address — Professional Business Address in Rockwall, TX',
+  title: 'Virtual Mailbox & Business Address in Rockwall, TX | My Biz Address',
   description:
-    'Get a real Rockwall, TX business address, receive mail securely, and manage it all online. Starting at $29.99/mo. No contracts.',
+    'Get a real Rockwall, TX business address and virtual mailbox for your business. Receive, scan, forward and manage your mail online.',
 };
 
 /* ── JSON-LD ────────────────────────────────────────────────────────────────── */
@@ -17,7 +17,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
   name: BUSINESS.brandName,
-  description: 'Professional business address and mail receiving service in Rockwall, TX.',
+  description: 'Professional business address, virtual mailbox and mail receiving service in Rockwall, TX.',
   url: BUSINESS.websiteUrl,
   telephone: BUSINESS.phoneE164,
   address: {
@@ -246,7 +246,7 @@ export default function Home() {
             A complete business address service.
           </h2>
           <p className="w-hero-sub">
-            More than a mailbox. Everything you need to operate with a
+            More than a virtual mailbox. Everything you need to operate with a
             professional address and manage your mail online.
           </p>
 
