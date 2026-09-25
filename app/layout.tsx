@@ -12,13 +12,18 @@ const TITLE = `${BUSINESS.brandName} — ${BUSINESS.tagline}`;
 const DESCRIPTION =
   'Get a real Rockwall, TX business address for your LLC, receive mail and packages, and manage everything online. Starting at $29.99/mo.';
 
+// Social sharing (Open Graph / Twitter) text matches the homepage SEO title and description.
+const SOCIAL_TITLE = 'Virtual Mailbox & Business Address in Rockwall, TX | My Biz Address';
+const SOCIAL_DESCRIPTION =
+  'Get a real Rockwall, TX business address and virtual mailbox for your business. Receive, scan, forward and manage your mail online.';
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   metadataBase: new URL(BUSINESS.websiteUrl),
   openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
+    title: SOCIAL_TITLE,
+    description: SOCIAL_DESCRIPTION,
     url: BUSINESS.websiteUrl,
     siteName: BUSINESS.brandName,
     locale: 'en_US',
@@ -26,8 +31,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: TITLE,
-    description: DESCRIPTION,
+    title: SOCIAL_TITLE,
+    description: SOCIAL_DESCRIPTION,
   },
   alternates: { canonical: BUSINESS.websiteUrl },
   robots: { index: true, follow: true },
