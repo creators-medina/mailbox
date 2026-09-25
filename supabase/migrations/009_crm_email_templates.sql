@@ -51,7 +51,7 @@ begin
         'Signup link',
         'email',
         'Your My Biz Address signup link',
-        E'Hi {{first_name}},\n\nGreat talking with you! You can complete your signup here:\n\nhttps://mybizmailbox.biz/signup\n\nOnce you''re set up we''ll assign your suite number and get your mail handling started right away. Reply here if you hit any snags.\n\nWelcome aboard,\nThe My Biz Address Team'
+        E'Hi {{first_name}},\n\nGreat talking with you! You can complete your signup here:\n\nhttps://mybizmailbox.biz/signup\n\nOnce you''re set up we''ll assign your mailbox number and get your mail handling started right away. Reply here if you hit any snags.\n\nWelcome aboard,\nThe My Biz Address Team'
       ),
       (
         'No response follow-up',
