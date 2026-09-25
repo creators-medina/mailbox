@@ -152,7 +152,7 @@ export default function SignupPage() {
               What happens after checkout
             </p>
             {[
-              'Secure payment via Stripe activates your plan and reserves your suite number.',
+              'Secure payment via Stripe activates your plan and reserves your mailbox number.',
               'You’ll get an email to set your password and sign in to your dashboard.',
               'You’ll complete USPS Form 1583 (with ID) — the postal step required before we can receive your mail.',
               'Our Rockwall team confirms your setup and your address is ready to use.',

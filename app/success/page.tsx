@@ -35,7 +35,7 @@ export default function SuccessPage() {
             {[
               'Check your email — we\'ll send a link to set your password and sign in.',
               'Complete USPS Form 1583 (with a valid photo ID). This postal step is required before we can legally receive your mail.',
-              'Our Rockwall team confirms your suite number and address details.',
+              'Our Rockwall team confirms your mailbox number and address details.',
               'Sign in anytime to view mail and request scans, forwarding, or pickup.',
             ].map((step, i) => (
               <div key={i} style={{ display: 'flex', gap: 14, padding: '10px 0', borderBottom: i < 3 ? '1px solid var(--c-border,rgba(255,255,255,0.07))' : 'none' }}>

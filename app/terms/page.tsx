@@ -37,7 +37,7 @@ export default function TermsPage() {
 
       <H2>1. The Service</H2>
       <P>
-        We provide a real street business address with an assigned suite number, plus mail
+        We provide a real street business address with an assigned mailbox number, plus mail
         receiving and handling at our Rockwall, Texas location. Depending on the plan and add-ons you
         select, the Services may include envelope notifications, mail scanning, local pickup, mail
         forwarding, shredding, a business phone number, and Google Business Profile setup assistance.
@@ -93,7 +93,7 @@ export default function TermsPage() {
 
       <H2>6. Mail Handling, Storage, and Forwarding</H2>
       <UL>
-        <LI>We will receive mail and parcels addressed to your assigned suite and notify you according to your plan.</LI>
+        <LI>We will receive mail and parcels addressed to your assigned mailbox number and notify you according to your plan.</LI>
         <LI>You are responsible for requesting scanning, forwarding, pickup, or shredding in a timely manner. Forwarding postage and handling may incur additional charges.</LI>
         <LI>We may set reasonable limits on storage volume and duration. Unclaimed, abandoned, or excess mail may be returned to sender, disposed of, or shredded after a reasonable period and after any notice required by law.</LI>
         <LI>We handle mail with reasonable care but are not liable for items lost, delayed, damaged, or mishandled by USPS or other carriers before delivery to us, or for the contents of mail.</LI>

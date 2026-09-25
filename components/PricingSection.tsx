@@ -2,7 +2,7 @@ const SIGNUP_URL = '/signup';
 
 const coreFeatures = [
   'Real Rockwall, TX business address',
-  'Unique suite number assigned to you',
+  'Unique mailbox number assigned to you',
   'Mail receiving from all carriers',
   'Envelope notifications via email',
   'Online dashboard access',

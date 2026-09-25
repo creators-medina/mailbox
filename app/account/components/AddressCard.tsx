@@ -14,7 +14,7 @@ export default function AddressCard({
   const [copied, setCopied] = useState(false);
   const hasSuite = Boolean(suiteNumber);
 
-  // The address line already includes the suite; fall back to a sensible
+  // The address line already includes the mailbox number; fall back to a sensible
   // single-line value if it's missing.
   const fullAddress = addressLine ?? '';
 
@@ -36,7 +36,7 @@ export default function AddressCard({
       {hasSuite ? (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 20px', alignItems: 'start' }}>
-            <span style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)', paddingTop: 3 }}>Suite</span>
+            <span style={{ font: '400 13px/1.4 var(--font-text,sans-serif)', color: 'var(--c-text-3)', paddingTop: 3 }}>Mailbox</span>
             <span style={{ font: '800 32px/1 var(--font-display,sans-serif)', letterSpacing: '-0.5px', color: 'var(--c-gold-2,#C99A5A)' }}>
               {suiteNumber}
             </span>
@@ -94,10 +94,10 @@ export default function AddressCard({
       ) : (
         <div>
           <span style={{ font: '700 22px/1.2 var(--font-display,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', display: 'block', marginBottom: 8 }}>
-            Suite pending assignment
+            Mailbox number pending assignment
           </span>
           <p style={{ font: '400 14px/1.6 var(--font-text,sans-serif)', color: 'var(--c-text-2)', margin: 0 }}>
-            Your suite number is being assigned. You&rsquo;ll receive an email once your
+            Your mailbox number is being assigned. You&rsquo;ll receive an email once your
             business address is ready — usually within a few hours.
           </p>
         </div>

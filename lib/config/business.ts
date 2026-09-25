@@ -1,3 +1,5 @@
+import { formatMailboxNumber } from '@/lib/mailbox/suite-format';
+
 // Central business configuration — update these values before going live.
 // Every address, phone number, and brand name in the app is derived from here.
 
@@ -37,11 +39,15 @@ export const BUSINESS = {
 /** Short address used in signup page plan card and similar compact contexts */
 export const SHORT_ADDRESS = `${BUSINESS.addressStreet} · ${BUSINESS.addressCity}, ${BUSINESS.addressState}`;
 
-/** Full business address line assigned to customers: street + suite + city/state/zip.
- *  If the suite label already starts with "Suite" (e.g. "Suite201") it is used
- *  verbatim; otherwise a "Suite " prefix is added (e.g. legacy "MB1001"). */
+/** Display form of a stored mailbox number, e.g. "#201". Legacy stored values
+ *  (Suite201, MB1001, 201) render as #201 / #1001. Null when unassigned. */
+export function displayMailboxNumber(suiteNumber: string | null | undefined): string | null {
+  return formatMailboxNumber(suiteNumber, BUSINESS.suitePrefix);
+}
+
+/** Full business address line assigned to customers: street + #mailbox + city/state/zip,
+ *  e.g. "802 North Goliad Street, #201, Rockwall, TX 75087". */
 export function buildCustomerAddress(suiteNumber: string): string {
-  const suite = suiteNumber.trim();
-  const label = /^suite/i.test(suite) ? suite : `Suite ${suite}`;
+  const label = displayMailboxNumber(suiteNumber) ?? suiteNumber.trim();
   return `${BUSINESS.addressStreet}, ${label}, ${BUSINESS.addressCity}, ${BUSINESS.addressState} ${BUSINESS.addressZip}`;
 }

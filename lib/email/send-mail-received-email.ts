@@ -1,6 +1,7 @@
 import 'server-only';
 import { getResend } from './resend';
 import { renderEmailHtml, renderEmailText, type DetailRow } from './mail-event-layout';
+import { displayMailboxNumber } from '@/lib/config/business';
 
 const SUBJECT = 'New mail received at your My Biz Address';
 
@@ -25,7 +26,7 @@ export async function sendMailReceivedEmail({
   if (!from) throw new Error('RESEND_FROM_EMAIL is not configured');
 
   const details: DetailRow[] = [];
-  if (suiteNumber) details.push({ label: 'Suite', value: suiteNumber });
+  if (suiteNumber) details.push({ label: 'Mailbox', value: displayMailboxNumber(suiteNumber) ?? suiteNumber });
   if (sender)      details.push({ label: 'From', value: sender });
   if (title)       details.push({ label: 'Description', value: title });
   details.push({ label: 'Received', value: receivedDate });

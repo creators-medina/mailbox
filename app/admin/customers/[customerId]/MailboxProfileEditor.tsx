@@ -21,19 +21,19 @@ const FIELDS: Array<{
     key: 'business_name',
     label: 'Business name',
     placeholder: 'Van Brunt & Company',
-    hint: 'Shown on this suite only. Does not change the billing name in Stripe.',
+    hint: 'Shown on this mailbox only. Does not change the billing name in Stripe.',
   },
   {
     key: 'recipient_name',
     label: 'Recipient name',
     placeholder: 'Jessica Van Brunt',
-    hint: 'Who mail at this suite is addressed to.',
+    hint: 'Who mail at this mailbox is addressed to.',
   },
   {
     key: 'contact_email',
     label: 'Mailbox contact email',
     placeholder: 'ops@example.com',
-    hint: 'Operational contact for this suite. Not the login or billing email.',
+    hint: 'Operational contact for this mailbox. Not the login or billing email.',
   },
   {
     key: 'contact_phone',

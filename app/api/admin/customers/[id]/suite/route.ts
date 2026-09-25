@@ -2,7 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { BUSINESS, buildCustomerAddress } from '@/lib/config/business';
-import { parseSuiteNumber, suiteFormatHint } from '@/lib/mailbox/suite-format';
+import { parseSuiteNumber, suiteFormatHint, mailboxNumberVariants } from '@/lib/mailbox/suite-format';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +30,8 @@ async function handle(req: Request, customerId: string) {
 
   // ── Parse + validate ──
   // Normalization and the accepted formats live in lib/mailbox/suite-format.ts
-  // so this route and the admin editor can never disagree. Both the generated
-  // (MB1001) and hand-assigned (Suite201) shapes are valid.
+  // so this route and the admin editor can never disagree. Input is a number
+  // with or without a leading "#" (201 or #201) and is stored as #201.
   let body: { suiteNumber?: unknown };
   try {
     body = await req.json();
@@ -46,16 +46,18 @@ async function handle(req: Request, customerId: string) {
   const { suiteNumber } = parsed;
 
   // ── Duplicate prevention ──
+  // Older rows may hold the same number as Suite201 or MB201, so every
+  // spelling of it counts as taken.
   const { data: dupe } = await admin
     .from('customers')
     .select('id')
-    .eq('suite_number', suiteNumber)
+    .in('suite_number', mailboxNumberVariants(suiteNumber, BUSINESS.suitePrefix))
     .neq('id', customerId)
     .limit(1)
     .maybeSingle();
 
   if (dupe) {
-    return Response.json({ error: 'This suite number is already assigned.' }, { status: 409 });
+    return Response.json({ error: 'This mailbox number is already assigned.' }, { status: 409 });
   }
 
   // ── Update (only suite_number, business_address_line, updated_at) ──
@@ -70,7 +72,7 @@ async function handle(req: Request, customerId: string) {
 
   if (error) {
     console.error('[admin/suite] update failed:', error.message);
-    return Response.json({ error: 'Could not update the suite. Please try again.' }, { status: 500 });
+    return Response.json({ error: 'Could not update the mailbox number. Please try again.' }, { status: 500 });
   }
 
   return Response.json({

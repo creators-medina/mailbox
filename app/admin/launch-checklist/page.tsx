@@ -64,7 +64,7 @@ where table_schema = 'public' and table_name = 'customers'
   {
     title: '4. Customer dashboard',
     items: [
-      { label: 'Address card shows suite + full address; "Copy address" works' },
+      { label: 'Address card shows mailbox # + full address; "Copy address" works' },
       { label: 'Mail inbox loads (real items or empty state)' },
       { label: 'Per-item actions render: Request scan / Request forwarding / Hold for pickup / Request shred' },
       { label: 'Open request shows "Request pending: …" and blocks duplicates' },
@@ -77,7 +77,7 @@ where table_schema = 'public' and table_name = 'customers'
     title: '5. Admin dashboard',
     items: [
       { label: '/admin/customers list loads; search works; row → detail page' },
-      { label: 'Suite editor saves Suite201-format values; duplicates rejected (409)' },
+      { label: '# editor saves 201 / #201 as #201; duplicates rejected (409)' },
       { label: 'Compliance editor saves; "Send authorization request" emails the customer' },
       { label: '/admin/mail/upload uploads envelope + scan to private buckets; tracking field saves' },
       { label: '/admin/mail status dropdown persists (no revert); enum-invalid values impossible (UI restricts)' },

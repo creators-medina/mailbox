@@ -1,69 +1,97 @@
-// Suite number formatting and validation, shared by the admin suite editor and
-// its API route so the two can never disagree about what is acceptable.
+// Mailbox number formatting and validation, shared by the admin mailbox-number
+// editor, its API route, and every screen/email that displays the number, so
+// they can never disagree about what is acceptable or how it looks.
 //
-// WHY THIS EXISTS
-// ───────────────
-// Two suite formats are live in production at once:
+// CANONICAL FORM
+// ──────────────
+// A mailbox number is shown to people as "#" followed by the number: #201.
+// New admin saves are stored in that same form.
 //
-//   • MB1001   — what provisioning generates (lib/mailbox/suite.ts, using
-//                BUSINESS.suitePrefix + suiteStartNum)
-//   • Suite201 — what staff type when assigning by hand
+// Older rows are NOT migrated. The customers.suite_number column may still hold
+// any of the shapes that were live before this change:
 //
-// The editor and route previously validated only /^Suite[0-9A-Za-z-]{1,10}$/,
-// which rejects the generated format. An admin opening the suite editor on an
-// auto-provisioned customer could not save the value already sitting in the
-// field — they had to rename the customer onto the Suite… scheme to save at
-// all. buildCustomerAddress() in lib/config/business.ts already renders both
-// correctly, so only validation was out of step.
+//   • MB1001    — what provisioning generates (lib/mailbox/suite.ts, using
+//                 BUSINESS.suitePrefix + suiteStartNum)
+//   • Suite201  — what staff used to type when assigning by hand
+//   • 201 / #201
 //
-// Both shapes are accepted here. Nothing that was valid before became invalid.
+// formatMailboxNumber() renders all of them as #1001 / #201, so existing
+// customers display correctly without any data being rewritten.
 //
 // This module deliberately imports nothing: the generated prefix is passed in
 // by the caller (from BUSINESS.suitePrefix) rather than imported, which keeps
 // it a pure function of its arguments and directly testable.
 
-/** "Suite" followed by 1–10 letters, digits, or hyphens. e.g. Suite201, Suite12A */
-const SUITE_LABEL_RE = /^Suite[0-9A-Za-z-]{1,10}$/;
+/** Canonical stored/displayed shape: "#" followed by 1–15 digits. */
+const MAILBOX_NUMBER_RE = /^#[0-9]{1,15}$/;
 
 /** Escapes a configured prefix for safe use inside a RegExp. */
 function escape(prefix: string): string {
   return prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Human-readable description of both accepted shapes, for error messages. */
-export function suiteFormatHint(prefix: string): string {
-  return `Suite must look like Suite201 or ${prefix}1001.`;
+/**
+ * Removes any leading label — "Suite", the generated prefix (only when digits
+ * follow it), "#", and surrounding whitespace — returning the bare identifier.
+ *
+ * "Suite201" → "201"  ·  "MB1001" → "1001"  ·  "#122" → "122"  ·  "Suite #7" → "7"
+ */
+function stripMailboxLabel(raw: string, prefix: string): string {
+  const label = new RegExp(`^(?:suite|${escape(prefix)}(?=[0-9])|#|\\s)+`, 'i');
+  return raw.trim().replace(label, '').trim();
 }
 
 /**
- * Canonicalises the capitalisation of a recognised prefix and trims
- * surrounding whitespace. The remainder is preserved exactly as entered, so
- * Suite12a and Suite12A stay distinct values.
- *
- * "suite201" → "Suite201"  ·  "mb1001" → "MB1001"  ·  "Suite-12" → "Suite-12"
+ * Display form of a stored mailbox number, e.g. "#201". Handles every legacy
+ * stored shape (Suite201, MB1001, 201, #201) and never doubles the "#".
+ * Returns null when there is no number.
  */
-export function normalizeSuiteNumber(input: unknown, prefix: string): string {
-  const raw = (typeof input === 'string' ? input : '').trim();
-  if (raw === '') return '';
-
-  // Leading "suite" → canonical "Suite". Unchanged from the previous behaviour.
-  if (/^suite/i.test(raw)) return raw.replace(/^suite/i, 'Suite');
-
-  // Leading configured prefix followed by digits → canonical prefix casing.
-  // The digit lookahead matters: without it "mbxyz" would be coerced into a
-  // prefixed value instead of staying invalid.
-  const generatedPrefix = new RegExp(`^${escape(prefix)}(?=[0-9])`, 'i');
-  if (generatedPrefix.test(raw)) return raw.replace(generatedPrefix, prefix);
-
-  return raw;
+export function formatMailboxNumber(value: unknown, prefix: string): string | null {
+  const raw = (typeof value === 'string' ? value : '').trim();
+  if (raw === '') return null;
+  const bare = stripMailboxLabel(raw, prefix);
+  return bare === '' ? raw : `#${bare}`;
 }
 
-/** True when an already-normalized value is one of the two accepted shapes. */
-export function isValidSuiteNumber(value: string, prefix: string): boolean {
+/**
+ * Every stored spelling that refers to the same mailbox number as `value`.
+ * Used for duplicate checks, because older rows may hold Suite201 or MB201
+ * while new saves hold #201.
+ */
+export function mailboxNumberVariants(value: string, prefix: string): string[] {
+  const bare = stripMailboxLabel(value, prefix);
+  if (bare === '') return [value];
+  return Array.from(new Set([
+    value,
+    `#${bare}`,
+    bare,
+    `Suite${bare}`,
+    `Suite ${bare}`,
+    `Suite #${bare}`,
+    `${prefix}${bare}`,
+  ]));
+}
+
+/** Human-readable description of the accepted input, for error messages. */
+export function suiteFormatHint(_prefix?: string): string {
+  return 'Mailbox number must be a number, like 201 or #201.';
+}
+
+/**
+ * Canonicalises admin input to "#<number>". A leading "#" is optional and is
+ * never doubled; surrounding whitespace is trimmed.
+ *
+ * "122" → "#122"  ·  "#122" → "#122"  ·  " 201 " → "#201"
+ */
+export function normalizeSuiteNumber(input: unknown, prefix: string): string {
+  return formatMailboxNumber(input, prefix) ?? '';
+}
+
+/** True when an already-normalized value is a valid mailbox number (#201). */
+export function isValidSuiteNumber(value: string, _prefix?: string): boolean {
   // The digit bound rejects a run long enough to be a data-entry accident
-  // rather than a suite number.
-  const generated = new RegExp(`^${escape(prefix)}[0-9]{1,15}$`);
-  return SUITE_LABEL_RE.test(value) || generated.test(value);
+  // rather than a mailbox number.
+  return MAILBOX_NUMBER_RE.test(value);
 }
 
 /**

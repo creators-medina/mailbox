@@ -5,6 +5,7 @@ import { getSignedUrl } from '@/lib/storage/signed-url';
 import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import RequestFulfillment from './RequestFulfillment';
 import MailFileLinks from '@/app/admin/components/MailFileLinks';
+import { displayMailboxNumber } from '@/lib/config/business';
 
 type RequestRow = {
   id: string;
@@ -130,7 +131,7 @@ export default async function AdminRequestsPage({
       mailItemFound: Boolean(mi),
       envelopeUrl: r.mail_item_id ? (fileUrls.get(r.mail_item_id)?.envelopeUrl ?? null) : null,
       scanUrl: r.mail_item_id ? (fileUrls.get(r.mail_item_id)?.scanUrl ?? null) : null,
-      suiteNumber: c?.suite_number ?? null,
+      suiteNumber: displayMailboxNumber(c?.suite_number),
       businessName: c ? resolveMailboxDisplayName(c, p) : null,
       customerEmail: p?.email ?? null,
       customerFound: Boolean(c),
@@ -177,7 +178,7 @@ export default async function AdminRequestsPage({
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Suite</th>
+                <th>#</th>
                 <th>Customer</th>
                 <th>Type</th>
                 <th>Mail item</th>
