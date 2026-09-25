@@ -1,6 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { displayMailboxNumber } from '@/lib/config/business';
 
 type CustomerOption = {
   id: string;
@@ -65,7 +66,7 @@ export default function UploadForm({
           <option value="">— Select customer —</option>
           {customers.map(c => (
             <option key={c.id} value={c.id}>
-              {c.suite_number ? `${c.suite_number} — ` : ''}{c.display}
+              {c.suite_number ? `${displayMailboxNumber(c.suite_number)} — ` : ''}{c.display}
               {c.complianceVerified ? ' ✓' : ' ⚠'}
             </option>
           ))}

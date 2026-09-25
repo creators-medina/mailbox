@@ -46,7 +46,7 @@ const S = { fill: 'none', stroke: 'var(--c-gold-2,#C99A5A)' as string,
 const faqs = [
   {
     q: 'What address will I use?',
-    a: '802 North Goliad Street, Rockwall, TX 75087, with a unique suite number assigned to your business. This is a real street address — not a P.O. box — and is accepted for LLC registration, banking, licensing, and Google Business.',
+    a: '802 North Goliad Street, Rockwall, TX 75087, with a unique mailbox number assigned to your business. This is a real street address — not a P.O. box — and is accepted for LLC registration, banking, licensing, and Google Business.',
   },
   {
     q: 'Can I use this address for my business?',
@@ -332,7 +332,7 @@ export default function Home() {
               {
                 n: '2',
                 title: 'Get your business address',
-                body: 'Receive your unique suite number at 802 North Goliad Street, Rockwall TX 75087. Use it on your LLC filing, bank accounts, business cards, and website.',
+                body: 'Receive your unique mailbox number at 802 North Goliad Street, Rockwall TX 75087. Use it on your LLC filing, bank accounts, business cards, and website.',
               },
               {
                 n: '3',
@@ -535,7 +535,7 @@ export default function Home() {
           </h2>
           <p className="w-hero-sub">
             Sign up online in minutes and choose your plan. After checkout
-            we&rsquo;ll assign your suite and walk you through USPS Form 1583 —
+            we&rsquo;ll assign your mailbox number and walk you through USPS Form 1583 —
             the one postal step required before we can receive your mail.
           </p>
           <div className="w-cta-row">

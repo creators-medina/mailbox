@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { BUSINESS, buildCustomerAddress } from '@/lib/config/business';
+import { mailboxNumberVariants } from '@/lib/mailbox/suite-format';
 
 // Assigns the next suite number in the MB1001, MB1002, … sequence.
 //
@@ -42,10 +43,12 @@ export async function assignSuiteNumber(): Promise<string> {
     }
 
     const candidate = `${prefix}${next}`;
+    // An admin may have assigned the same number as #1050 (or legacy
+    // Suite1050), so every spelling of it counts as taken.
     const { data: taken } = await admin
       .from('customers')
       .select('id')
-      .eq('suite_number', candidate)
+      .in('suite_number', mailboxNumberVariants(candidate, prefix))
       .limit(1)
       .maybeSingle();
 

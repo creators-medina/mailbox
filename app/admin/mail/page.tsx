@@ -5,6 +5,7 @@ import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import { MAIL_ITEM_STATUSES, mailStatusLabel } from '@/lib/mail/statuses';
 import MailStatusButton from './MailStatusButton';
 import MailFileLinks from '@/app/admin/components/MailFileLinks';
+import { displayMailboxNumber } from '@/lib/config/business';
 
 type MailItem = {
   id: string;
@@ -88,7 +89,7 @@ export default async function AdminMailQueuePage({
             <thead>
               <tr>
                 <th>Received</th>
-                <th>Suite</th>
+                <th>#</th>
                 <th>Sender</th>
                 <th>Title</th>
                 <th>Files</th>
@@ -102,7 +103,7 @@ export default async function AdminMailQueuePage({
                     {new Date(m.received_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </td>
                   <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#C99A5A)' }}>
-                    {m.customers?.suite_number ?? '—'}
+                    {displayMailboxNumber(m.customers?.suite_number) ?? '—'}
                   </td>
                   <td>{m.sender ?? '—'}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{m.title ?? '—'}</td>

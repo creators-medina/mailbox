@@ -53,7 +53,7 @@ function renderText(name: string, url: string): string {
     `Welcome to My Biz Address, ${name}!`,
     '',
     'Your My Biz Address account is set up. Set your password to access your',
-    'dashboard, view your assigned Rockwall suite, and complete the USPS',
+    'dashboard, view your assigned Rockwall mailbox number, and complete the USPS',
     'Form 1583 + ID verification we need before we can begin handling mail',
     'on your behalf.',
     '',
@@ -101,7 +101,7 @@ function renderHtml(name: string, url: string): string {
                   Your My Biz Address account is set up. Set your password to access your dashboard, where you can:
                 </p>
                 <ul style="margin:0 0 22px;padding-left:20px;color:rgba(245,240,232,0.78);font-size:15px;line-height:1.7;">
-                  <li>View your assigned <strong style="color:#fff;">Rockwall</strong> suite</li>
+                  <li>View your assigned <strong style="color:#fff;">Rockwall</strong> mailbox number</li>
                   <li>Complete USPS Form 1583 + ID verification</li>
                   <li>Manage your plan and add-ons online</li>
                 </ul>

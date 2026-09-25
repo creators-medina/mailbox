@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
+import { displayMailboxNumber } from '@/lib/config/business';
 
 type CustomerRow = {
   id: string;
@@ -36,6 +37,7 @@ export default async function AdminCustomersPage({
     const lq = q.toLowerCase();
     customers = customers.filter(c =>
       c.suite_number?.toLowerCase().includes(lq) ||
+      displayMailboxNumber(c.suite_number)?.toLowerCase().includes(lq) ||
       c.business_name?.toLowerCase().includes(lq) ||
       c.recipient_name?.toLowerCase().includes(lq) ||
       c.profiles?.full_name?.toLowerCase().includes(lq) ||
@@ -58,7 +60,7 @@ export default async function AdminCustomersPage({
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search name, email, suite…"
+            placeholder="Search name, email, #…"
             className="admin-search-input"
           />
         </form>
@@ -73,7 +75,7 @@ export default async function AdminCustomersPage({
           <table className="admin-table" style={{ borderRadius: 0, border: 'none' }}>
             <thead>
               <tr>
-                <th>Suite</th>
+                <th>#</th>
                 <th>Business / Name</th>
                 <th>Email</th>
                 <th>Status</th>
@@ -85,7 +87,7 @@ export default async function AdminCustomersPage({
               {customers.map(c => (
                 <tr key={c.id}>
                   <td style={{ fontWeight: 700, color: 'var(--c-gold-2,#C99A5A)' }}>
-                    {c.suite_number ?? '—'}
+                    {displayMailboxNumber(c.suite_number) ?? '—'}
                   </td>
                   <td>{resolveMailboxDisplayName(c, c.profiles) ?? '—'}</td>
                   <td style={{ color: 'var(--c-text-2)', fontSize: 12 }}>{c.profiles?.email ?? '—'}</td>

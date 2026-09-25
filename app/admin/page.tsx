@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
+import { displayMailboxNumber } from '@/lib/config/business';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +79,7 @@ export default async function AdminOverviewPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Suite</th>
+                <th>#</th>
                 <th>Name / Business</th>
                 <th>Email</th>
                 <th>Status</th>
@@ -90,7 +91,7 @@ export default async function AdminOverviewPage() {
                 <tr key={c.id}>
                   <td>
                     <a href={`/admin/customers/${c.id}`} style={{ color: 'var(--c-gold-2,#C99A5A)', textDecoration: 'none' }}>
-                      {c.suite_number ?? '—'}
+                      {displayMailboxNumber(c.suite_number) ?? '—'}
                     </a>
                   </td>
                   <td>{resolveMailboxDisplayName(c, c.profiles) ?? '—'}</td>

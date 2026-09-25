@@ -11,6 +11,7 @@ import ComplianceEditor from './ComplianceEditor';
 import MailStatusButton from '@/app/admin/mail/MailStatusButton';
 import MailFileLinks from '@/app/admin/components/MailFileLinks';
 import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
+import { buildCustomerAddress, displayMailboxNumber } from '@/lib/config/business';
 
 type MailItem = {
   id: string;
@@ -195,7 +196,7 @@ export default async function CustomerDetailPage({
         <h1 style={{ font: '700 24px/1.2 var(--font-display,sans-serif)', color: '#fff', margin: '8px 0 0' }}>
           {mailboxName ?? 'Mailbox'}
           <span style={{ font: '500 16px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)', marginLeft: 12 }}>
-            {customer.suite_number ?? '—'}
+            {displayMailboxNumber(customer.suite_number) ?? '—'}
           </span>
         </h1>
         <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '6px 0 0' }}>
@@ -207,18 +208,18 @@ export default async function CustomerDetailPage({
       <div className="dash-card" style={{ marginBottom: 20 }}>
         <span className="dash-card-title">Mailbox &amp; business details</span>
         <p style={{ font: '400 12px/1.5 var(--font-text,sans-serif)', color: 'var(--c-text-3)', margin: '0 0 18px' }}>
-          Operational information for this suite. Safe to edit — these fields are stored on the
+          Operational information for this mailbox. Safe to edit — these fields are stored on the
           mailbox itself and are never sent to Stripe.
         </p>
 
         <dl className="admin-dl" style={{ marginBottom: 16 }}>
-          <dt>Suite</dt>    <dd><SuiteEditor customerId={customer.id} currentSuite={customer.suite_number} /></dd>
-          <dt>Address</dt>  <dd style={{ fontSize: 12 }}>{customer.business_address_line ?? '—'}</dd>
+          <dt>#</dt>        <dd><SuiteEditor customerId={customer.id} currentSuite={customer.suite_number} /></dd>
+          <dt>Address</dt>  <dd style={{ fontSize: 12 }}>{customer.suite_number ? buildCustomerAddress(customer.suite_number) : (customer.business_address_line ?? '—')}</dd>
         </dl>
 
         <MailboxProfileEditor
           customerId={customer.id}
-          suiteNumber={customer.suite_number}
+          suiteNumber={displayMailboxNumber(customer.suite_number)}
           initial={{
             business_name:      customer.business_name      ?? '',
             recipient_name:     customer.recipient_name     ?? '',

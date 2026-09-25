@@ -1,6 +1,7 @@
 import 'server-only';
 import { createAdminClientAny } from '@/lib/supabase/admin';
 import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
+import { displayMailboxNumber } from '@/lib/config/business';
 
 export const dynamic = 'force-dynamic';
 
@@ -114,7 +115,7 @@ export default async function AdminCompliancePage({
       ...r,
       businessName: c ? resolveMailboxDisplayName(c, p) : null,
       email: p?.email || null,
-      suite: c?.suite_number ?? null,
+      suite: displayMailboxNumber(c?.suite_number),
     };
   });
 
@@ -172,7 +173,7 @@ export default async function AdminCompliancePage({
               <tr>
                 <th>Customer</th>
                 <th>Email</th>
-                <th>Suite</th>
+                <th>#</th>
                 <th>Form 1583</th>
                 <th>Photo ID</th>
                 <th>Uploaded</th>

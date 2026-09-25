@@ -7,6 +7,7 @@ import { getSignedUrl } from '@/lib/storage/signed-url';
 import { MAIL_ENVELOPE_BUCKET, MAIL_SCAN_BUCKET } from '@/lib/storage/buckets';
 import type { Database } from '@/types/database';
 import { resolveMailboxDisplayName } from '@/lib/mailbox/mailbox-profile';
+import { buildCustomerAddress, displayMailboxNumber } from '@/lib/config/business';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Tiles';
 import SignOutButton from './SignOutButton';
@@ -211,7 +212,7 @@ export default async function AccountPage({
     {
       label: 'Business address assigned',
       status: c.suite_number ? 'done' : 'pending',
-      note: c.suite_number ? undefined : 'We’re assigning your suite number now.',
+      note: c.suite_number ? undefined : 'We’re assigning your mailbox number now.',
     },
     {
       label: 'USPS Form 1583 verified',
@@ -292,8 +293,8 @@ export default async function AccountPage({
           )}
 
           <AddressCard
-            suiteNumber={c.suite_number}
-            addressLine={c.business_address_line}
+            suiteNumber={displayMailboxNumber(c.suite_number)}
+            addressLine={c.suite_number ? buildCustomerAddress(c.suite_number) : c.business_address_line}
             authorized={complianceVerified}
           />
 

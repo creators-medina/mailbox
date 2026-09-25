@@ -1,7 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { BUSINESS } from '@/lib/config/business';
+import { BUSINESS, displayMailboxNumber } from '@/lib/config/business';
 import { parseSuiteNumber, suiteFormatHint } from '@/lib/mailbox/suite-format';
 
 export default function SuiteEditor({
@@ -12,14 +12,18 @@ export default function SuiteEditor({
   currentSuite: string | null;
 }) {
   const router = useRouter();
+  // The field is labelled "#", so the number is shown and edited bare (201).
+  // Typing "#201" also works — the "#" is never doubled.
+  const currentDisplay = displayMailboxNumber(currentSuite);
+  const currentBare = currentDisplay ? currentDisplay.replace(/^#/, '') : '';
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(currentSuite ?? '');
+  const [value, setValue] = useState(currentBare);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isPending, startTransition] = useTransition();
 
   function open() {
-    setValue(currentSuite ?? '');
+    setValue(currentBare);
     setError('');
     setSuccess('');
     setEditing(true);
@@ -53,10 +57,10 @@ export default function SuiteEditor({
         });
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) {
-          setError(data.error || 'Could not update the suite. Please try again.');
+          setError(data.error || 'Could not update the mailbox number. Please try again.');
           return;
         }
-        setSuccess('Suite updated successfully.');
+        setSuccess('Mailbox number updated successfully.');
         setEditing(false);
         router.refresh();
       } catch {
@@ -69,7 +73,7 @@ export default function SuiteEditor({
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <span style={{ font: '600 16px/1 var(--font-text,sans-serif)', color: 'var(--c-gold-2,#C99A5A)' }}>
-          {currentSuite ?? '—'}
+          {currentBare || '—'}
         </span>
         <button type="button" className="admin-link" onClick={open} style={{ fontSize: 12, cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
           Edit
@@ -90,7 +94,8 @@ export default function SuiteEditor({
           className="ds-dark-input"
           value={value}
           onChange={e => setValue(e.target.value)}
-          placeholder="Suite201"
+          placeholder="201"
+          aria-label="Mailbox number"
           title={suiteFormatHint(BUSINESS.suitePrefix)}
           autoFocus
           disabled={isPending}

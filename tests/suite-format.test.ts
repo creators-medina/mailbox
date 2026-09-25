@@ -1,13 +1,12 @@
 // Run with: npm test
 //
-// Phase 2 covers suite integrity. These tests pin the two things that changed:
+// The mailbox number is shown and saved as "#" + number (#201). These tests pin:
 //
-//   1. Suite validation now accepts BOTH live production formats — the
-//      generated MB1001 and the hand-assigned Suite201 — where it previously
-//      rejected the one the system itself produces.
-//   2. Nothing that was valid under the old rule became invalid. The old rule
-//      is reproduced verbatim below and asserted against, so a future edit that
-//      narrows the format fails here rather than in production.
+//   1. Admin input is accepted as a number with or without "#", and the "#" is
+//      never doubled (122 → #122, #122 → #122).
+//   2. Every legacy stored shape (Suite201, MB1001, 201, #201) still displays
+//      correctly as #201 / #1001 — existing customers are not migrated.
+//   3. Duplicate checks treat every spelling of one number as the same number.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,6 +14,8 @@ import {
   normalizeSuiteNumber as normalizeRaw,
   isValidSuiteNumber as isValidRaw,
   parseSuiteNumber as parseRaw,
+  formatMailboxNumber as formatRaw,
+  mailboxNumberVariants as variantsRaw,
   suiteFormatHint,
 } from '../lib/mailbox/suite-format.ts';
 
@@ -24,88 +25,36 @@ const PREFIX = 'MB';
 const normalizeSuiteNumber = (v: unknown) => normalizeRaw(v, PREFIX);
 const isValidSuiteNumber = (v: string) => isValidRaw(v, PREFIX);
 const parseSuiteNumber = (v: unknown) => parseRaw(v, PREFIX);
+const formatMailboxNumber = (v: unknown) => formatRaw(v, PREFIX);
+const mailboxNumberVariants = (v: string) => variantsRaw(v, PREFIX);
 const SUITE_FORMAT_HINT = suiteFormatHint(PREFIX);
 
-/** The exact regex the editor and route enforced before Phase 2. */
-const LEGACY_SUITE_RE = /^Suite[0-9A-Za-z-]{1,10}$/;
-/** The exact normalization they applied before Phase 2. */
-const legacyNormalize = (v: string) => v.trim().replace(/^suite/i, 'Suite');
+// ── Admin input ─────────────────────────────────────────────────────────────
 
-// ── Regression guard: no previously valid suite may become invalid ──────────
-
-const LEGACY_VALID = [
-  'Suite201', 'Suite1', 'Suite12A', 'Suite-12', 'SuiteA', 'Suite1234567890',
-  'suite201', ' Suite201 ', 'SUITE201',
-];
-
-test('every suite valid under the old rule is still valid', () => {
-  for (const input of LEGACY_VALID) {
-    const legacy = legacyNormalize(input);
-    assert.ok(LEGACY_SUITE_RE.test(legacy), `fixture ${input} should be legacy-valid`);
-
-    const parsed = parseSuiteNumber(input);
-    assert.equal(parsed.ok, true, `${input} must remain valid`);
-    if (parsed.ok) {
-      assert.equal(parsed.suiteNumber, legacy, `${input} must normalize identically to before`);
-    }
-  }
-});
-
-test('every suite invalid under the old rule is still invalid, unless it is the generated format', () => {
-  const stillInvalid = [
-    '', '   ', 'Suite', '201', 'Suite12345678901', 'Suite 201',
-    'Suite_12', 'Room201', 'Suite!', 'MB', 'MB', 'MBxyz',
+test('a number with or without # saves as #number, never ##', () => {
+  const cases: Array<[string, string]> = [
+    ['122', '#122'], ['#122', '#122'],
+    ['201', '#201'], ['#201', '#201'],
+    ['1001', '#1001'], ['#1001', '#1001'],
+    ['305', '#305'], ['#412', '#412'],
+    [' 305 ', '#305'], ['# 412', '#412'], ['##412', '#412'],
   ];
-  for (const input of stillInvalid) {
-    assert.equal(parseSuiteNumber(input).ok, false, `${input} must stay invalid`);
-  }
-});
-
-// ── The fix: the generated format is now accepted ──────────────────────────
-
-test('the generated MB format is accepted', () => {
-  for (const input of ['MB1001', 'MB1042', 'MB1', 'MB999999999999999']) {
+  for (const [input, expected] of cases) {
     const parsed = parseSuiteNumber(input);
     assert.equal(parsed.ok, true, `${input} must be valid`);
-    if (parsed.ok) assert.equal(parsed.suiteNumber, input);
+    if (parsed.ok) assert.equal(parsed.suiteNumber, expected, `${input} → ${expected}`);
   }
 });
 
-test('the generated format was rejected by the old rule — this is the bug being fixed', () => {
-  assert.equal(LEGACY_SUITE_RE.test(legacyNormalize('MB1001')), false);
-  assert.equal(parseSuiteNumber('MB1001').ok, true);
-});
-
-test('generated-prefix casing is canonicalised', () => {
-  for (const input of ['mb1001', 'Mb1001', 'mB1001', ' mb1001 ']) {
-    const parsed = parseSuiteNumber(input);
-    assert.equal(parsed.ok, true, `${input} must be valid`);
-    if (parsed.ok) assert.equal(parsed.suiteNumber, 'MB1001');
+test('non-numeric input is rejected', () => {
+  for (const input of ['', '   ', '#', 'abc', '#abc', '12A', '20 1', 'Room201', '#-12', '12.5']) {
+    assert.equal(parseSuiteNumber(input).ok, false, `${input} must be invalid`);
   }
 });
 
-test('the prefix is only canonicalised when digits follow it', () => {
-  // "MBxyz" is not a suite number, so it stays invalid rather than being
-  // coerced into one.
-  assert.equal(parseSuiteNumber('mbxyz').ok, false);
-  assert.equal(normalizeSuiteNumber('mbxyz'), 'mbxyz');
-});
-
-test('a digit run too long to be a real suite is rejected, not truncated', () => {
-  assert.equal(parseSuiteNumber('MB' + '9'.repeat(16)).ok, false);
-});
-
-// ── Normalization details ──────────────────────────────────────────────────
-
-test('surrounding whitespace is trimmed', () => {
-  assert.equal(normalizeSuiteNumber('  Suite201  '), 'Suite201');
-  assert.equal(normalizeSuiteNumber('\tMB1001\n'), 'MB1001');
-});
-
-test('the remainder after the prefix is preserved exactly', () => {
-  // Suite12a and Suite12A are different suites and must not be merged.
-  assert.equal(normalizeSuiteNumber('suite12a'), 'Suite12a');
-  assert.equal(normalizeSuiteNumber('suite12A'), 'Suite12A');
+test('a digit run too long to be a real mailbox number is rejected, not truncated', () => {
+  assert.equal(parseSuiteNumber('9'.repeat(15)).ok, true);
+  assert.equal(parseSuiteNumber('9'.repeat(16)).ok, false);
 });
 
 test('non-string input is handled without throwing', () => {
@@ -116,17 +65,65 @@ test('non-string input is handled without throwing', () => {
 });
 
 test('isValidSuiteNumber operates on already-normalized values', () => {
-  assert.equal(isValidSuiteNumber('Suite201'), true);
-  assert.equal(isValidSuiteNumber('MB1001'), true);
-  assert.equal(isValidSuiteNumber('suite201'), false, 'raw input must be normalized first');
+  assert.equal(isValidSuiteNumber('#201'), true);
+  assert.equal(isValidSuiteNumber('201'), false, 'raw input must be normalized first');
+  assert.equal(isValidSuiteNumber('Suite201'), false);
 });
 
-test('the error message names both accepted formats', () => {
-  assert.match(SUITE_FORMAT_HINT, /Suite201/);
-  assert.match(SUITE_FORMAT_HINT, /MB1001/);
+test('the error message describes the # format and never says Suite', () => {
+  assert.doesNotMatch(SUITE_FORMAT_HINT, /suite/i);
+  assert.doesNotMatch(SUITE_FORMAT_HINT, /MB1001/);
+  assert.match(SUITE_FORMAT_HINT, /#201/);
   const parsed = parseSuiteNumber('nonsense');
   assert.equal(parsed.ok, false);
   if (!parsed.ok) assert.equal(parsed.error, SUITE_FORMAT_HINT);
+});
+
+// ── Existing data: every legacy stored shape displays as #number ────────────
+
+test('legacy stored values display as #number without being rewritten', () => {
+  const cases: Array<[string, string]> = [
+    ['Suite122', '#122'], ['Suite201', '#201'], ['suite201', '#201'],
+    ['Suite 201', '#201'], ['Suite #201', '#201'],
+    ['MB1001', '#1001'], ['mb1001', '#1001'],
+    ['122', '#122'], ['#122', '#122'], [' #122 ', '#122'],
+    ['Suite12A', '#12A'],
+  ];
+  for (const [stored, expected] of cases) {
+    assert.equal(formatMailboxNumber(stored), expected, `${stored} → ${expected}`);
+  }
+});
+
+test('no displayed value ever contains Suite, MB, or a doubled #', () => {
+  for (const stored of ['Suite122', 'MB1001', '#412', '412', 'Suite #7']) {
+    const shown = formatMailboxNumber(stored)!;
+    assert.doesNotMatch(shown, /suite/i);
+    assert.doesNotMatch(shown, /^#?MB/i);
+    assert.doesNotMatch(shown, /##/);
+  }
+});
+
+test('an unassigned mailbox has no display value', () => {
+  for (const stored of [null, undefined, '', '   ']) {
+    assert.equal(formatMailboxNumber(stored), null);
+  }
+});
+
+test('the generated prefix is only stripped when digits follow it', () => {
+  assert.equal(formatMailboxNumber('MBxyz'), '#MBxyz');
+});
+
+// ── Duplicate detection across spellings ──────────────────────────────────
+
+test('every spelling of one number is treated as the same number', () => {
+  const v = mailboxNumberVariants('#201');
+  for (const spelling of ['#201', '201', 'Suite201', 'Suite 201', 'Suite #201', 'MB201']) {
+    assert.ok(v.includes(spelling), `${spelling} must count as #201`);
+  }
+  const g = mailboxNumberVariants('MB1042');
+  for (const spelling of ['MB1042', '#1042', '1042', 'Suite1042']) {
+    assert.ok(g.includes(spelling), `${spelling} must count as MB1042`);
+  }
 });
 
 // ── Multi-mailbox: suite edits stay scoped to one mailbox ──────────────────
@@ -164,14 +161,15 @@ function jessicaMailboxes(): MailboxRow[] {
 /**
  * Stand-in for the suite route's write: validate, reject a duplicate, then
  * update exactly one row selected by id — mirroring the route's
- * `.eq('suite_number', …).neq('id', …)` check followed by `.eq('id', …)`.
+ * `.in('suite_number', variants).neq('id', …)` check followed by `.eq('id', …)`.
  */
 function applySuiteChange(rows: MailboxRow[], targetId: string, input: unknown) {
   const parsed = parseSuiteNumber(input);
   if (!parsed.ok) return { ok: false as const, error: parsed.error, rows };
 
-  const clash = rows.find(r => r.id !== targetId && r.suite_number === parsed.suiteNumber);
-  if (clash) return { ok: false as const, error: 'This suite number is already assigned.', rows };
+  const taken = mailboxNumberVariants(parsed.suiteNumber);
+  const clash = rows.find(r => r.id !== targetId && r.suite_number !== null && taken.includes(r.suite_number));
+  if (clash) return { ok: false as const, error: 'This mailbox number is already assigned.', rows };
 
   return {
     ok: true as const,
@@ -181,24 +179,24 @@ function applySuiteChange(rows: MailboxRow[], targetId: string, input: unknown) 
 
 test('changing Mailbox A suite leaves Mailbox B untouched', () => {
   const before = jessicaMailboxes();
-  const res = applySuiteChange(before, 'mailbox-a', 'Suite130');
+  const res = applySuiteChange(before, 'mailbox-a', '130');
   assert.equal(res.ok, true);
 
-  assert.equal(res.rows.find(r => r.id === 'mailbox-a')!.suite_number, 'Suite130');
+  assert.equal(res.rows.find(r => r.id === 'mailbox-a')!.suite_number, '#130');
   assert.deepEqual(res.rows.find(r => r.id === 'mailbox-b'), before[1]);
 });
 
 test('changing Mailbox B suite leaves Mailbox A untouched', () => {
   const before = jessicaMailboxes();
-  const res = applySuiteChange(before, 'mailbox-b', 'MB1001');
+  const res = applySuiteChange(before, 'mailbox-b', '#1001');
   assert.equal(res.ok, true);
 
-  assert.equal(res.rows.find(r => r.id === 'mailbox-b')!.suite_number, 'MB1001');
+  assert.equal(res.rows.find(r => r.id === 'mailbox-b')!.suite_number, '#1001');
   assert.deepEqual(res.rows.find(r => r.id === 'mailbox-a'), before[0]);
 });
 
 test('a suite change never alters Stripe identifiers or business names', () => {
-  const res = applySuiteChange(jessicaMailboxes(), 'mailbox-a', 'Suite130');
+  const res = applySuiteChange(jessicaMailboxes(), 'mailbox-a', '#130');
   assert.equal(res.ok, true);
   for (const row of res.rows) {
     assert.equal(row.stripe_customer_id, 'cus_TEST_JESSICA');
@@ -210,7 +208,13 @@ test('a suite change never alters Stripe identifiers or business names', () => {
 
 test('one mailbox cannot take a suite another mailbox already holds', () => {
   const before = jessicaMailboxes();
-  const res = applySuiteChange(before, 'mailbox-a', 'Suite123');
+  // Mailbox B is stored in the legacy form Suite123; #123 and 123 are the same number.
+  for (const input of ['123', '#123']) {
+    const res = applySuiteChange(before, 'mailbox-a', input);
+    assert.equal(res.ok, false, `${input} must clash with Suite123`);
+    assert.deepEqual(res.rows, before, 'a rejected change must write nothing');
+  }
+  const res = applySuiteChange(before, 'mailbox-a', '#123');
   assert.equal(res.ok, false);
   assert.deepEqual(res.rows, before, 'a rejected change must write nothing');
 });
@@ -218,13 +222,13 @@ test('one mailbox cannot take a suite another mailbox already holds', () => {
 test('re-saving a mailbox its own current suite is allowed', () => {
   // The duplicate check excludes the row being edited, so an admin opening the
   // editor and saving without changing anything must not hit a 409.
-  const res = applySuiteChange(jessicaMailboxes(), 'mailbox-a', 'Suite122');
+  const res = applySuiteChange(jessicaMailboxes(), 'mailbox-a', '122');
   assert.equal(res.ok, true);
 });
 
 test('an auto-provisioned mailbox can be re-saved with its generated suite', () => {
-  // The exact case the old validation broke: a customer provisioned as MB1001
-  // whose admin opens the suite editor and saves.
+  // A customer provisioned as MB1001 whose admin opens the editor (which shows
+  // 1001) and saves without changing it.
   const rows: MailboxRow[] = [{
     id: 'mailbox-legacy',
     profile_id: 'profile-legacy',
@@ -232,7 +236,7 @@ test('an auto-provisioned mailbox can be re-saved with its generated suite', () 
     suite_number: 'MB1001',
     business_name: 'Legacy Co',
   }];
-  const res = applySuiteChange(rows, 'mailbox-legacy', 'MB1001');
+  const res = applySuiteChange(rows, 'mailbox-legacy', '1001');
   assert.equal(res.ok, true);
-  assert.equal(res.rows[0].suite_number, 'MB1001');
+  assert.equal(res.rows[0].suite_number, '#1001');
 });
