@@ -67,23 +67,11 @@ export function LI({ children }: { children: React.ReactNode }) {
   return <li style={{ paddingLeft: 4 }}>{children}</li>;
 }
 
-// Muted callout used to flag items that need legal/business review.
-export function ReviewNote({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        background: 'rgba(181,138,82,0.08)',
-        border: '1px solid rgba(181,138,82,0.22)',
-        borderRadius: 12,
-        padding: '14px 18px',
-        margin: '0 0 20px',
-        font: '400 13px/1.6 var(--font-text,sans-serif)',
-        color: 'var(--c-text-3,rgba(255,255,255,0.55))',
-      }}
-    >
-      {children}
-    </div>
-  );
+// Internal note flagging items that need legal/business review. These are
+// drafting notes for the business owner, not customer content, so they are
+// kept in the page source but never rendered to visitors.
+export function ReviewNote(_props: { children: React.ReactNode }) {
+  return null;
 }
 
 export function MailLink({ email }: { email: string }) {
