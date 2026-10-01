@@ -49,6 +49,10 @@ const faqs = [
     a: '802 North Goliad Street, Rockwall, TX 75087, with a unique mailbox number assigned to your business. This is a real street address — not a P.O. box — and is accepted for LLC registration, banking, licensing, and Google Business.',
   },
   {
+    q: 'Is My Biz Address registered with USPS?',
+    a: 'Yes. My Biz Address is a USPS-registered Commercial Mail Receiving Agency (CMRA) in Rockwall, TX. We are registered to receive mail on behalf of our customers at our business location.',
+  },
+  {
     q: 'Can I use this address for my business?',
     a: 'Yes. The address meets Texas Secretary of State requirements for LLC and business entity registration. You can list it as your principal place of business on state filings, Google, your website, and business cards.',
   },
@@ -228,6 +232,7 @@ export default function Home() {
               { num: 'All carriers', label: 'USPS, UPS, FedEx, Amazon' },
               { num: 'Locally run',  label: 'Rockwall, TX team' },
               { num: 'Mon–Sat',      label: '9 am – 6 pm · Rockwall' },
+              { num: 'USPS Registered', label: 'Registered to receive mail for our customers' },
             ].map(s => (
               <div key={s.label} className="stats-bar-item">
                 <span className="stats-bar-num">{s.num}</span>
