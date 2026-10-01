@@ -232,7 +232,7 @@ export default function Home() {
               { num: 'All carriers', label: 'USPS, UPS, FedEx, Amazon' },
               { num: 'Locally run',  label: 'Rockwall, TX team' },
               { num: 'Mon–Sat',      label: '9 am – 6 pm · Rockwall' },
-              { num: 'USPS Registered', label: 'Registered to receive mail for our customers' },
+              { num: 'USPS-Registered CMRA', label: 'Registered to receive mail for our customers' },
             ].map(s => (
               <div key={s.label} className="stats-bar-item">
                 <span className="stats-bar-num">{s.num}</span>
